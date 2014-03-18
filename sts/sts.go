@@ -22,7 +22,7 @@ type STS struct {
 
 // New creates a new STS Client.
 // We can only use us-east for region because AWS..
-func New(auth aws.Auth) *STS {
+func New(auth aws.Auth, region aws.Region) *STS {
 	return &STS{auth, aws.Regions["us-east-1"], 0}
 }
 
