@@ -3,7 +3,7 @@ package sqs
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/crowdmob/goamz/aws"
+	"github.com/goamz/goamz/aws"
 	"hash"
 	"launchpad.net/gocheck"
 )

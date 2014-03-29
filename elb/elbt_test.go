@@ -1,9 +1,9 @@
 package elb_test
 
 import (
-	"github.com/crowdmob/goamz/aws"
-	"github.com/crowdmob/goamz/elb"
-	"github.com/crowdmob/goamz/elb/elbtest"
+	"github.com/goamz/goamz/aws"
+	"github.com/goamz/goamz/elb"
+	"github.com/goamz/goamz/elb/elbtest"
 	"launchpad.net/gocheck"
 )
 

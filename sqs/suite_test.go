@@ -3,7 +3,7 @@ package sqs
 import (
 	"flag"
 	"fmt"
-	"github.com/crowdmob/goamz/aws"
+	"github.com/goamz/goamz/aws"
 	"launchpad.net/gocheck"
 	"net/http"
 	"net/url"

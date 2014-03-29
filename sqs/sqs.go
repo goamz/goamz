@@ -13,7 +13,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/crowdmob/goamz/aws"
+	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
 	"log"
