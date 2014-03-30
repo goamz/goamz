@@ -2,7 +2,7 @@ package elb_test
 
 import (
 	"fmt"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"net/http"
 	"net/url"
 	"os"

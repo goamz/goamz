@@ -2,7 +2,7 @@ package dynamodb_test
 
 import (
 	"github.com/goamz/goamz/dynamodb"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"time"
 )
 

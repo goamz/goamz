@@ -4,7 +4,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/elb"
 	"github.com/goamz/goamz/elb/elbtest"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 )
 
 // LocalServer represents a local elbtest fake server.

@@ -6,7 +6,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/ec2"
 	"github.com/goamz/goamz/testutil"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 )
 
 // AmazonServer represents an Amazon EC2 server.

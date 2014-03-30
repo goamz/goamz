@@ -44,7 +44,7 @@ Just use `go get` with any of the available packages. For example:
 
 To run tests, first install gocheck with:
 
-`$ go get launchpad.net/gocheck`
+`$ go get github.com/motain/gocheck`
 
 Then run go test as usual:
 

@@ -4,8 +4,8 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/goamz/goamz/aws"
+	"github.com/motain/gocheck"
 	"hash"
-	"launchpad.net/gocheck"
 )
 
 var _ = gocheck.Suite(&S{})

@@ -3,7 +3,7 @@ package elb_test
 import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/elb"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"time"
 )
 

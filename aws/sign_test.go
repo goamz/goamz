@@ -3,7 +3,7 @@ package aws_test
 import (
 	"fmt"
 	"github.com/goamz/goamz/aws"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"net/http"
 	"strings"
 	"time"

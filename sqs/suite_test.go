@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/goamz/goamz/aws"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"net/http"
 	"net/url"
 	"os"

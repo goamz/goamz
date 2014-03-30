@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/dynamodb"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"testing"
 	"time"
 )

@@ -4,7 +4,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/rds"
 	"github.com/goamz/goamz/testutil"
-	"launchpad.net/gocheck"
+	"github.com/motain/gocheck"
 	"testing"
 )
 
