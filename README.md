@@ -1,6 +1,6 @@
 # goamz - An Amazon Library for Go
 
-[![Build Status](https://travis-ci.org/goamz/goamz.png?branch=master)](https://travis-ci.org/goamz/goamz)
+[![Build Status](http://travis-ci.org/goamz/goamz.png?branch=master)](https://travis-ci.org/goamz/goamz)
 
 The _goamz_ package enables Go programs to interact with Amazon Web Services.
 
