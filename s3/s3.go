@@ -168,11 +168,15 @@ func (b *Bucket) DelBucket() (err error) {
 // See http://goo.gl/isCO7 for details.
 func (b *Bucket) Get(path string) (data []byte, err error) {
 	body, err := b.GetReader(path)
+	defer func() {
+		if body != nil {
+			body.Close()
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}
 	data, err = ioutil.ReadAll(body)
-	body.Close()
 	return data, err
 }
 
