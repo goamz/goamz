@@ -23,7 +23,11 @@ var testServer = testutil.NewHTTPServer()
 func (s *S) SetUpSuite(c *gocheck.C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
-	s.ec2 = ec2.New(auth, aws.Region{EC2Endpoint: testServer.URL})
+	s.ec2 = ec2.NewWithClient(
+		auth,
+		aws.Region{EC2Endpoint: testServer.URL},
+		testutil.DefaultClient,
+	)
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {
@@ -56,7 +60,7 @@ func (s *S) TestRunInstancesErrorDump(c *gocheck.C) {
 }
 
 func (s *S) TestRunInstancesErrorWithoutXML(c *gocheck.C) {
-	testServer.Response(500, nil, "")
+	testServer.Responses(5, 500, nil, "")
 	options := ec2.RunInstancesOptions{ImageId: "image-id"}
 
 	resp, err := s.ec2.RunInstances(&options)
@@ -92,6 +96,10 @@ func (s *S) TestRunInstancesExample(c *gocheck.C) {
 		DisableAPITermination: true,
 		ShutdownBehavior:      "terminate",
 		PrivateIPAddress:      "10.0.0.25",
+		BlockDevices: []ec2.BlockDeviceMapping{
+			{DeviceName: "/dev/sdb", VirtualName: "ephemeral0"},
+			{DeviceName: "/dev/sdc", SnapshotId: "snap-a08912c9", DeleteOnTermination: true},
+		},
 	}
 	resp, err := s.ec2.RunInstances(&options)
 
@@ -116,6 +124,10 @@ func (s *S) TestRunInstancesExample(c *gocheck.C) {
 	c.Assert(req.Form["DisableApiTermination"], gocheck.DeepEquals, []string{"true"})
 	c.Assert(req.Form["InstanceInitiatedShutdownBehavior"], gocheck.DeepEquals, []string{"terminate"})
 	c.Assert(req.Form["PrivateIpAddress"], gocheck.DeepEquals, []string{"10.0.0.25"})
+	c.Assert(req.Form["BlockDeviceMapping.1.DeviceName"], gocheck.DeepEquals, []string{"/dev/sdb"})
+	c.Assert(req.Form["BlockDeviceMapping.1.VirtualName"], gocheck.DeepEquals, []string{"ephemeral0"})
+	c.Assert(req.Form["BlockDeviceMapping.2.Ebs.SnapshotId"], gocheck.DeepEquals, []string{"snap-a08912c9"})
+	c.Assert(req.Form["BlockDeviceMapping.2.Ebs.DeleteOnTermination"], gocheck.DeepEquals, []string{"true"})
 
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
@@ -335,69 +347,37 @@ func (s *S) TestDescribeAddressesAllocationIDExample(c *gocheck.C) {
 	c.Assert(r1.PrivateIpAddress, gocheck.Equals, "10.0.0.102")
 }
 
-func (s *S) TestAllocateAddressExample(c *gocheck.C) {
-	testServer.Response(200, nil, AllocateAddressExample)
+func (s *S) TestCreateImageExample(c *gocheck.C) {
+	testServer.Response(200, nil, CreateImageExample)
 
-	resp, err := s.ec2.AllocateAddress("vpc")
-
-	req := testServer.WaitRequest()
-	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"AllocateAddress"})
-	c.Assert(req.Form["Domain"], gocheck.DeepEquals, []string{"vpc"})
-
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
-	c.Assert(resp.PublicIp, gocheck.Equals, "198.51.100.1")
-	c.Assert(resp.Domain, gocheck.Equals, "vpc")
-	c.Assert(resp.AllocationId, gocheck.Equals, "eipalloc-5723d13e")
-}
-
-func (s *S) TestReleaseAddressExample(c *gocheck.C) {
-	testServer.Response(200, nil, ReleaseAddressExample)
-
-	resp, err := s.ec2.ReleaseAddress("192.0.2.1", "")
-
-	req := testServer.WaitRequest()
-	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"ReleaseAddress"})
-	c.Assert(req.Form["PublicIp"], gocheck.DeepEquals, []string{"192.0.2.1"})
-
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
-	c.Assert(resp.Return, gocheck.Equals, true)
-}
-
-func (s *S) TestAssociateAddressExample(c *gocheck.C) {
-	testServer.Response(200, nil, AssociateAddressExample)
-
-	options := ec2.AssociateAddressOptions{
-		PublicIp:   "192.0.2.1",
-		InstanceId: "i-2ea64347",
+	options := &ec2.CreateImage{
+		InstanceId:  "i-123456",
+		Name:        "foo",
+		Description: "Test CreateImage",
+		NoReboot:    true,
+		BlockDevices: []ec2.BlockDeviceMapping{
+			{DeviceName: "/dev/sdb", VirtualName: "ephemeral0"},
+			{DeviceName: "/dev/sdc", SnapshotId: "snap-a08912c9", DeleteOnTermination: true},
+		},
 	}
 
-	resp, err := s.ec2.AssociateAddress(&options)
+	resp, err := s.ec2.CreateImage(options)
 
 	req := testServer.WaitRequest()
-	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"AssociateAddress"})
-	c.Assert(req.Form["PublicIp"], gocheck.DeepEquals, []string{"192.0.2.1"})
-	c.Assert(req.Form["InstanceId"], gocheck.DeepEquals, []string{"i-2ea64347"})
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"CreateImage"})
+	c.Assert(req.Form["InstanceId"], gocheck.DeepEquals, []string{options.InstanceId})
+	c.Assert(req.Form["Name"], gocheck.DeepEquals, []string{options.Name})
+	c.Assert(req.Form["Description"], gocheck.DeepEquals, []string{options.Description})
+	c.Assert(req.Form["NoReboot"], gocheck.DeepEquals, []string{"true"})
+	c.Assert(req.Form["BlockDeviceMapping.1.DeviceName"], gocheck.DeepEquals, []string{"/dev/sdb"})
+	c.Assert(req.Form["BlockDeviceMapping.1.VirtualName"], gocheck.DeepEquals, []string{"ephemeral0"})
+	c.Assert(req.Form["BlockDeviceMapping.2.DeviceName"], gocheck.DeepEquals, []string{"/dev/sdc"})
+	c.Assert(req.Form["BlockDeviceMapping.2.Ebs.SnapshotId"], gocheck.DeepEquals, []string{"snap-a08912c9"})
+	c.Assert(req.Form["BlockDeviceMapping.2.Ebs.DeleteOnTermination"], gocheck.DeepEquals, []string{"true"})
 
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
-	c.Assert(resp.Return, gocheck.Equals, true)
-	c.Assert(resp.AssociationId, gocheck.Equals, "eipassoc-fc5ca095")
-}
-
-func (s *S) TestDiassociateAddressExample(c *gocheck.C) {
-	testServer.Response(200, nil, DiassociateAddressExample)
-
-	resp, err := s.ec2.DiassociateAddress("192.0.2.1", "")
-
-	req := testServer.WaitRequest()
-	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DiassociateAddress"})
-	c.Assert(req.Form["PublicIp"], gocheck.DeepEquals, []string{"192.0.2.1"})
-
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
-	c.Assert(resp.Return, gocheck.Equals, true)
+	c.Assert(resp.ImageId, gocheck.Equals, "ami-4fa54026")
 }
 
 func (s *S) TestDescribeImagesExample(c *gocheck.C) {
@@ -450,6 +430,64 @@ func (s *S) TestDescribeImagesExample(c *gocheck.C) {
 	c.Assert(i0.BlockDevices[0].SnapshotId, gocheck.Equals, "snap-787e9403")
 	c.Assert(i0.BlockDevices[0].VolumeSize, gocheck.Equals, int64(8))
 	c.Assert(i0.BlockDevices[0].DeleteOnTermination, gocheck.Equals, true)
+
+	testServer.Response(200, nil, DescribeImagesExample)
+	resp2, err := s.ec2.ImagesByOwners([]string{"ami-1", "ami-2"}, []string{"123456789999", "id2"}, filter)
+
+	req2 := testServer.WaitRequest()
+	c.Assert(req2.Form["Action"], gocheck.DeepEquals, []string{"DescribeImages"})
+	c.Assert(req2.Form["ImageId.1"], gocheck.DeepEquals, []string{"ami-1"})
+	c.Assert(req2.Form["ImageId.2"], gocheck.DeepEquals, []string{"ami-2"})
+	c.Assert(req2.Form["Owner.1"], gocheck.DeepEquals, []string{"123456789999"})
+	c.Assert(req2.Form["Owner.2"], gocheck.DeepEquals, []string{"id2"})
+	c.Assert(req2.Form["Filter.1.Name"], gocheck.DeepEquals, []string{"key1"})
+	c.Assert(req2.Form["Filter.1.Value.1"], gocheck.DeepEquals, []string{"value1"})
+	c.Assert(req2.Form["Filter.1.Value.2"], gocheck.IsNil)
+	c.Assert(req2.Form["Filter.2.Name"], gocheck.DeepEquals, []string{"key2"})
+	c.Assert(req2.Form["Filter.2.Value.1"], gocheck.DeepEquals, []string{"value2"})
+	c.Assert(req2.Form["Filter.2.Value.2"], gocheck.DeepEquals, []string{"value3"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp2.RequestId, gocheck.Equals, "4a4a27a2-2e7c-475d-b35b-ca822EXAMPLE")
+	c.Assert(resp2.Images, gocheck.HasLen, 1)
+
+	i1 := resp2.Images[0]
+	c.Assert(i1.Id, gocheck.Equals, "ami-a2469acf")
+	c.Assert(i1.Type, gocheck.Equals, "machine")
+	c.Assert(i1.Name, gocheck.Equals, "example-marketplace-amzn-ami.1")
+	c.Assert(i1.Description, gocheck.Equals, "Amazon Linux AMI i386 EBS")
+	c.Assert(i1.Location, gocheck.Equals, "aws-marketplace/example-marketplace-amzn-ami.1")
+	c.Assert(i1.State, gocheck.Equals, "available")
+	c.Assert(i1.Public, gocheck.Equals, true)
+	c.Assert(i1.OwnerId, gocheck.Equals, "123456789999")
+	c.Assert(i1.OwnerAlias, gocheck.Equals, "aws-marketplace")
+	c.Assert(i1.Architecture, gocheck.Equals, "i386")
+	c.Assert(i1.KernelId, gocheck.Equals, "aki-805ea7e9")
+	c.Assert(i1.RootDeviceType, gocheck.Equals, "ebs")
+	c.Assert(i1.RootDeviceName, gocheck.Equals, "/dev/sda1")
+	c.Assert(i1.VirtualizationType, gocheck.Equals, "paravirtual")
+	c.Assert(i1.Hypervisor, gocheck.Equals, "xen")
+
+	c.Assert(i1.BlockDevices, gocheck.HasLen, 1)
+	c.Assert(i1.BlockDevices[0].DeviceName, gocheck.Equals, "/dev/sda1")
+	c.Assert(i1.BlockDevices[0].SnapshotId, gocheck.Equals, "snap-787e9403")
+	c.Assert(i1.BlockDevices[0].VolumeSize, gocheck.Equals, int64(8))
+	c.Assert(i1.BlockDevices[0].DeleteOnTermination, gocheck.Equals, true)
+}
+
+func (s *S) TestImageAttributeExample(c *gocheck.C) {
+	testServer.Response(200, nil, ImageAttributeExample)
+
+	resp, err := s.ec2.ImageAttribute("ami-61a54008", "launchPermission")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DescribeImageAttribute"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.ImageId, gocheck.Equals, "ami-61a54008")
+	c.Assert(resp.Group, gocheck.Equals, "all")
+	c.Assert(resp.UserIds[0], gocheck.Equals, "495219933132")
 }
 
 func (s *S) TestCreateSnapshotExample(c *gocheck.C) {
@@ -526,10 +564,98 @@ func (s *S) TestDescribeSnapshotsExample(c *gocheck.C) {
 	c.Assert(s0.Tags[0].Value, gocheck.Equals, "demo_db_14_backup")
 }
 
+func (s *S) TestModifyImageAttributeExample(c *gocheck.C) {
+	testServer.Response(200, nil, ModifyImageAttributeExample)
+
+	options := ec2.ModifyImageAttribute{
+		Description: "Test Description",
+	}
+
+	resp, err := s.ec2.ModifyImageAttribute("ami-4fa54026", &options)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"ModifyImageAttribute"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+}
+
+func (s *S) TestModifyImageAttributeExample_complex(c *gocheck.C) {
+	testServer.Response(200, nil, ModifyImageAttributeExample)
+
+	options := ec2.ModifyImageAttribute{
+		AddUsers:     []string{"u1", "u2"},
+		RemoveUsers:  []string{"u3"},
+		AddGroups:    []string{"g1", "g3"},
+		RemoveGroups: []string{"g2"},
+		Description:  "Test Description",
+	}
+
+	resp, err := s.ec2.ModifyImageAttribute("ami-4fa54026", &options)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"ModifyImageAttribute"})
+	c.Assert(req.Form["LaunchPermission.Add.1.UserId"], gocheck.DeepEquals, []string{"u1"})
+	c.Assert(req.Form["LaunchPermission.Add.2.UserId"], gocheck.DeepEquals, []string{"u2"})
+	c.Assert(req.Form["LaunchPermission.Remove.1.UserId"], gocheck.DeepEquals, []string{"u3"})
+	c.Assert(req.Form["LaunchPermission.Add.1.Group"], gocheck.DeepEquals, []string{"g1"})
+	c.Assert(req.Form["LaunchPermission.Add.2.Group"], gocheck.DeepEquals, []string{"g3"})
+	c.Assert(req.Form["LaunchPermission.Remove.1.Group"], gocheck.DeepEquals, []string{"g2"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+}
+
+func (s *S) TestCopyImageExample(c *gocheck.C) {
+	testServer.Response(200, nil, CopyImageExample)
+
+	options := ec2.CopyImage{
+		SourceRegion:  "us-west-2",
+		SourceImageId: "ami-1a2b3c4d",
+		Description:   "Test Description",
+	}
+
+	resp, err := s.ec2.CopyImage(&options)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"CopyImage"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "60bc441d-fa2c-494d-b155-5d6a3EXAMPLE")
+}
+
+func (s *S) TestCreateKeyPairExample(c *gocheck.C) {
+	testServer.Response(200, nil, CreateKeyPairExample)
+
+	resp, err := s.ec2.CreateKeyPair("foo")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"CreateKeyPair"})
+	c.Assert(req.Form["KeyName"], gocheck.DeepEquals, []string{"foo"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.KeyName, gocheck.Equals, "foo")
+	c.Assert(resp.KeyFingerprint, gocheck.Equals, "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00")
+}
+
+func (s *S) TestDeleteKeyPairExample(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteKeyPairExample)
+
+	resp, err := s.ec2.DeleteKeyPair("foo")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DeleteKeyPair"})
+	c.Assert(req.Form["KeyName"], gocheck.DeepEquals, []string{"foo"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+}
+
 func (s *S) TestCreateSecurityGroupExample(c *gocheck.C) {
 	testServer.Response(200, nil, CreateSecurityGroupExample)
 
-	resp, err := s.ec2.CreateSecurityGroup("websrv", "Web Servers")
+	resp, err := s.ec2.CreateSecurityGroup(ec2.SecurityGroup{Name: "websrv", Description: "Web Servers"})
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"CreateSecurityGroup"})
@@ -827,11 +953,129 @@ func (s *S) TestSignatureWithEndpointPath(c *gocheck.C) {
 	testServer.Response(200, nil, RebootInstancesExample)
 
 	// https://bugs.launchpad.net/goamz/+bug/1022749
-	ec2 := ec2.New(s.ec2.Auth, aws.Region{EC2Endpoint: testServer.URL + "/services/Cloud"})
+	ec2 := ec2.NewWithClient(s.ec2.Auth, aws.Region{EC2Endpoint: testServer.URL + "/services/Cloud"}, testutil.DefaultClient)
 
 	_, err := ec2.RebootInstances("i-10a64379")
 	c.Assert(err, gocheck.IsNil)
 
 	req := testServer.WaitRequest()
-	c.Assert(req.Form["Signature"], gocheck.DeepEquals, []string{"klxs+VwDa1EKHBsxlDYYN58wbP6An+RVdhETv1Fm/os="})
+	c.Assert(req.Form["Signature"], gocheck.DeepEquals, []string{"WaKDWBipeZzpFeqg5PpHw8ayfiqPqB2SX5HsH8+b6+k="})
+}
+
+func (s *S) TestAllocateAddressExample(c *gocheck.C) {
+	testServer.Response(200, nil, AllocateAddressExample)
+
+	options := &ec2.AllocateAddressOptions{
+		Domain: "vpc",
+	}
+
+	resp, err := s.ec2.AllocateAddress(options)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"AllocateAddress"})
+	c.Assert(req.Form["Domain"], gocheck.DeepEquals, []string{"vpc"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.PublicIp, gocheck.Equals, "198.51.100.1")
+	c.Assert(resp.Domain, gocheck.Equals, "vpc")
+	c.Assert(resp.AllocationId, gocheck.Equals, "eipalloc-5723d13e")
+}
+
+func (s *S) TestReleaseAddressExample(c *gocheck.C) {
+	testServer.Response(200, nil, ReleaseAddressExample)
+
+	resp, err := s.ec2.ReleaseAddress("192.0.2.1", "eipalloc-5723d13e")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"ReleaseAddress"})
+	c.Assert(req.Form["PublicIp"], gocheck.DeepEquals, []string{"192.0.2.1"})
+	c.Assert(req.Form["AllocationId"], gocheck.DeepEquals, []string{"eipalloc-5723d13e"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Return, gocheck.Equals, true)
+}
+
+func (s *S) TestAssociateAddressExample(c *gocheck.C) {
+	testServer.Response(200, nil, AssociateAddressExample)
+
+	options := &ec2.AssociateAddressOptions{
+		PublicIp:           "192.0.2.1",
+		InstanceId:         "i-4fd2431a",
+		AllocationId:       "eipalloc-5723d13e",
+		AllowReassociation: true,
+	}
+
+	resp, err := s.ec2.AssociateAddress(options)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"AssociateAddress"})
+	c.Assert(req.Form["PublicIp"], gocheck.DeepEquals, []string{"192.0.2.1"})
+	c.Assert(req.Form["InstanceId"], gocheck.DeepEquals, []string{"i-4fd2431a"})
+	c.Assert(req.Form["AllocationId"], gocheck.DeepEquals, []string{"eipalloc-5723d13e"})
+	c.Assert(req.Form["AllowReassociation"], gocheck.DeepEquals, []string{"true"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.AssociationId, gocheck.Equals, "eipassoc-fc5ca095")
+	c.Assert(resp.Return, gocheck.Equals, true)
+}
+
+func (s *S) TestDisassociateAddressExample(c *gocheck.C) {
+	testServer.Response(200, nil, DisassociateAddressExample)
+
+	resp, err := s.ec2.DisassociateAddress("192.0.2.1", "eipassoc-aa7486c3")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DisassociateAddress"})
+	c.Assert(req.Form["PublicIp"], gocheck.DeepEquals, []string{"192.0.2.1"})
+	c.Assert(req.Form["AssociationId"], gocheck.DeepEquals, []string{"eipassoc-aa7486c3"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Return, gocheck.Equals, true)
+}
+
+func (s *S) TestModifyInstance(c *gocheck.C) {
+	testServer.Response(200, nil, ModifyInstanceExample)
+
+	options := ec2.ModifyInstance{
+		InstanceType:          "m1.small",
+		DisableAPITermination: true,
+		EbsOptimized:          true,
+		SecurityGroups:        []ec2.SecurityGroup{{Id: "g1"}, {Id: "g2"}},
+		ShutdownBehavior:      "terminate",
+		KernelId:              "kernel-id",
+		RamdiskId:             "ramdisk-id",
+		SourceDestCheck:       true,
+		SriovNetSupport:       true,
+		UserData:              []byte("1234"),
+		BlockDevices: []ec2.BlockDeviceMapping{
+			{DeviceName: "/dev/sda1", SnapshotId: "snap-a08912c9", DeleteOnTermination: true},
+		},
+	}
+
+	resp, err := s.ec2.ModifyInstance("i-2ba64342", &options)
+	req := testServer.WaitRequest()
+
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"ModifyInstanceAttribute"})
+	c.Assert(req.Form["InstanceId"], gocheck.DeepEquals, []string{"i-2ba64342"})
+	c.Assert(req.Form["InstanceType.Value"], gocheck.DeepEquals, []string{"m1.small"})
+	c.Assert(req.Form["BlockDeviceMapping.1.DeviceName"], gocheck.DeepEquals, []string{"/dev/sda1"})
+	c.Assert(req.Form["BlockDeviceMapping.1.Ebs.SnapshotId"], gocheck.DeepEquals, []string{"snap-a08912c9"})
+	c.Assert(req.Form["BlockDeviceMapping.1.Ebs.DeleteOnTermination"], gocheck.DeepEquals, []string{"true"})
+	c.Assert(req.Form["DisableApiTermination.Value"], gocheck.DeepEquals, []string{"true"})
+	c.Assert(req.Form["EbsOptimized"], gocheck.DeepEquals, []string{"true"})
+	c.Assert(req.Form["GroupId.1"], gocheck.DeepEquals, []string{"g1"})
+	c.Assert(req.Form["GroupId.2"], gocheck.DeepEquals, []string{"g2"})
+	c.Assert(req.Form["InstanceInitiatedShutdownBehavior.Value"], gocheck.DeepEquals, []string{"terminate"})
+	c.Assert(req.Form["Kernel.Value"], gocheck.DeepEquals, []string{"kernel-id"})
+	c.Assert(req.Form["Ramdisk.Value"], gocheck.DeepEquals, []string{"ramdisk-id"})
+	c.Assert(req.Form["SourceDestCheck.Value"], gocheck.DeepEquals, []string{"true"})
+	c.Assert(req.Form["SriovNetSupport.Value"], gocheck.DeepEquals, []string{"simple"})
+	c.Assert(req.Form["UserData"], gocheck.DeepEquals, []string{"MTIzNA=="})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
 }

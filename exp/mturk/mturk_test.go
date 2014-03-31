@@ -4,7 +4,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/exp/mturk"
 	"github.com/goamz/goamz/testutil"
-	. "github.com/motain/gocheck"
+	"github.com/motain/gocheck"
 	"net/url"
 	"testing"
 )

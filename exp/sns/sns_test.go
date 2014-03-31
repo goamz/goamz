@@ -239,6 +239,7 @@ func (s *S) TestListSubscriptionByTopic(c *gocheck.C) {
 	c.Assert(resp.Subscriptions[0].Protocol, gocheck.Equals, "email")
 	c.Assert(err, gocheck.IsNil)
 }
+
 func (s *S) TestCreatePlatformApplication(c *gocheck.C) {
 	testServer.Response(200, nil, TestCreatePlatformApplicationXmlOK)
 

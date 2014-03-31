@@ -314,6 +314,15 @@ func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source stri
 	return resp, nil
 }
 
+/*
+PutHeader - like Put, inserts an object into the S3 bucket.
+Instead of Content-Type string, pass in custom headers to override defaults.
+*/
+func (b *Bucket) PutHeader(path string, data []byte, customHeaders map[string][]string, perm ACL) error {
+	body := bytes.NewBuffer(data)
+	return b.PutReaderHeader(path, body, int64(len(data)), customHeaders, perm)
+}
+
 // PutReader inserts an object into the S3 bucket by consuming data
 // from r until EOF.
 func (b *Bucket) PutReader(path string, r io.Reader, length int64, contType string, perm ACL, options Options) error {
@@ -323,6 +332,33 @@ func (b *Bucket) PutReader(path string, r io.Reader, length int64, contType stri
 		"x-amz-acl":      {string(perm)},
 	}
 	options.addHeaders(headers)
+	req := &request{
+		method:  "PUT",
+		bucket:  b.Name,
+		path:    path,
+		headers: headers,
+		payload: r,
+	}
+	return b.S3.query(req, nil)
+}
+
+/*
+PutReaderHeader - like PutReader, inserts an object into S3 from a reader.
+Instead of Content-Type string, pass in custom headers to override defaults.
+*/
+func (b *Bucket) PutReaderHeader(path string, r io.Reader, length int64, customHeaders map[string][]string, perm ACL) error {
+	// Default headers
+	headers := map[string][]string{
+		"Content-Length": {strconv.FormatInt(length, 10)},
+		"Content-Type":   {"application/text"},
+		"x-amz-acl":      {string(perm)},
+	}
+
+	// Override with custom headers
+	for key, value := range customHeaders {
+		headers[key] = value
+	}
+
 	req := &request{
 		method:  "PUT",
 		bucket:  b.Name,
@@ -471,11 +507,13 @@ func (b *Bucket) DelMulti(objects Delete) error {
 
 // The ListResp type holds the results of a List bucket operation.
 type ListResp struct {
-	Name      string
-	Prefix    string
-	Delimiter string
-	Marker    string
-	MaxKeys   int
+	Name       string
+	Prefix     string
+	Delimiter  string
+	Marker     string
+	NextMarker string
+	MaxKeys    int
+
 	// IsTruncated is true if the results have been truncated because
 	// there are more keys and prefixes than can fit in MaxKeys.
 	// N.B. this is the opposite sense to that documented (incorrectly) in
@@ -640,6 +678,30 @@ func (b *Bucket) Versions(prefix, delim, keyMarker string, versionIdMarker strin
 	return result, nil
 }
 
+// Returns a mapping of all key names in this bucket to Key objects
+func (b *Bucket) GetBucketContents() (*map[string]Key, error) {
+	bucket_contents := map[string]Key{}
+	prefix := ""
+	path_separator := ""
+	marker := ""
+	for {
+		contents, err := b.List(prefix, path_separator, marker, 1000)
+		if err != nil {
+			return &bucket_contents, err
+		}
+		for _, key := range contents.Contents {
+			bucket_contents[key.Key] = key
+		}
+		if contents.IsTruncated {
+			marker = contents.NextMarker
+		} else {
+			break
+		}
+	}
+
+	return &bucket_contents, nil
+}
+
 // URL returns a non-signed URL that allows retriving the
 // object at path. It only works if the object is publicly
 // readable (see SignedURL).
@@ -755,6 +817,7 @@ type request struct {
 	method   string
 	bucket   string
 	path     string
+	signpath string
 	params   url.Values
 	headers  http.Header
 	baseurl  string
@@ -778,7 +841,11 @@ func (req *request) url() (*url.URL, error) {
 func (s3 *S3) query(req *request, resp interface{}) error {
 	err := s3.prepare(req)
 	if err == nil {
-		_, err = s3.run(req, resp)
+		var httpResponse *http.Response
+		httpResponse, err = s3.run(req, resp)
+		if resp == nil && httpResponse != nil {
+			httpResponse.Body.Close()
+		}
 	}
 	return err
 }
@@ -870,27 +937,7 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
 
-	c := http.Client{
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (c net.Conn, err error) {
-				deadline := time.Now().Add(s3.ReadTimeout)
-				if s3.ConnectTimeout > 0 {
-					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
-				} else {
-					c, err = net.Dial(netw, addr)
-				}
-				if err != nil {
-					return
-				}
-				if s3.ReadTimeout > 0 {
-					err = c.SetDeadline(deadline)
-				}
-				return
-			},
-		},
-	}
-
-	hresp, err := c.Do(&hreq)
+	hresp, err := http.DefaultClient.Do(&hreq)
 	if err != nil {
 		return nil, err
 	}
@@ -899,16 +946,15 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		log.Printf("} -> %s\n", dump)
 	}
 	if hresp.StatusCode != 200 && hresp.StatusCode != 204 {
+		hresp.Body.Close()
 		return nil, buildError(hresp)
 	}
 	if resp != nil {
 		err = xml.NewDecoder(hresp.Body).Decode(resp)
 		hresp.Body.Close()
-
 		if debug {
 			log.Printf("goamz.s3> decoded xml into %#v", resp)
 		}
-
 	}
 	return hresp, err
 }

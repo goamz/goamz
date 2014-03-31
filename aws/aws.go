@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -230,24 +229,13 @@ type credentials struct {
 	Expiration      string
 }
 
+// GetMetaData retrieves instance metadata about the current machine.
+//
+// See http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AESDG-chapter-instancedata.html for more details.
 func GetMetaData(path string) (contents []byte, err error) {
-	c := http.Client{
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (net.Conn, error) {
-				deadline := time.Now().Add(5 * time.Second)
-				c, err := net.DialTimeout(netw, addr, time.Second*2)
-				if err != nil {
-					return nil, err
-				}
-				c.SetDeadline(deadline)
-				return c, nil
-			},
-		},
-	}
-
 	url := "http://169.254.169.254/latest/meta-data/" + path
 
-	resp, err := c.Get(url)
+	resp, err := RetryingClient.Get(url)
 	if err != nil {
 		return
 	}

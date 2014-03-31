@@ -1,4 +1,4 @@
-# GoAMZ
+# goamz - An Amazon Library for Go
 
 [![Build Status](https://travis-ci.org/goamz/goamz.png?branch=master)](https://travis-ci.org/goamz/goamz)
 
@@ -11,12 +11,16 @@ The API of AWS is very comprehensive, though, and goamz doesn't even scratch the
 The following packages are available at the moment:
 
 ```
+github.com/goamz/goamz/autoscaling
 github.com/goamz/goamz/aws
+github.com/goamz/goamz/cloudfront
 github.com/goamz/goamz/cloudwatch
 github.com/goamz/goamz/dynamodb
 github.com/goamz/goamz/ec2
 github.com/goamz/goamz/elb
 github.com/goamz/goamz/iam
+github.com/goamz/goamz/rds
+github.com/goamz/goamz/route53
 github.com/goamz/goamz/s3
 github.com/goamz/goamz/sqs
 

@@ -24,7 +24,7 @@ var testServer = testutil.NewHTTPServer()
 func (s *S) SetUpSuite(c *gocheck.C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
-	s.iam = iam.New(auth, aws.Region{IAMEndpoint: testServer.URL})
+	s.iam = iam.NewWithClient(auth, aws.Region{IAMEndpoint: testServer.URL}, testutil.DefaultClient)
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {
@@ -273,6 +273,17 @@ func (s *S) TestDeleteUserPolicy(c *gocheck.C) {
 	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteUserPolicy")
 	c.Assert(values.Get("PolicyName"), gocheck.Equals, "AllAccessPolicy")
 	c.Assert(values.Get("UserName"), gocheck.Equals, "Bob")
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+}
+
+func (s *S) TestAddUserToGroup(c *gocheck.C) {
+	testServer.Response(200, nil, AddUserToGroupExample)
+	resp, err := s.iam.AddUserToGroup("admin1", "Admins")
+	values := testServer.WaitRequest().URL.Query()
+	c.Assert(values.Get("Action"), gocheck.Equals, "AddUserToGroup")
+	c.Assert(values.Get("GroupName"), gocheck.Equals, "Admins")
+	c.Assert(values.Get("UserName"), gocheck.Equals, "admin1")
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(resp.RequestId, gocheck.Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
 }

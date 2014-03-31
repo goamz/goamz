@@ -2,14 +2,15 @@ package s3_test
 
 import (
 	"bytes"
-	"github.com/goamz/goamz/aws"
-	"github.com/goamz/goamz/s3"
-	"github.com/goamz/goamz/testutil"
-	"github.com/motain/gocheck"
 	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/goamz/goamz/aws"
+	"github.com/goamz/goamz/s3"
+	"github.com/goamz/goamz/testutil"
+	"github.com/motain/gocheck"
 )
 
 func Test(t *testing.T) {
@@ -218,12 +219,58 @@ func (s *S) TestPutObjectReadTimeout(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 }
 
+func (s *S) TestPutObjectHeader(c *gocheck.C) {
+	testServer.Response(200, nil, "")
+
+	b := s.s3.Bucket("bucket")
+	err := b.PutHeader(
+		"name",
+		[]byte("content"),
+		map[string][]string{"Content-Type": {"content-type"}},
+		s3.Private,
+	)
+	c.Assert(err, gocheck.IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, gocheck.Equals, "PUT")
+	c.Assert(req.URL.Path, gocheck.Equals, "/bucket/name")
+	c.Assert(req.Header["Date"], gocheck.Not(gocheck.DeepEquals), []string{""})
+	c.Assert(req.Header["Content-Type"], gocheck.DeepEquals, []string{"content-type"})
+	c.Assert(req.Header["Content-Length"], gocheck.DeepEquals, []string{"7"})
+	//c.Assert(req.Header["Content-MD5"], gocheck.DeepEquals, "...")
+	c.Assert(req.Header["X-Amz-Acl"], gocheck.DeepEquals, []string{"private"})
+}
+
 func (s *S) TestPutReader(c *gocheck.C) {
 	testServer.Response(200, nil, "")
 
 	b := s.s3.Bucket("bucket")
 	buf := bytes.NewBufferString("content")
 	err := b.PutReader("name", buf, int64(buf.Len()), "content-type", s3.Private, s3.Options{})
+	c.Assert(err, gocheck.IsNil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, gocheck.Equals, "PUT")
+	c.Assert(req.URL.Path, gocheck.Equals, "/bucket/name")
+	c.Assert(req.Header["Date"], gocheck.Not(gocheck.DeepEquals), []string{""})
+	c.Assert(req.Header["Content-Type"], gocheck.DeepEquals, []string{"content-type"})
+	c.Assert(req.Header["Content-Length"], gocheck.DeepEquals, []string{"7"})
+	//c.Assert(req.Header["Content-MD5"], gocheck.Equals, "...")
+	c.Assert(req.Header["X-Amz-Acl"], gocheck.DeepEquals, []string{"private"})
+}
+
+func (s *S) TestPutReaderHeader(c *gocheck.C) {
+	testServer.Response(200, nil, "")
+
+	b := s.s3.Bucket("bucket")
+	buf := bytes.NewBufferString("content")
+	err := b.PutReaderHeader(
+		"name",
+		buf,
+		int64(buf.Len()),
+		map[string][]string{"Content-Type": {"content-type"}},
+		s3.Private,
+	)
 	c.Assert(err, gocheck.IsNil)
 
 	req := testServer.WaitRequest()

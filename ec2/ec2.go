@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,12 +32,18 @@ const debug = false
 type EC2 struct {
 	aws.Auth
 	aws.Region
-	private byte // Reserve the right of using private data.
+	httpClient *http.Client
+	private    byte // Reserve the right of using private data.
+}
+
+// NewWithClient creates a new EC2 with a custom http client
+func NewWithClient(auth aws.Auth, region aws.Region, client *http.Client) *EC2 {
+	return &EC2{auth, region, client, 0}
 }
 
 // New creates a new EC2.
 func New(auth aws.Auth, region aws.Region) *EC2 {
-	return &EC2{auth, region, 0}
+	return NewWithClient(auth, region, aws.RetryingClient)
 }
 
 // ----------------------------------------------------------------------------
@@ -119,7 +126,7 @@ type xmlErrors struct {
 var timeNow = time.Now
 
 func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
-	params["Version"] = "2013-02-01"
+	params["Version"] = "2013-07-15"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(ec2.Region.EC2Endpoint)
 	if err != nil {
@@ -133,7 +140,7 @@ func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
 	if debug {
 		log.Printf("get { %v } -> {\n", endpoint.String())
 	}
-	r, err := http.Get(endpoint.String())
+	r, err := ec2.httpClient.Get(endpoint.String())
 	if err != nil {
 		return err
 	}
@@ -186,32 +193,66 @@ func addParamsList(params map[string]string, label string, ids []string) {
 	}
 }
 
+func addBlockDeviceParams(params map[string]string, blockDevices []BlockDeviceMapping) {
+	for i, k := range blockDevices {
+		// Fixup index since Amazon counts these from 1
+		prefix := "BlockDeviceMapping." + strconv.Itoa(i+1) + "."
+
+		if k.DeviceName != "" {
+			params[prefix+"DeviceName"] = k.DeviceName
+		}
+		if k.VirtualName != "" {
+			params[prefix+"VirtualName"] = k.VirtualName
+		}
+		if k.SnapshotId != "" {
+			params[prefix+"Ebs.SnapshotId"] = k.SnapshotId
+		}
+		if k.VolumeType != "" {
+			params[prefix+"Ebs.VolumeType"] = k.VolumeType
+		}
+		if k.IOPS != 0 {
+			params[prefix+"Ebs.Iops"] = strconv.FormatInt(k.IOPS, 10)
+		}
+		if k.VolumeSize != 0 {
+			params[prefix+"Ebs.VolumeSize"] = strconv.FormatInt(k.VolumeSize, 10)
+		}
+		if k.DeleteOnTermination {
+			params[prefix+"Ebs.DeleteOnTermination"] = "true"
+		}
+		if k.NoDevice {
+			params[prefix+"NoDevice"] = "true"
+		}
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Instance management functions and types.
 
-// The RunInstances type encapsulates options for the respective request in EC2.
+// RunInstancesOptions encapsulates options for the respective request in EC2.
 //
 // See http://goo.gl/Mcm3b for more details.
 type RunInstancesOptions struct {
-	ImageId                string
-	MinCount               int
-	MaxCount               int
-	KeyName                string
-	InstanceType           string
-	SecurityGroups         []SecurityGroup
-	KernelId               string
-	RamdiskId              string
-	UserData               []byte
-	AvailabilityZone       string
-	PlacementGroupName     string
-	Monitoring             bool
-	SubnetId               string
-	DisableAPITermination  bool
-	ShutdownBehavior       string
-	PrivateIPAddress       string
-	IamInstanceProfileArn  string
-	IamInstanceProfileName string
-	BlockDeviceMappings    []BlockDeviceMapping
+	ImageId                  string
+	MinCount                 int
+	MaxCount                 int
+	KeyName                  string
+	InstanceType             string
+	SecurityGroups           []SecurityGroup
+	KernelId                 string
+	RamdiskId                string
+	UserData                 []byte
+	AvailabilityZone         string
+	PlacementGroupName       string
+	Monitoring               bool
+	SubnetId                 string
+	DisableAPITermination    bool
+	ShutdownBehavior         string
+	PrivateIPAddress         string
+	IamInstanceProfileArn    string
+	IamInstanceProfileName   string
+	IamInstanceProfile       string
+	BlockDevices             []BlockDeviceMapping
+	AssociatePublicIpAddress bool
 }
 
 // Response to a RunInstances request.
@@ -384,41 +425,6 @@ func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesRe
 	}
 	params["MinCount"] = strconv.Itoa(min)
 	params["MaxCount"] = strconv.Itoa(max)
-	i, j := 1, 1
-	for _, g := range options.SecurityGroups {
-		if g.Id != "" {
-			params["SecurityGroupId."+strconv.Itoa(i)] = g.Id
-			i++
-		} else {
-			params["SecurityGroup."+strconv.Itoa(j)] = g.Name
-			j++
-		}
-	}
-
-	for i, d := range options.BlockDeviceMappings {
-		if d.DeviceName != "" {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".DeviceName"] = d.DeviceName
-		}
-		if d.VirtualName != "" {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".VirtualName"] = d.VirtualName
-		}
-		if d.SnapshotId != "" {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".Ebs.SnapshotId"] = d.SnapshotId
-		}
-		if d.VolumeType != "" {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".Ebs.VolumeType"] = d.VolumeType
-		}
-		if d.VolumeSize != 0 {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".Ebs.VolumeSize"] = strconv.FormatInt(d.VolumeSize, 10)
-		}
-		if d.DeleteOnTermination {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".Ebs.DeleteOnTermination"] = "true"
-		}
-		if d.IOPS != 0 {
-			params["BlockDeviceMapping."+strconv.Itoa(i)+".Ebs.Iops"] = strconv.FormatInt(d.IOPS, 10)
-		}
-	}
-
 	token, err := clientToken()
 	if err != nil {
 		return nil, err
@@ -448,8 +454,50 @@ func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesRe
 	if options.Monitoring {
 		params["Monitoring.Enabled"] = "true"
 	}
-	if options.SubnetId != "" {
-		params["SubnetId"] = options.SubnetId
+	if options.SubnetId != "" && options.AssociatePublicIpAddress {
+		// If we have a non-default VPC / Subnet specified, we can flag
+		// AssociatePublicIpAddress to get a Public IP assigned. By default these are not provided.
+		// You cannot specify both SubnetId and the NetworkInterface.0.* parameters though, otherwise
+		// you get: Network interfaces and an instance-level subnet ID may not be specified on the same request
+		// You also need to attach Security Groups to the NetworkInterface instead of the instance,
+		// to avoid: Network interfaces and an instance-level security groups may not be specified on
+		// the same request
+		params["NetworkInterface.0.DeviceIndex"] = "0"
+		params["NetworkInterface.0.AssociatePublicIpAddress"] = "true"
+		params["NetworkInterface.0.SubnetId"] = options.SubnetId
+
+		i := 1
+		for _, g := range options.SecurityGroups {
+			// We only have SecurityGroupId's on NetworkInterface's, no SecurityGroup params.
+			if g.Id != "" {
+				params["NetworkInterface.0.SecurityGroupId."+strconv.Itoa(i)] = g.Id
+				i++
+			}
+		}
+	} else {
+		if options.SubnetId != "" {
+			params["SubnetId"] = options.SubnetId
+		}
+
+		i, j := 1, 1
+		for _, g := range options.SecurityGroups {
+			if g.Id != "" {
+				params["SecurityGroupId."+strconv.Itoa(i)] = g.Id
+				i++
+			} else {
+				params["SecurityGroup."+strconv.Itoa(j)] = g.Name
+				j++
+			}
+		}
+	}
+	if options.IamInstanceProfile != "" {
+		params["IamInstanceProfile.Name"] = options.IamInstanceProfile
+	}
+	if options.IamInstanceProfileArn != "" {
+		params["IamInstanceProfile.Arn"] = options.IamInstanceProfileArn
+	}
+	if options.IamInstanceProfileName != "" {
+		params["IamInstanceProfile.Name"] = options.IamInstanceProfileName
 	}
 	if options.DisableAPITermination {
 		params["DisableApiTermination"] = "true"
@@ -460,12 +508,8 @@ func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesRe
 	if options.PrivateIPAddress != "" {
 		params["PrivateIpAddress"] = options.PrivateIPAddress
 	}
-	if options.IamInstanceProfileArn != "" {
-		params["IamInstanceProfile.Arn"] = options.IamInstanceProfileArn
-	}
-	if options.IamInstanceProfileName != "" {
-		params["IamInstanceProfile.Name"] = options.IamInstanceProfileName
-	}
+
+	addBlockDeviceParams(params, options.BlockDevices)
 
 	resp = &RunInstancesResp{}
 	err = ec2.query(params, resp)
@@ -532,184 +576,6 @@ func (ec2 *EC2) TerminateInstances(instIds []string) (resp *TerminateInstancesRe
 	return
 }
 
-// Response to a DescribeAddresses request.
-//
-// See http://goo.gl/zW7J4p for more details.
-type DescribeAddressesResp struct {
-	RequestId string    `xml:"requestId"`
-	Addresses []Address `xml:"addressesSet>item"`
-}
-
-// Address represents an Elastic IP Address
-// See http://goo.gl/uxCjp7 for more details
-type Address struct {
-	PublicIp                string `xml:"publicIp"`
-	AllocationId            string `xml:"allocationId"`
-	Domain                  string `xml:"domain"`
-	InstanceId              string `xml:"instanceId"`
-	AssociationId           string `xml:"associationId"`
-	NetworkInterfaceId      string `xml:"networkInterfaceId"`
-	NetworkInterfaceOwnerId string `xml:"networkInterfaceOwnerId"`
-	PrivateIpAddress        string `xml:"privateIpAddress"`
-}
-
-// DescribeAddresses returns details about one or more
-// Elastic IP Addresses. Returned addresses can be
-// filtered by Public IP, Allocation ID or multiple filters
-//
-// See http://goo.gl/zW7J4p for more details.
-func (ec2 *EC2) DescribeAddresses(publicIps []string, allocationIds []string, filter *Filter) (resp *DescribeAddressesResp, err error) {
-	params := makeParams("DescribeAddresses")
-	addParamsList(params, "PublicIp", publicIps)
-	addParamsList(params, "AllocationId", allocationIds)
-	filter.addParams(params)
-	resp = &DescribeAddressesResp{}
-	err = ec2.query(params, resp)
-	if err != nil {
-		return nil, err
-	}
-	return
-}
-
-//Response to an AllocateAddress request
-//
-// See  http://goo.gl/aLPmbm for more details
-type AllocateAddressResp struct {
-	RequestId    string `xml:"requestId"`
-	PublicIp     string `xml:"publicIp"`
-	Domain       string `xml:"domain"`
-	AllocationId string `xml:"allocationId"`
-}
-
-// Allocates a new Elastic ip address.
-// The domain parameter is optional and is used for provisioning an ip address
-// in EC2 or in VPC respectively
-//
-// See http://goo.gl/aLPmbm for more details
-func (ec2 *EC2) AllocateAddress(domain string) (resp *AllocateAddressResp, err error) {
-	params := makeParams("AllocateAddress")
-	params["Domain"] = domain
-
-	resp = &AllocateAddressResp{}
-	err = ec2.query(params, resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// Response to a ReleaseAddress request
-//
-// See http://goo.gl/Ciw2Z8 for more details
-type ReleaseAddressResp struct {
-	RequestId string `xml:"requestId"`
-	Return    bool   `xml:"return"`
-}
-
-// Release existing elastic ip address from the account
-// PublicIp = Required for EC2
-// AllocationId = Required for VPC
-//
-// See http://goo.gl/Ciw2Z8 for more details
-func (ec2 *EC2) ReleaseAddress(publicIp, allocationId string) (resp *ReleaseAddressResp, err error) {
-	params := makeParams("ReleaseAddress")
-
-	if publicIp != "" {
-		params["PublicIp"] = publicIp
-
-	}
-	if allocationId != "" {
-		params["AllocationId"] = allocationId
-	}
-
-	resp = &ReleaseAddressResp{}
-	err = ec2.query(params, resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// Options set for AssociateAddress
-//
-// See http://goo.gl/hhj4z7 for more details
-type AssociateAddressOptions struct {
-	PublicIp           string
-	InstanceId         string
-	AllocationId       string
-	NetworkInterfaceId string
-	PrivateIpAddress   string
-	AllowReassociation bool
-}
-
-// Response to an AssociateAddress request
-//
-// See http://goo.gl/hhj4z7 for more details
-type AssociateAddressResp struct {
-	RequestId     string `xml:"requestId"`
-	Return        bool   `xml:"return"`
-	AssociationId string `xml:"associationId"`
-}
-
-// Associate an Elastic ip address to an instance id or a network interface
-//
-// See http://goo.gl/hhj4z7 for more details
-func (ec2 *EC2) AssociateAddress(options *AssociateAddressOptions) (resp *AssociateAddressResp, err error) {
-	params := makeParams("AssociateAddress")
-	params["InstanceId"] = options.InstanceId
-	if options.PublicIp != "" {
-		params["PublicIp"] = options.PublicIp
-	}
-	if options.AllocationId != "" {
-		params["AllocationId"] = options.AllocationId
-	}
-	if options.NetworkInterfaceId != "" {
-		params["NetworkInterfaceId"] = options.NetworkInterfaceId
-	}
-	if options.PrivateIpAddress != "" {
-		params["PrivateIpAddress"] = options.PrivateIpAddress
-	}
-	if options.AllowReassociation {
-		params["AllowReassociation"] = "true"
-	}
-
-	resp = &AssociateAddressResp{}
-	err = ec2.query(params, resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// Response to a Diassociate request
-//
-// See http://goo.gl/Dapkuzfor more details
-type DiassociateAddressResp struct {
-	RequestId string `xml:"requestId"`
-	Return    bool   `xml:"return"`
-}
-
-// Diassociate an elastic ip address from an instance
-// PublicIp - Required for EC2
-// AssociationId - Required for VPC
-// See http://goo.gl/Dapkuz for more details
-func (ec2 *EC2) DiassociateAddress(publicIp, associationId string) (resp *DiassociateAddressResp, err error) {
-	params := makeParams("DiassociateAddress")
-	if publicIp != "" {
-		params["PublicIp"] = publicIp
-	}
-	if associationId != "" {
-		params["AssociationId"] = associationId
-	}
-
-	resp = &DiassociateAddressResp{}
-	err = ec2.query(params, resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
 // Response to a DescribeInstances request.
 //
 // See http://goo.gl/mLbmw for more details.
@@ -757,7 +623,242 @@ func (ec2 *EC2) DescribeInstances(instIds []string, filter *Filter) (resp *Descr
 }
 
 // ----------------------------------------------------------------------------
+// KeyPair management functions and types.
+
+type CreateKeyPairResp struct {
+	RequestId      string `xml:"requestId"`
+	KeyName        string `xml:"keyName"`
+	KeyFingerprint string `xml:"keyFingerprint"`
+	KeyMaterial    string `xml:"keyMaterial"`
+}
+
+// CreateKeyPair creates a new key pair and returns the private key contents.
+//
+// See http://goo.gl/0S6hV
+func (ec2 *EC2) CreateKeyPair(keyName string) (resp *CreateKeyPairResp, err error) {
+	params := makeParams("CreateKeyPair")
+	params["KeyName"] = keyName
+
+	resp = &CreateKeyPairResp{}
+	err = ec2.query(params, resp)
+	if err == nil {
+		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
+	}
+	return
+}
+
+// DeleteKeyPair deletes a key pair.
+//
+// See http://goo.gl/0bqok
+func (ec2 *EC2) DeleteKeyPair(name string) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteKeyPair")
+	params["KeyName"] = name
+
+	resp = &SimpleResp{}
+	err = ec2.query(params, resp)
+	return
+}
+
+// ResourceTag represents key-value metadata used to classify and organize
+// EC2 instances.
+//
+// See http://goo.gl/bncl3 for more details
+type Tag struct {
+	Key   string `xml:"key"`
+	Value string `xml:"value"`
+}
+
+// CreateTags adds or overwrites one or more tags for the specified taggable resources.
+// For a list of tagable resources, see: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html
+//
+// See http://goo.gl/Vmkqc for more details
+func (ec2 *EC2) CreateTags(resourceIds []string, tags []Tag) (resp *SimpleResp, err error) {
+	params := makeParams("CreateTags")
+	addParamsList(params, "ResourceId", resourceIds)
+
+	for j, tag := range tags {
+		params["Tag."+strconv.Itoa(j+1)+".Key"] = tag.Key
+		params["Tag."+strconv.Itoa(j+1)+".Value"] = tag.Value
+	}
+
+	resp = &SimpleResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Response to a StartInstances request.
+//
+// See http://goo.gl/awKeF for more details.
+type StartInstanceResp struct {
+	RequestId    string                `xml:"requestId"`
+	StateChanges []InstanceStateChange `xml:"instancesSet>item"`
+}
+
+// Response to a StopInstances request.
+//
+// See http://goo.gl/436dJ for more details.
+type StopInstanceResp struct {
+	RequestId    string                `xml:"requestId"`
+	StateChanges []InstanceStateChange `xml:"instancesSet>item"`
+}
+
+// StartInstances starts an Amazon EBS-backed AMI that you've previously stopped.
+//
+// See http://goo.gl/awKeF for more details.
+func (ec2 *EC2) StartInstances(ids ...string) (resp *StartInstanceResp, err error) {
+	params := makeParams("StartInstances")
+	addParamsList(params, "InstanceId", ids)
+	resp = &StartInstanceResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StopInstances requests stopping one or more Amazon EBS-backed instances.
+//
+// See http://goo.gl/436dJ for more details.
+func (ec2 *EC2) StopInstances(ids ...string) (resp *StopInstanceResp, err error) {
+	params := makeParams("StopInstances")
+	addParamsList(params, "InstanceId", ids)
+	resp = &StopInstanceResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// RebootInstance requests a reboot of one or more instances. This operation is asynchronous;
+// it only queues a request to reboot the specified instance(s). The operation will succeed
+// if the instances are valid and belong to you.
+//
+// Requests to reboot terminated instances are ignored.
+//
+// See http://goo.gl/baoUf for more details.
+func (ec2 *EC2) RebootInstances(ids ...string) (resp *SimpleResp, err error) {
+	params := makeParams("RebootInstances")
+	addParamsList(params, "InstanceId", ids)
+	resp = &SimpleResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// The ModifyInstanceAttribute request parameters.
+type ModifyInstance struct {
+	InstanceType          string
+	BlockDevices          []BlockDeviceMapping
+	DisableAPITermination bool
+	EbsOptimized          bool
+	SecurityGroups        []SecurityGroup
+	ShutdownBehavior      string
+	KernelId              string
+	RamdiskId             string
+	SourceDestCheck       bool
+	SriovNetSupport       bool
+	UserData              []byte
+}
+
+// Response to a ModifyInstanceAttribute request.
+//
+// http://goo.gl/icuXh5 for more details.
+type ModifyInstanceResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"`
+}
+
+// ModifyImageAttribute modifies the specified attribute of the specified instance.
+// You can specify only one attribute at a time. To modify some attributes, the
+// instance must be stopped.
+//
+// See http://goo.gl/icuXh5 for more details.
+func (ec2 *EC2) ModifyInstance(instId string, options *ModifyInstance) (resp *ModifyInstanceResp, err error) {
+	params := makeParams("ModifyInstanceAttribute")
+	params["InstanceId"] = instId
+	addBlockDeviceParams(params, options.BlockDevices)
+
+	if options.InstanceType != "" {
+		params["InstanceType.Value"] = options.InstanceType
+	}
+
+	if options.DisableAPITermination {
+		params["DisableApiTermination.Value"] = "true"
+	}
+
+	if options.EbsOptimized {
+		params["EbsOptimized"] = "true"
+	}
+
+	if options.ShutdownBehavior != "" {
+		params["InstanceInitiatedShutdownBehavior.Value"] = options.ShutdownBehavior
+	}
+
+	if options.KernelId != "" {
+		params["Kernel.Value"] = options.KernelId
+	}
+
+	if options.RamdiskId != "" {
+		params["Ramdisk.Value"] = options.RamdiskId
+	}
+
+	if options.SourceDestCheck {
+		params["SourceDestCheck.Value"] = "true"
+	}
+
+	if options.SriovNetSupport {
+		params["SriovNetSupport.Value"] = "simple"
+	}
+
+	if options.UserData != nil {
+		userData := make([]byte, b64.EncodedLen(len(options.UserData)))
+		b64.Encode(userData, options.UserData)
+		params["UserData"] = string(userData)
+	}
+
+	i := 1
+	for _, g := range options.SecurityGroups {
+		if g.Id != "" {
+			params["GroupId."+strconv.Itoa(i)] = g.Id
+			i++
+		}
+	}
+
+	resp = &ModifyInstanceResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		resp = nil
+	}
+	return
+}
+
+// ----------------------------------------------------------------------------
 // Image and snapshot management functions and types.
+
+// The CreateImage request parameters.
+//
+// See http://goo.gl/cxU41 for more details.
+type CreateImage struct {
+	InstanceId   string
+	Name         string
+	Description  string
+	NoReboot     bool
+	BlockDevices []BlockDeviceMapping
+}
+
+// Response to a CreateImage request.
+//
+// See http://goo.gl/cxU41 for more details.
+type CreateImageResp struct {
+	RequestId string `xml:"requestId"`
+	ImageId   string `xml:"imageId"`
+}
 
 // Response to a DescribeImages request.
 //
@@ -765,6 +866,48 @@ func (ec2 *EC2) DescribeInstances(instIds []string, filter *Filter) (resp *Descr
 type ImagesResp struct {
 	RequestId string  `xml:"requestId"`
 	Images    []Image `xml:"imagesSet>item"`
+}
+
+// Response to a DescribeImageAttribute request.
+//
+// See http://goo.gl/bHO3zT for more details.
+type ImageAttributeResp struct {
+	RequestId    string               `xml:"requestId"`
+	ImageId      string               `xml:"imageId"`
+	Kernel       string               `xml:"kernel>value"`
+	RamDisk      string               `xml:"ramdisk>value"`
+	Description  string               `xml:"description>value"`
+	Group        string               `xml:"launchPermission>item>group"`
+	UserIds      []string             `xml:"launchPermission>item>userId"`
+	ProductCodes []string             `xml:"productCodes>item>productCode"`
+	BlockDevices []BlockDeviceMapping `xml:"blockDeviceMapping>item"`
+}
+
+// The RegisterImage request parameters.
+type RegisterImage struct {
+	ImageLocation  string
+	Name           string
+	Description    string
+	Architecture   string
+	KernelId       string
+	RamdiskId      string
+	RootDeviceName string
+	VirtType       string
+	BlockDevices   []BlockDeviceMapping
+}
+
+// Response to a RegisterImage request.
+type RegisterImageResp struct {
+	RequestId string `xml:"requestId"`
+	ImageId   string `xml:"imageId"`
+}
+
+// Response to a DegisterImage request.
+//
+// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DeregisterImage.html
+type DeregisterImageResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"`
 }
 
 // BlockDeviceMapping represents the association of a block device with an image.
@@ -777,6 +920,7 @@ type BlockDeviceMapping struct {
 	VolumeType          string `xml:"ebs>volumeType"`
 	VolumeSize          int64  `xml:"ebs>volumeSize"`
 	DeleteOnTermination bool   `xml:"ebs>deleteOnTermination"`
+	NoDevice            bool   `xml:"noDevice"`
 
 	// The number of I/O operations per second (IOPS) that the volume supports.
 	IOPS int64 `xml:"ebs>iops"`
@@ -804,15 +948,70 @@ type Image struct {
 	RootDeviceType     string               `xml:"rootDeviceType"`
 	RootDeviceName     string               `xml:"rootDeviceName"`
 	VirtualizationType string               `xml:"virtualizationType"`
-	Tags               []Tag                `xml:"tagSet>item"`
 	Hypervisor         string               `xml:"hypervisor"`
 	BlockDevices       []BlockDeviceMapping `xml:"blockDeviceMapping>item"`
+	Tags               []Tag                `xml:"tagSet>item"`
+}
+
+// The ModifyImageAttribute request parameters.
+type ModifyImageAttribute struct {
+	AddUsers     []string
+	RemoveUsers  []string
+	AddGroups    []string
+	RemoveGroups []string
+	ProductCodes []string
+	Description  string
+}
+
+// The CopyImage request parameters.
+//
+// See http://goo.gl/hQwPCK for more details.
+type CopyImage struct {
+	SourceRegion  string
+	SourceImageId string
+	Name          string
+	Description   string
+	ClientToken   string
+}
+
+// Response to a CopyImage request.
+//
+// See http://goo.gl/hQwPCK for more details.
+type CopyImageResp struct {
+	RequestId string `xml:"requestId"`
+	ImageId   string `xml:"imageId"`
+}
+
+// Creates an Amazon EBS-backed AMI from an Amazon EBS-backed instance
+// that is either running or stopped.
+//
+// See http://goo.gl/cxU41 for more details.
+func (ec2 *EC2) CreateImage(options *CreateImage) (resp *CreateImageResp, err error) {
+	params := makeParams("CreateImage")
+	params["InstanceId"] = options.InstanceId
+	params["Name"] = options.Name
+	if options.Description != "" {
+		params["Description"] = options.Description
+	}
+	if options.NoReboot {
+		params["NoReboot"] = "true"
+	}
+	addBlockDeviceParams(params, options.BlockDevices)
+
+	resp = &CreateImageResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
 }
 
 // Images returns details about available images.
 // The ids and filter parameters, if provided, will limit the images returned.
 // For example, to get all the private images associated with this account set
-// the boolean filter "is-private" to true.
+// the boolean filter "is-public" to 0.
+// For list of filters: http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeImages.html
 //
 // Note: calling this function with nil ids and filter parameters will result in
 // a very large number of images being returned.
@@ -830,6 +1029,201 @@ func (ec2 *EC2) Images(ids []string, filter *Filter) (resp *ImagesResp, err erro
 	if err != nil {
 		return nil, err
 	}
+	return
+}
+
+// ImagesByOwners returns details about available images.
+// The ids, owners, and filter parameters, if provided, will limit the images returned.
+// For example, to get all the private images associated with this account set
+// the boolean filter "is-public" to 0.
+// For list of filters: http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeImages.html
+//
+// Note: calling this function with nil ids and filter parameters will result in
+// a very large number of images being returned.
+//
+// See http://goo.gl/SRBhW for more details.
+func (ec2 *EC2) ImagesByOwners(ids []string, owners []string, filter *Filter) (resp *ImagesResp, err error) {
+	params := makeParams("DescribeImages")
+	for i, id := range ids {
+		params["ImageId."+strconv.Itoa(i+1)] = id
+	}
+	for i, owner := range owners {
+		params[fmt.Sprintf("Owner.%d", i+1)] = owner
+	}
+
+	filter.addParams(params)
+
+	resp = &ImagesResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// ImageAttribute describes an attribute of an AMI.
+// You can specify only one attribute at a time.
+// Valid attributes are:
+//    description | kernel | ramdisk | launchPermission | productCodes | blockDeviceMapping
+//
+// See http://goo.gl/bHO3zT for more details.
+func (ec2 *EC2) ImageAttribute(imageId, attribute string) (resp *ImageAttributeResp, err error) {
+	params := makeParams("DescribeImageAttribute")
+	params["ImageId"] = imageId
+	params["Attribute"] = attribute
+
+	resp = &ImageAttributeResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// ModifyImageAttribute sets attributes for an image.
+//
+// See http://goo.gl/YUjO4G for more details.
+func (ec2 *EC2) ModifyImageAttribute(imageId string, options *ModifyImageAttribute) (resp *SimpleResp, err error) {
+	params := makeParams("ModifyImageAttribute")
+	params["ImageId"] = imageId
+	if options.Description != "" {
+		params["Description.Value"] = options.Description
+	}
+
+	if options.AddUsers != nil {
+		for i, user := range options.AddUsers {
+			p := fmt.Sprintf("LaunchPermission.Add.%d.UserId", i+1)
+			params[p] = user
+		}
+	}
+
+	if options.RemoveUsers != nil {
+		for i, user := range options.RemoveUsers {
+			p := fmt.Sprintf("LaunchPermission.Remove.%d.UserId", i+1)
+			params[p] = user
+		}
+	}
+
+	if options.AddGroups != nil {
+		for i, group := range options.AddGroups {
+			p := fmt.Sprintf("LaunchPermission.Add.%d.Group", i+1)
+			params[p] = group
+		}
+	}
+
+	if options.RemoveGroups != nil {
+		for i, group := range options.RemoveGroups {
+			p := fmt.Sprintf("LaunchPermission.Remove.%d.Group", i+1)
+			params[p] = group
+		}
+	}
+
+	if options.ProductCodes != nil {
+		addParamsList(params, "ProductCode", options.ProductCodes)
+	}
+
+	resp = &SimpleResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		resp = nil
+	}
+
+	return
+}
+
+// Registers a new AMI with EC2.
+//
+// See: http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-RegisterImage.html
+func (ec2 *EC2) RegisterImage(options *RegisterImage) (resp *RegisterImageResp, err error) {
+	params := makeParams("RegisterImage")
+	params["Name"] = options.Name
+	if options.ImageLocation != "" {
+		params["ImageLocation"] = options.ImageLocation
+	}
+
+	if options.Description != "" {
+		params["Description"] = options.Description
+	}
+
+	if options.Architecture != "" {
+		params["Architecture"] = options.Architecture
+	}
+
+	if options.KernelId != "" {
+		params["KernelId"] = options.KernelId
+	}
+
+	if options.RamdiskId != "" {
+		params["RamdiskId"] = options.RamdiskId
+	}
+
+	if options.RootDeviceName != "" {
+		params["RootDeviceName"] = options.RootDeviceName
+	}
+
+	if options.VirtType != "" {
+		params["VirtualizationType"] = options.VirtType
+	}
+
+	addBlockDeviceParams(params, options.BlockDevices)
+
+	resp = &RegisterImageResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+// Degisters an image. Note that this does not delete the backing stores of the AMI.
+//
+// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DeregisterImage.html
+func (ec2 *EC2) DeregisterImage(imageId string) (resp *DeregisterImageResp, err error) {
+	params := makeParams("DeregisterImage")
+	params["ImageId"] = imageId
+
+	resp = &DeregisterImageResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+// Copy and Image from one region to another.
+//
+// See http://goo.gl/hQwPCK for more details.
+func (ec2 *EC2) CopyImage(options *CopyImage) (resp *CopyImageResp, err error) {
+	params := makeParams("CopyImage")
+
+	if options.SourceRegion != "" {
+		params["SourceRegion"] = options.SourceRegion
+	}
+
+	if options.SourceImageId != "" {
+		params["SourceImageId"] = options.SourceImageId
+	}
+
+	if options.Name != "" {
+		params["Name"] = options.Name
+	}
+
+	if options.Description != "" {
+		params["Description"] = options.Description
+	}
+
+	if options.ClientToken != "" {
+		params["ClientToken"] = options.ClientToken
+	}
+
+	resp = &CopyImageResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }
 
@@ -926,6 +1320,152 @@ func (ec2 *EC2) Snapshots(ids []string, filter *Filter) (resp *SnapshotsResp, er
 }
 
 // ----------------------------------------------------------------------------
+// Volume management
+
+// The CreateVolume request parameters
+//
+// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-CreateVolume.html
+type CreateVolume struct {
+	AvailZone  string
+	Size       int64
+	SnapshotId string
+	VolumeType string
+	IOPS       int64
+}
+
+// Response to an AttachVolume request
+type AttachVolumeResp struct {
+	RequestId  string `xml:"requestId"`
+	VolumeId   string `xml:"volumeId"`
+	InstanceId string `xml:"instanceId"`
+	Device     string `xml:"device"`
+	Status     string `xml:"status"`
+	AttachTime string `xml:"attachTime"`
+}
+
+// Response to a CreateVolume request
+type CreateVolumeResp struct {
+	RequestId  string `xml:"requestId"`
+	VolumeId   string `xml:"volumeId"`
+	Size       int64  `xml:"size"`
+	SnapshotId string `xml:"snapshotId"`
+	AvailZone  string `xml:"availabilityZone"`
+	Status     string `xml:"status"`
+	CreateTime string `xml:"createTime"`
+	VolumeType string `xml:"volumeType"`
+	IOPS       int64  `xml:"iops"`
+}
+
+// Volume is a single volume.
+type Volume struct {
+	VolumeId    string             `xml:"volumeId"`
+	Size        string             `xml:"size"`
+	SnapshotId  string             `xml:"snapshotId"`
+	AvailZone   string             `xml:"availabilityZone"`
+	Status      string             `xml:"status"`
+	Attachments []VolumeAttachment `xml:"attachmentSet>item"`
+	VolumeType  string             `xml:"volumeType"`
+	IOPS        int64              `xml:"iops"`
+	Tags        []Tag              `xml:"tagSet>item"`
+}
+
+type VolumeAttachment struct {
+	VolumeId   string `xml:"volumeId"`
+	InstanceId string `xml:"instanceId"`
+	Device     string `xml:"device"`
+	Status     string `xml:"status"`
+}
+
+// Response to a DescribeVolumes request
+type VolumesResp struct {
+	RequestId string   `xml:"requestId"`
+	Volumes   []Volume `xml:"volumeSet>item"`
+}
+
+// Attach a volume.
+func (ec2 *EC2) AttachVolume(volumeId string, instanceId string, device string) (resp *AttachVolumeResp, err error) {
+	params := makeParams("AttachVolume")
+	params["VolumeId"] = volumeId
+	params["InstanceId"] = instanceId
+	params["Device"] = device
+
+	resp = &AttachVolumeResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// Create a new volume.
+func (ec2 *EC2) CreateVolume(options *CreateVolume) (resp *CreateVolumeResp, err error) {
+	params := makeParams("CreateVolume")
+	params["AvailabilityZone"] = options.AvailZone
+	if options.Size > 0 {
+		params["Size"] = strconv.FormatInt(options.Size, 10)
+	}
+
+	if options.SnapshotId != "" {
+		params["SnapshotId"] = options.SnapshotId
+	}
+
+	if options.VolumeType != "" {
+		params["VolumeType"] = options.VolumeType
+	}
+
+	if options.IOPS > 0 {
+		params["Iops"] = strconv.FormatInt(options.IOPS, 10)
+	}
+
+	resp = &CreateVolumeResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Delete an EBS volume.
+func (ec2 *EC2) DeleteVolume(id string) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteVolume")
+	params["VolumeId"] = id
+
+	resp = &SimpleResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// Detaches an EBS volume.
+func (ec2 *EC2) DetachVolume(id string) (resp *SimpleResp, err error) {
+	params := makeParams("DetachVolume")
+	params["VolumeId"] = id
+
+	resp = &SimpleResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// Finds or lists all volumes.
+func (ec2 *EC2) Volumes(volIds []string, filter *Filter) (resp *VolumesResp, err error) {
+	params := makeParams("DescribeVolumes")
+	addParamsList(params, "VolumeId", volIds)
+	filter.addParams(params)
+	resp = &VolumesResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// ----------------------------------------------------------------------------
 // Security group management functions and types.
 
 // SimpleResp represents a response to an EC2 request which on success will
@@ -945,17 +1485,20 @@ type CreateSecurityGroupResp struct {
 // name and description.
 //
 // See http://goo.gl/Eo7Yl for more details.
-func (ec2 *EC2) CreateSecurityGroup(name, description string) (resp *CreateSecurityGroupResp, err error) {
+func (ec2 *EC2) CreateSecurityGroup(group SecurityGroup) (resp *CreateSecurityGroupResp, err error) {
 	params := makeParams("CreateSecurityGroup")
-	params["GroupName"] = name
-	params["GroupDescription"] = description
+	params["GroupName"] = group.Name
+	params["GroupDescription"] = group.Description
+	if group.VpcId != "" {
+		params["VpcId"] = group.VpcId
+	}
 
 	resp = &CreateSecurityGroupResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
 		return nil, err
 	}
-	resp.Name = name
+	resp.Name = group.Name
 	return resp, nil
 }
 
@@ -1001,8 +1544,10 @@ type UserSecurityGroup struct {
 // If SecurityGroup is used as a parameter, then one of Id or Name
 // may be empty. If both are set, then Id is used.
 type SecurityGroup struct {
-	Id   string `xml:"groupId"`
-	Name string `xml:"groupName"`
+	Id          string `xml:"groupId"`
+	Name        string `xml:"groupName"`
+	Description string `xml:"groupDescription"`
+	VpcId       string `xml:"vpcId"`
 }
 
 // SecurityGroupNames is a convenience function that
@@ -1123,28 +1668,74 @@ func (ec2 *EC2) authOrRevoke(op string, group SecurityGroup, perms []IPPerm) (re
 	return resp, nil
 }
 
-// ResourceTag represents key-value metadata used to classify and organize
-// EC2 instances.
+// ----------------------------------------------------------------------------
+// Elastic IP management functions and types.
+
+// Response to a DescribeAddresses request.
 //
-// See http://goo.gl/bncl3 for more details
-type Tag struct {
-	Key   string `xml:"key"`
-	Value string `xml:"value"`
+// See http://goo.gl/zW7J4p for more details.
+type DescribeAddressesResp struct {
+	RequestId string    `xml:"requestId"`
+	Addresses []Address `xml:"addressesSet>item"`
 }
 
-// CreateTags adds or overwrites one or more tags for the specified instance ids.
+// Address represents an Elastic IP Address
+// See http://goo.gl/uxCjp7 for more details
+type Address struct {
+	PublicIp                string `xml:"publicIp"`
+	AllocationId            string `xml:"allocationId"`
+	Domain                  string `xml:"domain"`
+	InstanceId              string `xml:"instanceId"`
+	AssociationId           string `xml:"associationId"`
+	NetworkInterfaceId      string `xml:"networkInterfaceId"`
+	NetworkInterfaceOwnerId string `xml:"networkInterfaceOwnerId"`
+	PrivateIpAddress        string `xml:"privateIpAddress"`
+}
+
+// DescribeAddresses returns details about one or more
+// Elastic IP Addresses. Returned addresses can be
+// filtered by Public IP, Allocation ID or multiple filters
 //
-// See http://goo.gl/Vmkqc for more details
-func (ec2 *EC2) CreateTags(instIds []string, tags []Tag) (resp *SimpleResp, err error) {
-	params := makeParams("CreateTags")
-	addParamsList(params, "ResourceId", instIds)
-
-	for j, tag := range tags {
-		params["Tag."+strconv.Itoa(j+1)+".Key"] = tag.Key
-		params["Tag."+strconv.Itoa(j+1)+".Value"] = tag.Value
+// See http://goo.gl/zW7J4p for more details.
+func (ec2 *EC2) DescribeAddresses(publicIps []string, allocationIds []string, filter *Filter) (resp *DescribeAddressesResp, err error) {
+	params := makeParams("DescribeAddresses")
+	addParamsList(params, "PublicIp", publicIps)
+	addParamsList(params, "AllocationId", allocationIds)
+	filter.addParams(params)
+	resp = &DescribeAddressesResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
 	}
+	return
+}
 
-	resp = &SimpleResp{}
+// AllocateAddressOptions are request parameters for allocating an Elastic IP Address
+//
+// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-AllocateAddress.html
+type AllocateAddressOptions struct {
+	Domain string
+}
+
+// Response to an AllocateAddress request
+//
+// See http://goo.gl/aLPmbm for more details
+type AllocateAddressResp struct {
+	RequestId    string `xml:"requestId"`
+	PublicIp     string `xml:"publicIp"`
+	Domain       string `xml:"domain"`
+	AllocationId string `xml:"allocationId"`
+}
+
+// Allocates a new Elastic IP address.
+// The domain parameter is optional and is used for provisioning an ip address
+// in EC2 or in VPC respectively
+//
+// See http://goo.gl/aLPmbm for more details
+func (ec2 *EC2) AllocateAddress(options *AllocateAddressOptions) (resp *AllocateAddressResp, err error) {
+	params := makeParams("AllocateAddress")
+	params["Domain"] = options.Domain
+	resp = &AllocateAddressResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
 		return nil, err
@@ -1152,29 +1743,31 @@ func (ec2 *EC2) CreateTags(instIds []string, tags []Tag) (resp *SimpleResp, err 
 	return resp, nil
 }
 
-// Response to a StartInstances request.
+// Response to a ReleaseAddress request
 //
-// See http://goo.gl/awKeF for more details.
-type StartInstanceResp struct {
-	RequestId    string                `xml:"requestId"`
-	StateChanges []InstanceStateChange `xml:"instancesSet>item"`
+// See http://goo.gl/Ciw2Z8 for more details
+type ReleaseAddressResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"`
 }
 
-// Response to a StopInstances request.
+// Release existing elastic ip address from the account
+// PublicIp = Required for EC2
+// AllocationId = Required for VPC
 //
-// See http://goo.gl/436dJ for more details.
-type StopInstanceResp struct {
-	RequestId    string                `xml:"requestId"`
-	StateChanges []InstanceStateChange `xml:"instancesSet>item"`
-}
+// See http://goo.gl/Ciw2Z8 for more details
+func (ec2 *EC2) ReleaseAddress(publicIp, allocationId string) (resp *ReleaseAddressResp, err error) {
+	params := makeParams("ReleaseAddress")
 
-// StartInstances starts an Amazon EBS-backed AMI that you've previously stopped.
-//
-// See http://goo.gl/awKeF for more details.
-func (ec2 *EC2) StartInstances(ids ...string) (resp *StartInstanceResp, err error) {
-	params := makeParams("StartInstances")
-	addParamsList(params, "InstanceId", ids)
-	resp = &StartInstanceResp{}
+	if publicIp != "" {
+		params["PublicIp"] = publicIp
+
+	}
+	if allocationId != "" {
+		params["AllocationId"] = allocationId
+	}
+
+	resp = &ReleaseAddressResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
 		return nil, err
@@ -1182,13 +1775,50 @@ func (ec2 *EC2) StartInstances(ids ...string) (resp *StartInstanceResp, err erro
 	return resp, nil
 }
 
-// StopInstances requests stopping one or more Amazon EBS-backed instances.
+// Options set for AssociateAddress
 //
-// See http://goo.gl/436dJ for more details.
-func (ec2 *EC2) StopInstances(ids ...string) (resp *StopInstanceResp, err error) {
-	params := makeParams("StopInstances")
-	addParamsList(params, "InstanceId", ids)
-	resp = &StopInstanceResp{}
+// See http://goo.gl/hhj4z7 for more details
+type AssociateAddressOptions struct {
+	PublicIp           string
+	InstanceId         string
+	AllocationId       string
+	NetworkInterfaceId string
+	PrivateIpAddress   string
+	AllowReassociation bool
+}
+
+// Response to an AssociateAddress request
+//
+// See http://goo.gl/hhj4z7 for more details
+type AssociateAddressResp struct {
+	RequestId     string `xml:"requestId"`
+	Return        bool   `xml:"return"`
+	AssociationId string `xml:"associationId"`
+}
+
+// Associate an Elastic ip address to an instance id or a network interface
+//
+// See http://goo.gl/hhj4z7 for more details
+func (ec2 *EC2) AssociateAddress(options *AssociateAddressOptions) (resp *AssociateAddressResp, err error) {
+	params := makeParams("AssociateAddress")
+	params["InstanceId"] = options.InstanceId
+	if options.PublicIp != "" {
+		params["PublicIp"] = options.PublicIp
+	}
+	if options.AllocationId != "" {
+		params["AllocationId"] = options.AllocationId
+	}
+	if options.NetworkInterfaceId != "" {
+		params["NetworkInterfaceId"] = options.NetworkInterfaceId
+	}
+	if options.PrivateIpAddress != "" {
+		params["PrivateIpAddress"] = options.PrivateIpAddress
+	}
+	if options.AllowReassociation {
+		params["AllowReassociation"] = "true"
+	}
+
+	resp = &AssociateAddressResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
 		return nil, err
@@ -1196,17 +1826,28 @@ func (ec2 *EC2) StopInstances(ids ...string) (resp *StopInstanceResp, err error)
 	return resp, nil
 }
 
-// RebootInstance requests a reboot of one or more instances. This operation is asynchronous;
-// it only queues a request to reboot the specified instance(s). The operation will succeed
-// if the instances are valid and belong to you.
+// Response to a Disassociate Address request
 //
-// Requests to reboot terminated instances are ignored.
-//
-// See http://goo.gl/baoUf for more details.
-func (ec2 *EC2) RebootInstances(ids ...string) (resp *SimpleResp, err error) {
-	params := makeParams("RebootInstances")
-	addParamsList(params, "InstanceId", ids)
-	resp = &SimpleResp{}
+// See http://goo.gl/Dapkuzfor more details
+type DisassociateAddressResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"`
+}
+
+// Disassociate an elastic ip address from an instance
+// PublicIp - Required for EC2
+// AssociationId - Required for VPC
+// See http://goo.gl/Dapkuz for more details
+func (ec2 *EC2) DisassociateAddress(publicIp, associationId string) (resp *DisassociateAddressResp, err error) {
+	params := makeParams("DisassociateAddress")
+	if publicIp != "" {
+		params["PublicIp"] = publicIp
+	}
+	if associationId != "" {
+		params["AssociationId"] = associationId
+	}
+
+	resp = &DisassociateAddressResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
 		return nil, err

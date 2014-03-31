@@ -16,11 +16,16 @@ import (
 type IAM struct {
 	aws.Auth
 	aws.Region
+	httpClient *http.Client
 }
 
 // New creates a new IAM instance.
 func New(auth aws.Auth, region aws.Region) *IAM {
-	return &IAM{auth, region}
+	return NewWithClient(auth, region, aws.RetryingClient)
+}
+
+func NewWithClient(auth aws.Auth, region aws.Region, httpClient *http.Client) *IAM {
+	return &IAM{auth, region, httpClient}
 }
 
 func (iam *IAM) query(params map[string]string, resp interface{}) error {
@@ -32,7 +37,7 @@ func (iam *IAM) query(params map[string]string, resp interface{}) error {
 	}
 	sign(iam.Auth, "GET", "/", params, endpoint.Host)
 	endpoint.RawQuery = multimap(params).Encode()
-	r, err := http.Get(endpoint.String())
+	r, err := iam.httpClient.Get(endpoint.String())
 	if err != nil {
 		return err
 	}
@@ -394,6 +399,29 @@ func (iam *IAM) DeleteUserPolicy(userName, policyName string) (*SimpleResp, erro
 		"UserName":   userName,
 	}
 	resp := new(SimpleResp)
+	if err := iam.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Response for AddUserToGroup requests.
+//
+//  See http://goo.gl/ZnzRN for more details.
+type AddUserToGroupResp struct {
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// AddUserToGroup adds a user to a specific group
+//
+// See http://goo.gl/ZnzRN for more details.
+func (iam *IAM) AddUserToGroup(name, group string) (*AddUserToGroupResp, error) {
+
+	params := map[string]string{
+		"Action":    "AddUserToGroup",
+		"GroupName": group,
+		"UserName":  name}
+	resp := new(AddUserToGroupResp)
 	if err := iam.query(params, resp); err != nil {
 		return nil, err
 	}

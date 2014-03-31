@@ -318,6 +318,49 @@ var DescribeInstancesExample2 = `
 </DescribeInstancesResponse>
 `
 
+// http://goo.gl/icuXh5
+var ModifyInstanceExample = `
+<ModifyImageAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+  <return>true</return>
+</ModifyImageAttributeResponse>
+`
+
+// http://goo.gl/9rprDN
+var AllocateAddressExample = `
+<AllocateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <publicIp>198.51.100.1</publicIp>
+   <domain>vpc</domain>
+   <allocationId>eipalloc-5723d13e</allocationId>
+</AllocateAddressResponse>
+`
+
+// http://goo.gl/3Q0oCc
+var ReleaseAddressExample = `
+<ReleaseAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+</ReleaseAddressResponse>
+`
+
+// http://goo.gl/uOSQE
+var AssociateAddressExample = `
+<AssociateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+   <associationId>eipassoc-fc5ca095</associationId>
+</AssociateAddressResponse>
+`
+
+// http://goo.gl/LrOa0
+var DisassociateAddressExample = `
+<DisassociateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+</DisassociateAddressResponse>
+`
+
 //http://goo.gl/zW7J4p
 var DescribeAddressesExample = `
 <DescribeAddressesResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
@@ -375,39 +418,12 @@ var DescribeAddressesAllocationIdExample = `
 </DescribeAddressesResponse>
 `
 
-//http://goo.gl/aLPmbm
-var AllocateAddressExample = `
-<AllocateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+// http://goo.gl/cxU41
+var CreateImageExample = `
+<CreateImageResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
-   <publicIp>198.51.100.1</publicIp>
-   <domain>vpc</domain>
-   <allocationId>eipalloc-5723d13e</allocationId>
-</AllocateAddressResponse>
-`
-
-//http://goo.gl/Ciw2Z8
-var ReleaseAddressExample = `
-<ReleaseAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
-  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
-  <return>true</return>
-</ReleaseAddressResponse>
-`
-
-//http://goo.gl/hhj4z7
-var AssociateAddressExample = `
-<AssociateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
-   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
-   <return>true</return>
-   <associationId>eipassoc-fc5ca095</associationId>
-</AssociateAddressResponse>
-`
-
-//http://goo.gl/Dapkuz
-var DiassociateAddressExample = `
-<ReleaseAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
-  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
-  <return>true</return>
-</ReleaseAddressResponse>
+   <imageId>ami-4fa54026</imageId>
+</CreateImageResponse>
 `
 
 // http://goo.gl/V0U25
@@ -458,6 +474,22 @@ var DescribeImagesExample = `
 </DescribeImagesResponse>
 `
 
+// http://goo.gl/bHO3z
+var ImageAttributeExample = `
+<DescribeImageAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-07-15/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <imageId>ami-61a54008</imageId>
+   <launchPermission>
+      <item>
+         <group>all</group>
+      </item>
+      <item>
+         <userId>495219933132</userId>
+      </item>
+   </launchPermission>
+</DescribeImageAttributeResponse>
+`
+
 // http://goo.gl/ttcda
 var CreateSnapshotExample = `
 <CreateSnapshotResponse xmlns="http://ec2.amazonaws.com/doc/2012-10-01/">
@@ -504,6 +536,56 @@ var DescribeSnapshotsExample = `
       </item>
    </snapshotSet>
 </DescribeSnapshotsResponse>
+`
+
+// http://goo.gl/YUjO4G
+var ModifyImageAttributeExample = `
+<ModifyImageAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+  <return>true</return>
+</ModifyImageAttributeResponse>
+`
+
+// http://goo.gl/hQwPCK
+var CopyImageExample = `
+<CopyImageResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+   <requestId>60bc441d-fa2c-494d-b155-5d6a3EXAMPLE</requestId>
+   <imageId>ami-4d3c2b1a</imageId>
+</CopyImageResponse>
+`
+
+var CreateKeyPairExample = `
+<CreateKeyPairResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
+  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+  <keyName>foo</keyName>
+  <keyFingerprint>
+     00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+  </keyFingerprint>
+  <keyMaterial>---- BEGIN RSA PRIVATE KEY ----
+MIICiTCCAfICCQD6m7oRw0uXOjANBgkqhkiG9w0BAQUFADCBiDELMAkGA1UEBhMC
+VVMxCzAJBgNVBAgTAldBMRAwDgYDVQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZBbWF6
+b24xFDASBgNVBAsTC0lBTSBDb25zb2xlMRIwEAYDVQQDEwlUZXN0Q2lsYWMxHzAd
+BgkqhkiG9w0BCQEWEG5vb25lQGFtYXpvbi5jb20wHhcNMTEwNDI1MjA0NTIxWhcN
+MTIwNDI0MjA0NTIxWjCBiDELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAldBMRAwDgYD
+VQQHEwdTZWF0dGxlMQ8wDQYDVQQKEwZBbWF6b24xFDASBgNVBAsTC0lBTSBDb25z
+b2xlMRIwEAYDVQQDEwlUZXN0Q2lsYWMxHzAdBgkqhkiG9w0BCQEWEG5vb25lQGFt
+YXpvbi5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMaK0dn+a4GmWIWJ
+21uUSfwfEvySWtC2XADZ4nB+BLYgVIk60CpiwsZ3G93vUEIO3IyNoH/f0wYK8m9T
+rDHudUZg3qX4waLG5M43q7Wgc/MbQITxOUSQv7c7ugFFDzQGBzZswY6786m86gpE
+Ibb3OhjZnzcvQAaRHhdlQWIMm2nrAgMBAAEwDQYJKoZIhvcNAQEFBQADgYEAtCu4
+nUhVVxYUntneD9+h8Mg9q6q+auNKyExzyLwaxlAoo7TJHidbtS4J5iNmZgXL0Fkb
+FFBjvSfpJIlJ00zbhNYS5f6GuoEDmFJl0ZxBHjJnyp378OD8uTs7fLvjx79LjSTb
+NYiytVbZPQUQ5Yaxu2jXnimvw3rrszlaEXAMPLE=
+-----END RSA PRIVATE KEY-----
+</keyMaterial>
+</CreateKeyPairResponse>
+`
+
+var DeleteKeyPairExample = `
+<DeleteKeyPairResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
+  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+  <return>true</return>
+</DeleteKeyPairResponse>
 `
 
 // http://goo.gl/Eo7Yl
