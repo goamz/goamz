@@ -126,7 +126,7 @@ type xmlErrors struct {
 var timeNow = time.Now
 
 func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
-	params["Version"] = "2013-07-15"
+	params["Version"] = "2014-02-01"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(ec2.Region.EC2Endpoint)
 	if err != nil {
@@ -243,15 +243,15 @@ type RunInstancesOptions struct {
 	UserData                 []byte
 	AvailabilityZone         string
 	PlacementGroupName       string
+	Tenancy                  string
 	Monitoring               bool
 	SubnetId                 string
 	DisableAPITermination    bool
 	ShutdownBehavior         string
 	PrivateIPAddress         string
-	IamInstanceProfileArn    string
-	IamInstanceProfileName   string
-	IamInstanceProfile       string
+	IamInstanceProfile       IamInstanceProfile
 	BlockDevices             []BlockDeviceMapping
+	EbsOptimized             bool
 	AssociatePublicIpAddress bool
 }
 
@@ -398,8 +398,9 @@ type InstancePrivateIpAddress struct {
 // IamInstanceProfile
 // See http://goo.gl/PjyijL for more details
 type IamInstanceProfile struct {
-	ARN string `xml:"arn"`
-	Id  string `xml:"id"`
+	ARN  string `xml:"arn"`
+	Id   string `xml:"id"`
+	Name string `xml:"name"`
 }
 
 // RunInstances starts new instances in EC2.
@@ -451,6 +452,9 @@ func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesRe
 	if options.PlacementGroupName != "" {
 		params["Placement.GroupName"] = options.PlacementGroupName
 	}
+	if options.Tenancy != "" {
+		params["Placement.Tenancy"] = options.Tenancy
+	}
 	if options.Monitoring {
 		params["Monitoring.Enabled"] = "true"
 	}
@@ -490,14 +494,11 @@ func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesRe
 			}
 		}
 	}
-	if options.IamInstanceProfile != "" {
-		params["IamInstanceProfile.Name"] = options.IamInstanceProfile
+	if options.IamInstanceProfile.ARN != "" {
+		params["IamInstanceProfile.Arn"] = options.IamInstanceProfile.ARN
 	}
-	if options.IamInstanceProfileArn != "" {
-		params["IamInstanceProfile.Arn"] = options.IamInstanceProfileArn
-	}
-	if options.IamInstanceProfileName != "" {
-		params["IamInstanceProfile.Name"] = options.IamInstanceProfileName
+	if options.IamInstanceProfile.Name != "" {
+		params["IamInstanceProfile.Name"] = options.IamInstanceProfile.Name
 	}
 	if options.DisableAPITermination {
 		params["DisableApiTermination"] = "true"
@@ -507,6 +508,9 @@ func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesRe
 	}
 	if options.PrivateIPAddress != "" {
 		params["PrivateIpAddress"] = options.PrivateIPAddress
+	}
+	if options.EbsOptimized {
+		params["EbsOptimized"] = "true"
 	}
 
 	addBlockDeviceParams(params, options.BlockDevices)

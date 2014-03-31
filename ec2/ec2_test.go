@@ -959,7 +959,7 @@ func (s *S) TestSignatureWithEndpointPath(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 
 	req := testServer.WaitRequest()
-	c.Assert(req.Form["Signature"], gocheck.DeepEquals, []string{"WaKDWBipeZzpFeqg5PpHw8ayfiqPqB2SX5HsH8+b6+k="})
+	c.Assert(req.Form["Signature"], gocheck.DeepEquals, []string{"VVoC6Y6xfES+KvZo+789thP8+tye4F6fOKBiKmXk4S4="})
 }
 
 func (s *S) TestAllocateAddressExample(c *gocheck.C) {
