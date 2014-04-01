@@ -66,3 +66,32 @@ func (ec2 *EC2) DescribeRouteTables(routeTableIds []string, filter *Filter) (res
 	}
 	return
 }
+
+// AssociateRouteTableResp represents a response from an AssociateRouteTable call
+//
+// See http://goo.gl/T4KlYk for more details.
+type AssociateRouteTableResp struct {
+	RequestId     string `xml:"requestId"`
+	AssociationId string `xml:"associationId"`
+}
+
+// AssociateRouteTable associates a subnet with a route table.
+//
+// The subnet and route table must be in the same VPC. This association causes
+// traffic originating from the subnet to be routed according to the routes
+// in the route table. The action returns an association ID, which you need in
+// order to disassociate the route table from the subnet later.
+// A route table can be associated with multiple subnets.
+//
+// See http://goo.gl/bfnONU for more details.
+func (ec2 *EC2) AssociateRouteTable(routeTableId, subnetId string) (resp *AssociateRouteTableResp, err error) {
+	params := makeParams("AssociateRouteTable")
+	params["RouteTableId"] = routeTableId
+	params["SubnetId"] = subnetId
+	resp = &AssociateRouteTableResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}

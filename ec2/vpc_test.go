@@ -44,3 +44,18 @@ func (s *S) TestDescribeRouteTables(c *gocheck.C) {
 		{Id: "rtbassoc-faad4893", RouteTableId: "rtb-f9ad4890", SubnetId: "subnet-15ad487c"},
 	})
 }
+
+func (s *S) TestAssociateRouteTable(c *gocheck.C) {
+	testServer.Response(200, nil, AssociateRouteTableExample)
+
+	resp, err := s.ec2.AssociateRouteTable("rtb-e4ad488d", "subnet-15ad487c")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"AssociateRouteTable"})
+	c.Assert(req.Form["RouteTableId"], gocheck.DeepEquals, []string{"rtb-e4ad488d"})
+	c.Assert(req.Form["SubnetId"], gocheck.DeepEquals, []string{"subnet-15ad487c"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.AssociationId, gocheck.Equals, "rtbassoc-f8ad4891")
+}
