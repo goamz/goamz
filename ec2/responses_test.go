@@ -822,3 +822,10 @@ var AssociateRouteTableExample = `
    <associationId>rtbassoc-f8ad4891</associationId>
 </AssociateRouteTableResponse>
 `
+
+var ReplaceRouteTableAssociationExample = `
+<ReplaceRouteTableAssociationResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59dbff89-35bd-4eac-88ed-be587EXAMPLE</requestId>
+   <newAssociationId>rtbassoc-faad2958</newAssociationId>
+</ReplaceRouteTableAssociationResponse>
+`

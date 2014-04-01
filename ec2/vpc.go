@@ -95,3 +95,26 @@ func (ec2 *EC2) AssociateRouteTable(routeTableId, subnetId string) (resp *Associ
 	}
 	return
 }
+
+// ReplaceRouteTableAssociationResp represents a response from a ReplaceRouteTableAssociation call
+//
+// See  for more details.
+type ReplaceRouteTableAssociationResp struct {
+	RequestId        string `xml:"requestId"`
+	NewAssociationId string `xml:"newAssociationId"`
+}
+
+// ReplaceRouteTableAssociation changes the route table associated with a given subnet in a VPC.
+//
+// See  for more details.
+func (ec2 *EC2) ReplaceRouteTableAssociation(associationId, routeTableId string) (resp *ReplaceRouteTableAssociationResp, err error) {
+	params := makeParams("ReplaceRouteTableAssociation")
+	params["AssociationId"] = associationId
+	params["RouteTableId"] = routeTableId
+	resp = &ReplaceRouteTableAssociationResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}

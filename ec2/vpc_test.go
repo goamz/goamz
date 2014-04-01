@@ -59,3 +59,18 @@ func (s *S) TestAssociateRouteTable(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
 	c.Assert(resp.AssociationId, gocheck.Equals, "rtbassoc-f8ad4891")
 }
+
+func (s *S) TestReplaceRouteTableAssociation(c *gocheck.C) {
+	testServer.Response(200, nil, ReplaceRouteTableAssociationExample)
+
+	resp, err := s.ec2.ReplaceRouteTableAssociation("rtbassoc-f8ad4891", "rtb-f9ad4890")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"ReplaceRouteTableAssociation"})
+	c.Assert(req.Form["RouteTableId"], gocheck.DeepEquals, []string{"rtb-f9ad4890"})
+	c.Assert(req.Form["AssociationId"], gocheck.DeepEquals, []string{"rtbassoc-f8ad4891"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-88ed-be587EXAMPLE")
+	c.Assert(resp.NewAssociationId, gocheck.Equals, "rtbassoc-faad2958")
+}
