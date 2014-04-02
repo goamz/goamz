@@ -5,6 +5,29 @@ import (
 	"github.com/motain/gocheck"
 )
 
+func (s *S) TestCreateRouteTable(c *gocheck.C) {
+	testServer.Response(200, nil, CreateRouteTableExample)
+
+	resp, err := s.ec2.CreateRouteTable("vpc-11ad4878")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"CreateRouteTable"})
+	c.Assert(req.Form["VpcId"], gocheck.DeepEquals, []string{"vpc-11ad4878"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59abcd43-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.RouteTable.Id, gocheck.Equals, "rtb-f9ad4890")
+	c.Assert(resp.RouteTable.VpcId, gocheck.Equals, "vpc-11ad4878")
+	c.Assert(resp.RouteTable.Routes, gocheck.HasLen, 1)
+	c.Assert(resp.RouteTable.Routes[0], gocheck.DeepEquals, ec2.Route{
+		DestinationCidrBlock: "10.0.0.0/22",
+		GatewayId:            "local",
+		State:                "active",
+	})
+	c.Assert(resp.RouteTable.Associations, gocheck.HasLen, 0)
+	c.Assert(resp.RouteTable.Tags, gocheck.HasLen, 0)
+}
+
 func (s *S) TestDescribeRouteTables(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeRouteTablesExample)
 
@@ -60,6 +83,20 @@ func (s *S) TestAssociateRouteTable(c *gocheck.C) {
 	c.Assert(resp.AssociationId, gocheck.Equals, "rtbassoc-f8ad4891")
 }
 
+func (s *S) TestDisassociateRouteTable(c *gocheck.C) {
+	testServer.Response(200, nil, DisassociateRouteTableExample)
+
+	resp, err := s.ec2.DisassociateRouteTable("rtbassoc-f8ad4891")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DisassociateRouteTable"})
+	c.Assert(req.Form["AssociationId"], gocheck.DeepEquals, []string{"rtbassoc-f8ad4891"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Return, gocheck.Equals, true)
+}
+
 func (s *S) TestReplaceRouteTableAssociation(c *gocheck.C) {
 	testServer.Response(200, nil, ReplaceRouteTableAssociationExample)
 
@@ -73,4 +110,18 @@ func (s *S) TestReplaceRouteTableAssociation(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-88ed-be587EXAMPLE")
 	c.Assert(resp.NewAssociationId, gocheck.Equals, "rtbassoc-faad2958")
+}
+
+func (s *S) TestDeleteRouteTable(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteRouteTableExample)
+
+	resp, err := s.ec2.DeleteRouteTable("rtb-f9ad4890")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DeleteRouteTable"})
+	c.Assert(req.Form["RouteTableId"], gocheck.DeepEquals, []string{"rtb-f9ad4890"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "49dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Return, gocheck.Equals, true)
 }

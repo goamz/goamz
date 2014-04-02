@@ -816,11 +816,44 @@ var DescribeRouteTablesExample = `
 </DescribeRouteTablesResponse>
 `
 
+var CreateRouteTableExample = `
+<CreateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59abcd43-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <routeTable>
+      <routeTableId>rtb-f9ad4890</routeTableId>
+      <vpcId>vpc-11ad4878</vpcId>
+      <routeSet>
+         <item>
+            <destinationCidrBlock>10.0.0.0/22</destinationCidrBlock>
+            <gatewayId>local</gatewayId>
+            <state>active</state>
+         </item>
+      </routeSet>
+      <associationSet/>
+      <tagSet/>
+   </routeTable>
+</CreateRouteTableResponse>
+`
+
+var DeleteRouteTableExample = `
+<DeleteRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>49dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+</DeleteRouteTableResponse>
+`
+
 var AssociateRouteTableExample = `
 <AssociateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
    <associationId>rtbassoc-f8ad4891</associationId>
 </AssociateRouteTableResponse>
+`
+
+var DisassociateRouteTableExample = `
+<DisassociateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+</DisassociateRouteTableResponse>
 `
 
 var ReplaceRouteTableAssociationExample = `
