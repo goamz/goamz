@@ -46,7 +46,7 @@ type PropagatingVgw struct {
 
 // CreateRouteTableResp represents a response from a CreateRouteTable request
 //
-// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-CreateRouteTable.html#query-CreateRouteTable-response-elements
+// See http://goo.gl/LD0TqP for more details.
 type CreateRouteTableResp struct {
 	RequestId  string     `xml:"requestId"`
 	RouteTable RouteTable `xml:"routeTable"`
@@ -55,7 +55,7 @@ type CreateRouteTableResp struct {
 // CreateRouteTable creates a route table for the specified VPC.
 // After you create a route table, you can add routes and associate the table with a subnet.
 //
-// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-CreateRouteTable.html
+// See http://goo.gl/V9h6gE for more details..
 func (ec2 *EC2) CreateRouteTable(vpcId string) (resp *CreateRouteTableResp, err error) {
 	params := makeParams("CreateRouteTable")
 	params["VpcId"] = vpcId
@@ -121,7 +121,7 @@ func (ec2 *EC2) AssociateRouteTable(routeTableId, subnetId string) (resp *Associ
 
 // DisassociateRouteTableResp represents the response from a DisassociateRouteTable request
 //
-//  http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DisassociateRouteTable.html#query-DisassociateRouteTable-response-elements
+// See http://goo.gl/1v4reT for more details.
 type DisassociateRouteTableResp struct {
 	RequestId string `xml:"requestId"`
 	Return    bool   `xml:"return"` // True if the request succeeds
@@ -129,7 +129,7 @@ type DisassociateRouteTableResp struct {
 
 // DisassociateRouteTable disassociates a subnet from a route table.
 //
-// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DisassociateRouteTable.html
+// See http://goo.gl/A4NJum for more details.
 func (ec2 *EC2) DisassociateRouteTable(associationId string) (resp *DisassociateRouteTableResp, err error) {
 	params := makeParams("DisassociateRouteTable")
 	params["AssociationId"] = associationId
@@ -143,7 +143,7 @@ func (ec2 *EC2) DisassociateRouteTable(associationId string) (resp *Disassociate
 
 // ReplaceRouteTableAssociationResp represents a response from a ReplaceRouteTableAssociation call
 //
-// See  for more details.
+// See http://goo.gl/VhILGe for more details.
 type ReplaceRouteTableAssociationResp struct {
 	RequestId        string `xml:"requestId"`
 	NewAssociationId string `xml:"newAssociationId"`
@@ -151,7 +151,7 @@ type ReplaceRouteTableAssociationResp struct {
 
 // ReplaceRouteTableAssociation changes the route table associated with a given subnet in a VPC.
 //
-// See  for more details.
+// See http://goo.gl/kiit8j for more details.
 func (ec2 *EC2) ReplaceRouteTableAssociation(associationId, routeTableId string) (resp *ReplaceRouteTableAssociationResp, err error) {
 	params := makeParams("ReplaceRouteTableAssociation")
 	params["AssociationId"] = associationId
@@ -166,7 +166,7 @@ func (ec2 *EC2) ReplaceRouteTableAssociation(associationId, routeTableId string)
 
 // DeleteRouteTableResp represents a response from a DeleteRouteTable request
 //
-// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DeleteRouteTable.html#query-DeleteRouteTable-response-elements
+// See http://goo.gl/b8usig for more details.
 type DeleteRouteTableResp struct {
 	RequestId string `xml:"requestId"`
 	Return    bool   `xml:"return"` // True if the request succeeds
@@ -176,7 +176,7 @@ type DeleteRouteTableResp struct {
 // You must disassociate the route table from any subnets before you can delete it.
 // You can't delete the main route table.
 //
-// http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-DeleteRouteTable.html
+// See http://goo.gl/crHxT2 for more details.
 func (ec2 *EC2) DeleteRouteTable(routeTableId string) (resp *DeleteRouteTableResp, err error) {
 	params := makeParams("DeleteRouteTable")
 	params["RouteTableId"] = routeTableId
