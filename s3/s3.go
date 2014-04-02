@@ -168,11 +168,15 @@ func (b *Bucket) DelBucket() (err error) {
 // See http://goo.gl/isCO7 for details.
 func (b *Bucket) Get(path string) (data []byte, err error) {
 	body, err := b.GetReader(path)
+	defer func() {
+		if body != nil {
+			body.Close()
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}
 	data, err = ioutil.ReadAll(body)
-	body.Close()
 	return data, err
 }
 
@@ -946,7 +950,7 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		log.Printf("} -> %s\n", dump)
 	}
 	if hresp.StatusCode != 200 && hresp.StatusCode != 204 {
-		hresp.Body.Close()
+		defer hresp.Body.Close()
 		return nil, buildError(hresp)
 	}
 	if resp != nil {

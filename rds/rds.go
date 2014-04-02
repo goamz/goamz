@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-const debug = true
+const debug = false
 
 const (
 	ServiceName = "rds"

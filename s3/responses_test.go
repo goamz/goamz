@@ -2,9 +2,13 @@ package s3_test
 
 var GetObjectErrorDump = `
 <?xml version="1.0" encoding="UTF-8"?>
-<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message>
-<BucketName>non-existent-bucket</BucketName><RequestId>3F1B667FAD71C3D8</RequestId>
-<HostId>L4ee/zrm1irFXY5F45fKXIRdOf9ktsKY/8TDVawuMK2jWRb1RF84i1uBzkdNqS5D</HostId></Error>
+<Error>
+  <Code>NoSuchBucket</Code>
+  <Message>The specified bucket does not exist</Message>
+  <BucketName>non-existent-bucket</BucketName>
+  <RequestId>3F1B667FAD71C3D8</RequestId>
+  <HostId>L4ee/zrm1irFXY5F45fKXIRdOf9ktsKY/8TDVawuMK2jWRb1RF84i1uBzkdNqS5D</HostId>
+</Error>
 `
 
 var GetListResultDump1 = `
