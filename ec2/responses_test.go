@@ -762,3 +762,103 @@ var RebootInstancesExample = `
   <return>true</return>
 </RebootInstancesResponse>
 `
+
+var DescribeRouteTablesExample = `
+<DescribeRouteTablesResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>6f570b0b-9c18-4b07-bdec-73740dcf861aEXAMPLE</requestId>
+   <routeTableSet>
+      <item>
+         <routeTableId>rtb-13ad487a</routeTableId>
+         <vpcId>vpc-11ad4878</vpcId>
+         <routeSet>
+            <item>
+               <destinationCidrBlock>10.0.0.0/22</destinationCidrBlock>
+               <gatewayId>local</gatewayId>
+               <state>active</state>
+               <origin>CreateRouteTable</origin>
+            </item>
+         </routeSet>
+         <associationSet>
+             <item>
+                <routeTableAssociationId>rtbassoc-12ad487b</routeTableAssociationId>
+                <routeTableId>rtb-13ad487a</routeTableId>
+                <main>true</main>
+             </item>
+         </associationSet>
+        <tagSet/>
+      </item>
+      <item>
+         <routeTableId>rtb-f9ad4890</routeTableId>
+         <vpcId>vpc-11ad4878</vpcId>
+         <routeSet>
+            <item>
+               <destinationCidrBlock>10.0.0.0/22</destinationCidrBlock>
+               <gatewayId>local</gatewayId>
+               <state>active</state>
+               <origin>CreateRouteTable</origin>
+            </item>
+            <item>
+               <destinationCidrBlock>0.0.0.0/0</destinationCidrBlock>
+               <gatewayId>igw-eaad4883</gatewayId>
+               <state>active</state>
+            </item>
+         </routeSet>
+         <associationSet>
+            <item>
+                <routeTableAssociationId>rtbassoc-faad4893</routeTableAssociationId>
+                <routeTableId>rtb-f9ad4890</routeTableId>
+                <subnetId>subnet-15ad487c</subnetId>
+            </item>
+         </associationSet>
+         <tagSet/>
+      </item>
+   </routeTableSet>
+</DescribeRouteTablesResponse>
+`
+
+var CreateRouteTableExample = `
+<CreateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59abcd43-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <routeTable>
+      <routeTableId>rtb-f9ad4890</routeTableId>
+      <vpcId>vpc-11ad4878</vpcId>
+      <routeSet>
+         <item>
+            <destinationCidrBlock>10.0.0.0/22</destinationCidrBlock>
+            <gatewayId>local</gatewayId>
+            <state>active</state>
+         </item>
+      </routeSet>
+      <associationSet/>
+      <tagSet/>
+   </routeTable>
+</CreateRouteTableResponse>
+`
+
+var DeleteRouteTableExample = `
+<DeleteRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>49dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+</DeleteRouteTableResponse>
+`
+
+var AssociateRouteTableExample = `
+<AssociateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <associationId>rtbassoc-f8ad4891</associationId>
+</AssociateRouteTableResponse>
+`
+
+var DisassociateRouteTableExample = `
+<DisassociateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <return>true</return>
+</DisassociateRouteTableResponse>
+`
+
+var ReplaceRouteTableAssociationExample = `
+<ReplaceRouteTableAssociationResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+   <requestId>59dbff89-35bd-4eac-88ed-be587EXAMPLE</requestId>
+   <newAssociationId>rtbassoc-faad2958</newAssociationId>
+</ReplaceRouteTableAssociationResponse>
+`
