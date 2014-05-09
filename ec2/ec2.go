@@ -726,6 +726,32 @@ func (ec2 *EC2) DescribeSpotRequests(spotrequestIds []string, filter *Filter) (r
 	return
 }
 
+// Response to a CancelSpotInstanceRequests request.
+//
+// See http://goo.gl/3BKHj for more details.
+type CancelSpotRequestResult struct {
+	SpotRequestId string `xml:"spotInstanceRequestId"`
+	State         string `xml:"state"`
+}
+type CancelSpotRequestsResp struct {
+	RequestId                string                    `xml:"requestId"`
+	CancelSpotRequestResults []CancelSpotRequestResult `xml:"spotInstanceRequestSet>item"`
+}
+
+// CancelSpotRequests requests the cancellation of spot requests when the given ids.
+//
+// See http://goo.gl/3BKHj for more details.
+func (ec2 *EC2) CancelSpotRequests(spotrequestIds []string) (resp *CancelSpotRequestsResp, err error) {
+	params := makeParams("CancelSpotInstanceRequests")
+	addParamsList(params, "SpotInstanceRequestId", spotrequestIds)
+	resp = &CancelSpotRequestsResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
 // Response to a TerminateInstances request.
 //
 // See http://goo.gl/3BKHj for more details.

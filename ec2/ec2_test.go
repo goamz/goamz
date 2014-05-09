@@ -268,6 +268,22 @@ func (s *S) TestRequestSpotInstancesExample(c *C) {
 	c.Assert(resp.SpotRequestResults[0].SpotLaunchSpec.ImageId, Equals, "ami-1a2b3c4d")
 }
 
+func (s *S) TestCancelSpotRequestsExample(c *C) {
+	testServer.Response(200, nil, CancelSpotRequestsExample)
+
+	resp, err := s.ec2.CancelSpotRequests([]string{"s-1", "s-2"})
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], DeepEquals, []string{"CancelSpotInstanceRequests"})
+	c.Assert(req.Form["SpotInstanceRequestId.1"], DeepEquals, []string{"s-1"})
+	c.Assert(req.Form["SpotInstanceRequestId.2"], DeepEquals, []string{"s-2"})
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.RequestId, Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.CancelSpotRequestResults[0].SpotRequestId, Equals, "sir-1a2b3c4d")
+	c.Assert(resp.CancelSpotRequestResults[0].State, Equals, "cancelled")
+}
+
 func (s *S) TestTerminateInstancesExample(c *C) {
 	testServer.Response(200, nil, TerminateInstancesExample)
 
