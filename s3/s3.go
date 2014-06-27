@@ -71,6 +71,9 @@ type S3 struct {
 
 	// Reserve the right of using private data.
 	private byte
+
+	// client used for requests
+	client *http.Client
 }
 
 // The Bucket type encapsulates operations with an S3 bucket.
@@ -973,29 +976,36 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
 
-	c := http.Client{
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (c net.Conn, err error) {
-				c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
-				if err != nil {
-					return
-				}
-				if s3.RequestTimeout > 0 {
-					c.SetDeadline(time.Now().Add(s3.RequestTimeout))
-				}
-				if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
-					c = &ioTimeoutConn{
-						TCPConn:      c.(*net.TCPConn),
-						readTimeout:  s3.ReadTimeout,
-						writeTimeout: s3.WriteTimeout,
+	if s3.client == nil {
+		s3.client = &http.Client{
+			Transport: &http.Transport{
+				Dial: func(netw, addr string) (c net.Conn, err error) {
+					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
+					if err != nil {
+						return
 					}
-				}
-				return
+
+					var deadline time.Time
+					if s3.RequestTimeout > 0 {
+						deadline = time.Now().Add(s3.RequestTimeout)
+						c.SetDeadline(deadline)
+					}
+
+					if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
+						c = &ioTimeoutConn{
+							TCPConn:      c.(*net.TCPConn),
+							readTimeout:  s3.ReadTimeout,
+							writeTimeout: s3.WriteTimeout,
+							requestDeadline: deadline,
+						}
+					}
+					return
+				},
 			},
-		},
+		}
 	}
 
-	hresp, err := c.Do(&hreq)
+	hresp, err := s3.client.Do(&hreq)
 	if err != nil {
 		return nil, err
 	}
@@ -1061,8 +1071,12 @@ func shouldRetry(err error) bool {
 	if err == nil {
 		return false
 	}
-
 	if e, ok := err.(*url.Error); ok {
+		// Transport returns this string if it detects a write on a connection which
+		// has already had an error
+		if e.Err.Error() == "http: can't write HTTP request on broken connection" {
+			return true
+		}
 		err = e.Err
 	}
 
@@ -1097,11 +1111,21 @@ type ioTimeoutConn struct {
 	*net.TCPConn
 	readTimeout  time.Duration
 	writeTimeout time.Duration
+	requestDeadline time.Time
+}
+
+func (c *ioTimeoutConn) deadline(timeout time.Duration) time.Time {
+	dl := time.Now().Add(timeout)
+	if c.requestDeadline.IsZero() || dl.Before(c.requestDeadline) {
+		return dl
+	}
+
+	return c.requestDeadline
 }
 
 func (c *ioTimeoutConn) Read(b []byte) (int, error) {
 	if c.readTimeout > 0 {
-		err := c.TCPConn.SetReadDeadline(time.Now().Add(c.readTimeout))
+		err := c.TCPConn.SetReadDeadline(c.deadline(c.readTimeout))
 		if err != nil {
 			return 0, err
 		}
@@ -1111,7 +1135,7 @@ func (c *ioTimeoutConn) Read(b []byte) (int, error) {
 
 func (c *ioTimeoutConn) Write(b []byte) (int, error) {
 	if c.writeTimeout > 0 {
-		err := c.TCPConn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
+		err := c.TCPConn.SetWriteDeadline(c.deadline(c.writeTimeout))
 		if err != nil {
 			return 0, err
 		}
