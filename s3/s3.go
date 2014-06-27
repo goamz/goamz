@@ -66,6 +66,9 @@ type S3 struct {
 	// A Timeout of zero means no timeout.
 	RequestTimeout time.Duration
 
+	// AttemptStrategy is the attempt strategy used for requests.
+	aws.AttemptStrategy
+
 	// Reserve the right of using private data.
 	private byte
 }
@@ -109,7 +112,8 @@ type CopyObjectResult struct {
 	LastModified string
 }
 
-var attempts = aws.AttemptStrategy{
+// DefaultAttemptStrategy is the default AttemptStrategy used by S3 objects created by New.
+var DefaultAttemptStrategy = aws.AttemptStrategy{
 	Min:   5,
 	Total: 5 * time.Second,
 	Delay: 200 * time.Millisecond,
@@ -117,7 +121,7 @@ var attempts = aws.AttemptStrategy{
 
 // New creates a new S3.
 func New(auth aws.Auth, region aws.Region) *S3 {
-	return &S3{Auth: auth, Region: region}
+	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy}
 }
 
 // Bucket returns a Bucket with the given name.
@@ -182,7 +186,7 @@ func (b *Bucket) DelBucket() (err error) {
 		bucket: b.Name,
 		path:   "/",
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		err = b.S3.query(req, nil)
 		if !shouldRetry(err) {
 			break
@@ -243,7 +247,7 @@ func (b *Bucket) GetResponseWithHeaders(path string, headers map[string][]string
 	if err != nil {
 		return nil, err
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		resp, err := b.S3.run(req, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
@@ -267,7 +271,7 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 	if err != nil {
 		return
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		resp, err := b.S3.run(req, nil)
 
 		if shouldRetry(err) && attempt.HasNext() {
@@ -304,7 +308,7 @@ func (b *Bucket) Head(path string, headers map[string][]string) (*http.Response,
 		return nil, err
 	}
 
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		resp, err := b.S3.run(req, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
@@ -637,7 +641,7 @@ func (b *Bucket) List(prefix, delim, marker string, max int) (result *ListResp, 
 		params: params,
 	}
 	result = &ListResp{}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		err = b.S3.query(req, result)
 		if !shouldRetry(err) {
 			break
@@ -698,7 +702,7 @@ func (b *Bucket) Versions(prefix, delim, keyMarker string, versionIdMarker strin
 		params: params,
 	}
 	result = &VersionsResp{}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		err = b.S3.query(req, result)
 		if !shouldRetry(err) {
 			break
