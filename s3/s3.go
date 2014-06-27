@@ -941,7 +941,27 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
 
-	hresp, err := http.DefaultClient.Do(&hreq)
+	c := http.Client{
+		Transport: &http.Transport{
+			Dial: func(netw, addr string) (c net.Conn, err error) {
+				deadline := time.Now().Add(s3.ReadTimeout)
+				if s3.ConnectTimeout > 0 {
+					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
+				} else {
+					c, err = net.Dial(netw, addr)
+				}
+				if err != nil {
+					return
+				}
+				if s3.ReadTimeout > 0 {
+					err = c.SetDeadline(deadline)
+				}
+				return
+			},
+		},
+	}
+
+	hresp, err := c.Do(&hreq)
 	if err != nil {
 		return nil, err
 	}
