@@ -1057,6 +1057,11 @@ func shouldRetry(err error) bool {
 	if err == nil {
 		return false
 	}
+
+	if e, ok := err.(*url.Error); ok {
+		err = e.Err
+	}
+
 	switch err {
 	case io.ErrUnexpectedEOF, io.EOF:
 		return true
@@ -1066,7 +1071,7 @@ func shouldRetry(err error) bool {
 		return true
 	case *net.OpError:
 		switch e.Op {
-		case "read", "write":
+		case "read", "write", "WSARecv", "WSASend", "ConnectEx":
 			return true
 		}
 	case *Error:
