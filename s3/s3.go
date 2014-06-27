@@ -37,9 +37,37 @@ const debug = false
 type S3 struct {
 	aws.Auth
 	aws.Region
+
+	// ConnectTimeout is the maximum time a request attempt will
+	// wait for a successful connection to be made.
+	//
+	// A value of zero means no timeout.
 	ConnectTimeout time.Duration
-	ReadTimeout    time.Duration
-	private        byte // Reserve the right of using private data.
+
+	// ReadTimeout is the maximum time a request attempt will wait
+	// for an individual read to complete.
+	//
+	// A value of zero means no timeout.
+	ReadTimeout time.Duration
+
+	// WriteTimeout is the maximum time a request attempt will
+	// wait for an individual write to complete.
+	//
+	// A value of zero means no timeout.
+	WriteTimeout time.Duration
+
+	// RequestTimeout is the maximum time a request attempt can
+	// take before operations return a timeout error.
+	//
+	// This includes connection time, any redirects, and reading
+	// the response body. The timer remains running after the request
+	// is made so it can interrupt reading of the response data.
+	//
+	// A Timeout of zero means no timeout.
+	RequestTimeout time.Duration
+
+	// Reserve the right of using private data.
+	private byte
 }
 
 // The Bucket type encapsulates operations with an S3 bucket.
@@ -89,7 +117,7 @@ var attempts = aws.AttemptStrategy{
 
 // New creates a new S3.
 func New(auth aws.Auth, region aws.Region) *S3 {
-	return &S3{auth, region, 0, 0, 0}
+	return &S3{Auth: auth, Region: region}
 }
 
 // Bucket returns a Bucket with the given name.
@@ -944,17 +972,19 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 	c := http.Client{
 		Transport: &http.Transport{
 			Dial: func(netw, addr string) (c net.Conn, err error) {
-				deadline := time.Now().Add(s3.ReadTimeout)
-				if s3.ConnectTimeout > 0 {
-					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
-				} else {
-					c, err = net.Dial(netw, addr)
-				}
+				c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
 				if err != nil {
 					return
 				}
-				if s3.ReadTimeout > 0 {
-					err = c.SetDeadline(deadline)
+				if s3.RequestTimeout > 0 {
+					c.SetDeadline(time.Now().Add(s3.RequestTimeout))
+				}
+				if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
+					c = &ioTimeoutConn{
+						TCPConn:      c.(*net.TCPConn),
+						readTimeout:  s3.ReadTimeout,
+						writeTimeout: s3.WriteTimeout,
+					}
 				}
 				return
 			},
@@ -1051,4 +1081,31 @@ func shouldRetry(err error) bool {
 func hasCode(err error, code string) bool {
 	s3err, ok := err.(*Error)
 	return ok && s3err.Code == code
+}
+
+// ioTimeoutConn is a net.Conn which sets a deadline for each Read or Write operation
+type ioTimeoutConn struct {
+	*net.TCPConn
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+}
+
+func (c *ioTimeoutConn) Read(b []byte) (int, error) {
+	if c.readTimeout > 0 {
+		err := c.TCPConn.SetReadDeadline(time.Now().Add(c.readTimeout))
+		if err != nil {
+			return 0, err
+		}
+	}
+	return c.TCPConn.Read(b)
+}
+
+func (c *ioTimeoutConn) Write(b []byte) (int, error) {
+	if c.writeTimeout > 0 {
+		err := c.TCPConn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
+		if err != nil {
+			return 0, err
+		}
+	}
+	return c.TCPConn.Write(b)
 }
