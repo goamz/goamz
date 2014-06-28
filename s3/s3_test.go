@@ -32,15 +32,14 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 }
 
 func (s *S) TearDownSuite(c *gocheck.C) {
-	s3.SetAttemptStrategy(nil)
+	s.s3.AttemptStrategy = s3.DefaultAttemptStrategy
 }
 
 func (s *S) SetUpTest(c *gocheck.C) {
-	attempts := aws.AttemptStrategy{
+	s.s3.AttemptStrategy = aws.AttemptStrategy{
 		Total: 300 * time.Millisecond,
 		Delay: 100 * time.Millisecond,
 	}
-	s3.SetAttemptStrategy(&attempts)
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {
@@ -48,7 +47,7 @@ func (s *S) TearDownTest(c *gocheck.C) {
 }
 
 func (s *S) DisableRetries() {
-	s3.SetAttemptStrategy(&aws.AttemptStrategy{})
+	s.s3.AttemptStrategy = aws.AttemptStrategy{}
 }
 
 // PutBucket docs: http://goo.gl/kBTCu
