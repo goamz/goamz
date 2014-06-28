@@ -993,9 +993,9 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 
 					if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
 						c = &ioTimeoutConn{
-							TCPConn:      c.(*net.TCPConn),
-							readTimeout:  s3.ReadTimeout,
-							writeTimeout: s3.WriteTimeout,
+							TCPConn:         c.(*net.TCPConn),
+							readTimeout:     s3.ReadTimeout,
+							writeTimeout:    s3.WriteTimeout,
 							requestDeadline: deadline,
 						}
 					}
@@ -1109,8 +1109,8 @@ func hasCode(err error, code string) bool {
 // ioTimeoutConn is a net.Conn which sets a deadline for each Read or Write operation
 type ioTimeoutConn struct {
 	*net.TCPConn
-	readTimeout  time.Duration
-	writeTimeout time.Duration
+	readTimeout     time.Duration
+	writeTimeout    time.Duration
 	requestDeadline time.Time
 }
 
