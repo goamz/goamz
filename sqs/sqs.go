@@ -306,9 +306,13 @@ func (q *Queue) GetQueueAttributes(A string) (resp *GetQueueAttributesResponse, 
 }
 
 func (q *Queue) DeleteMessage(M *Message) (resp *DeleteMessageResponse, err error) {
+	return q.DeleteMessageUsingReceiptHandle(M.ReceiptHandle)
+}
+
+func (q *Queue) DeleteMessageUsingReceiptHandle(receiptHandle string) (resp *DeleteMessageResponse, err error) {
 	resp = &DeleteMessageResponse{}
 	params := makeParams("DeleteMessage")
-	params["ReceiptHandle"] = M.ReceiptHandle
+	params["ReceiptHandle"] = receiptHandle
 
 	err = q.SQS.query(q.Url, params, resp)
 	return

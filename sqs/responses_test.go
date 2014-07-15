@@ -118,6 +118,14 @@ var TestDeleteMessageBatchXmlOK = `
 </DeleteMessageBatchResponse>
 `
 
+var TestDeleteMessageUsingReceiptXmlOK = `
+<DeleteMessageResponse>
+    <ResponseMetadata>
+        <RequestId>d6d86b7a-74d1-4439-b43f-196a1e29cd85</RequestId>
+    </ResponseMetadata>
+</DeleteMessageResponse>
+`
+
 var TestGetQueueAttributesXmlOK = `
 <GetQueueAttributesResponse>
   <GetQueueAttributesResult>
