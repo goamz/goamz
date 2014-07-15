@@ -73,7 +73,7 @@ var TestReceiveMessageXmlOK = `
       <Attribute>
         <Name>SenderId</Name>
         <Value>195004372649</Value>
-      </Attribute>                                                                                                                   
+      </Attribute>
       <Attribute>
         <Name>SentTimestamp</Name>
         <Value>1238099229000</Value>
