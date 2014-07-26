@@ -159,6 +159,24 @@ func (s *S) TestDeleteMessageBatch(c *gocheck.C) {
 	}
 }
 
+func (s *S) TestDeleteMessageUsingReceiptHandle(c *gocheck.C) {
+	testServer.PrepareResponse(200, nil, TestDeleteMessageUsingReceiptXmlOK)
+
+	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
+
+	msg := &Message{ReceiptHandle: "gfk0T0R0waama4fVFffkjRQrrvzMrOg0fTFk2LxT33EuB8wR0ZCFgKWyXGWFoqqpCIiprQUEhir%2F5LeGPpYTLzjqLQxyQYaQALeSNHb0us3uE84uujxpBhsDkZUQkjFFkNqBXn48xlMcVhTcI3YLH%2Bd%2BIqetIOHgBCZAPx6r%2B09dWaBXei6nbK5Ygih21DCDdAwFV68Jo8DXhb3ErEfoDqx7vyvC5nCpdwqv%2BJhU%2FTNGjNN8t51v5c%2FAXvQsAzyZVNapxUrHIt4NxRhKJ72uICcxruyE8eRXlxIVNgeNP8ZEDcw7zZU1Zw%3D%3D"}
+
+	resp, err := q.DeleteMessageUsingReceiptHandle(msg.ReceiptHandle)
+	c.Assert(err, gocheck.IsNil)
+	req := testServer.WaitRequest()
+
+	c.Assert(req.Method, gocheck.Equals, "GET")
+	c.Assert(req.URL.Path, gocheck.Equals, "/123456789012/testQueue/")
+	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
+
+	c.Assert(resp.ResponseMetadata.RequestId, gocheck.Equals, "d6d86b7a-74d1-4439-b43f-196a1e29cd85")
+}
+
 func (s *S) TestReceiveMessage(c *gocheck.C) {
 	testServer.PrepareResponse(200, nil, TestReceiveMessageXmlOK)
 

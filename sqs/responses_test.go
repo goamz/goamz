@@ -73,7 +73,7 @@ var TestReceiveMessageXmlOK = `
       <Attribute>
         <Name>SenderId</Name>
         <Value>195004372649</Value>
-      </Attribute>                                                                                                                   
+      </Attribute>
       <Attribute>
         <Name>SentTimestamp</Name>
         <Value>1238099229000</Value>
@@ -116,6 +116,14 @@ var TestDeleteMessageBatchXmlOK = `
         <RequestId>d6f86b7a-74d1-4439-b43f-196a1e29cd85</RequestId>
     </ResponseMetadata>
 </DeleteMessageBatchResponse>
+`
+
+var TestDeleteMessageUsingReceiptXmlOK = `
+<DeleteMessageResponse>
+    <ResponseMetadata>
+        <RequestId>d6d86b7a-74d1-4439-b43f-196a1e29cd85</RequestId>
+    </ResponseMetadata>
+</DeleteMessageResponse>
 `
 
 var TestGetQueueAttributesXmlOK = `
