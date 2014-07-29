@@ -1,6 +1,6 @@
 # goamz - An Amazon Library for Go
 
-[![Build Status](http://travis-ci.org/goamz/goamz.png?branch=master)](https://travis-ci.org/goamz/goamz)
+[![Build Status](http://travis-ci.org/czgo/goamz.png?branch=master)](https://travis-ci.org/czgo/goamz)
 
 The _goamz_ package enables Go programs to interact with Amazon Web Services.
 
@@ -11,22 +11,22 @@ The API of AWS is very comprehensive, though, and goamz doesn't even scratch the
 The following packages are available at the moment:
 
 ```
-github.com/goamz/goamz/autoscaling
-github.com/goamz/goamz/aws
-github.com/goamz/goamz/cloudfront
-github.com/goamz/goamz/cloudwatch
-github.com/goamz/goamz/dynamodb
-github.com/goamz/goamz/ec2
-github.com/goamz/goamz/elb
-github.com/goamz/goamz/iam
-github.com/goamz/goamz/rds
-github.com/goamz/goamz/route53
-github.com/goamz/goamz/s3
-github.com/goamz/goamz/sqs
+github.com/czgo/goamz/autoscaling
+github.com/czgo/goamz/aws
+github.com/czgo/goamz/cloudfront
+github.com/czgo/goamz/cloudwatch
+github.com/czgo/goamz/dynamodb
+github.com/czgo/goamz/ec2
+github.com/czgo/goamz/elb
+github.com/czgo/goamz/iam
+github.com/czgo/goamz/rds
+github.com/czgo/goamz/route53
+github.com/czgo/goamz/s3
+github.com/czgo/goamz/sqs
 
-github.com/goamz/goamz/exp/mturk
-github.com/goamz/goamz/exp/sdb
-github.com/goamz/goamz/exp/sns
+github.com/czgo/goamz/exp/mturk
+github.com/czgo/goamz/exp/sdb
+github.com/czgo/goamz/exp/sns
 ```
 
 Packages under `exp/` are still in an experimental or unfinished/unpolished state.
@@ -35,14 +35,14 @@ Packages under `exp/` are still in an experimental or unfinished/unpolished stat
 
 The API documentation is currently available at:
 
-[http://godoc.org/github.com/goamz/goamz](http://godoc.org/github.com/goamz/goamz)
+[http://godoc.org/github.com/czgo/goamz](http://godoc.org/github.com/czgo/goamz)
 
 ## How to build and install goamz
 
 Just use `go get` with any of the available packages. For example:
 
-* `$ go get github.com/goamz/goamz/ec2`
-* `$ go get github.com/goamz/goamz/s3`
+* `$ go get github.com/czgo/goamz/ec2`
+* `$ go get github.com/czgo/goamz/s3`
 
 ## Running tests
 
@@ -52,7 +52,7 @@ To run tests, first install gocheck with:
 
 Then run go test as usual:
 
-`$ go test github.com/goamz/goamz/...`
+`$ go test github.com/czgo/goamz/...`
 
 _Note:_ running all tests with the command `go test ./...` will currently fail as tests do not tear down their HTTP listeners.
 
