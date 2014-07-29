@@ -1,7 +1,7 @@
 package aws_test
 
 import (
-	"github.com/goamz/goamz/aws"
+	"github.com/czgo/goamz/aws"
 	"github.com/motain/gocheck"
 	"os"
 	"strings"
