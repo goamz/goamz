@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goamz/goamz/aws"
-	"github.com/goamz/goamz/s3"
-	"github.com/goamz/goamz/testutil"
+	"github.com/czos/goamz/aws"
+	"github.com/czos/goamz/s3"
+	"github.com/czos/goamz/testutil"
 	"github.com/motain/gocheck"
 )
 

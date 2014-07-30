@@ -2,7 +2,7 @@ package testutil
 
 import (
 	"flag"
-	"github.com/goamz/goamz/aws"
+	"github.com/czos/goamz/aws"
 	"github.com/motain/gocheck"
 )
 
