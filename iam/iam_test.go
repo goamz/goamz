@@ -28,7 +28,7 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 	s.iam = iam.NewWithClient(auth, aws.Region{IAMEndpoint: testServer.URL}, testutil.DefaultClient)
 }
 
-func (s *S) TearDownSuite(c *C) {
+func (s *S) TearDownSuite(c *gocheck.C) {
 	testServer.Stop()
 }
 

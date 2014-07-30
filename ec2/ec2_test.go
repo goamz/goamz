@@ -31,7 +31,7 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 	)
 }
 
-func (s *S) TearDownSuite(c *C) {
+func (s *S) TearDownSuite(c *gocheck.C) {
 	testServer.Stop()
 }
 
