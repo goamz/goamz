@@ -1,11 +1,12 @@
 package ec2_test
 
 import (
+	"testing"
+
 	"github.com/czos/goamz/aws"
 	"github.com/czos/goamz/ec2"
 	"github.com/czos/goamz/testutil"
 	"github.com/motain/gocheck"
-	"testing"
 )
 
 func Test(t *testing.T) {
@@ -28,6 +29,10 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 		aws.Region{EC2Endpoint: testServer.URL},
 		testutil.DefaultClient,
 	)
+}
+
+func (s *S) TearDownSuite(c *gocheck.C) {
+	testServer.Stop()
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {

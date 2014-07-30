@@ -1,11 +1,12 @@
 package sdb_test
 
 import (
+	"testing"
+
 	"github.com/czos/goamz/aws"
 	"github.com/czos/goamz/exp/sdb"
 	"github.com/czos/goamz/testutil"
 	"github.com/motain/gocheck"
-	"testing"
 )
 
 func Test(t *testing.T) {
@@ -24,6 +25,10 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
 	s.sdb = sdb.New(auth, aws.Region{SDBEndpoint: testServer.URL})
+}
+
+func (s *S) TearDownSuite(c *C) {
+	testServer.Stop()
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {
