@@ -1,12 +1,13 @@
 package mturk_test
 
 import (
+	"net/url"
+	"testing"
+
 	"github.com/czos/goamz/aws"
 	"github.com/czos/goamz/exp/mturk"
 	"github.com/czos/goamz/testutil"
 	"github.com/motain/gocheck"
-	"net/url"
-	"testing"
 )
 
 func Test(t *testing.T) {
@@ -33,6 +34,10 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 		Auth: auth,
 		URL:  u,
 	}
+}
+
+func (s *S) TearDownSuite(c *C) {
+	testServer.Stop()
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {

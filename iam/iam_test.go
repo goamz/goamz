@@ -1,12 +1,13 @@
 package iam_test
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/czos/goamz/aws"
 	"github.com/czos/goamz/iam"
 	"github.com/czos/goamz/testutil"
 	"github.com/motain/gocheck"
-	"strings"
-	"testing"
 )
 
 func Test(t *testing.T) {
@@ -25,6 +26,10 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
 	s.iam = iam.NewWithClient(auth, aws.Region{IAMEndpoint: testServer.URL}, testutil.DefaultClient)
+}
+
+func (s *S) TearDownSuite(c *C) {
+	testServer.Stop()
 }
 
 func (s *S) TearDownTest(c *gocheck.C) {

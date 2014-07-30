@@ -33,6 +33,7 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 
 func (s *S) TearDownSuite(c *gocheck.C) {
 	s3.SetAttemptStrategy(nil)
+	testServer.Stop()
 }
 
 func (s *S) SetUpTest(c *gocheck.C) {
