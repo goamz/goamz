@@ -62,8 +62,8 @@ func (s *S) TestCreateTopic(c *gocheck.C) {
 func (s *S) TestDeleteTopic(c *gocheck.C) {
 	testServer.Response(200, nil, TestDeleteTopicXmlOK)
 
-	t := sns.Topic{nil, "arn:aws:sns:us-east-1:123456789012:My-Topic"}
-	resp, err := s.sns.DeleteTopic(t)
+	t := sns.Topic{s.sns, "arn:aws:sns:us-east-1:123456789012:My-Topic"}
+	resp, err := t.Delete()
 	req := testServer.WaitRequest()
 
 	c.Assert(req.Method, gocheck.Equals, "GET")
