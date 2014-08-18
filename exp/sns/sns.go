@@ -13,9 +13,6 @@
 // first-class package in goamz.
 package sns
 
-// BUG(niemeyer): Topic values in responses are not being initialized
-// properly, since they're supposed to reference *SNS.
-
 // BUG(niemeyer): Package needs documentation.
 
 import (
