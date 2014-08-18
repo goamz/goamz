@@ -20,8 +20,6 @@ package sns
 
 // BUG(niemeyer): Message.Message should be "Payload []byte"
 
-// BUG(niemeyer): Message.SNS must be dropped.
-
 import (
 	"encoding/xml"
 	"net/http"

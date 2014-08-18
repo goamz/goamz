@@ -9,10 +9,6 @@ type Topic struct {
 	TopicArn string
 }
 
-func (topic *Topic) Message(message [8192]byte, subject string) *Message {
-	return &Message{topic.SNS, topic, message, subject}
-}
-
 type ListTopicsResp struct {
 	Topics    []Topic `xml:"ListTopicsResult>Topics>member"`
 	NextToken string
@@ -70,10 +66,10 @@ func (sns *SNS) CreateTopic(Name string) (resp *CreateTopicResp, err error) {
 // Helper function for deleting a topic
 func (topic *Topic) Delete() (resp *DeleteTopicResp, err error) {
 	resp = &DeleteTopicResp{}
-  params := makeParams("DeleteTopic")
-  params["TopicArn"] = topic.TopicArn
-  err = sns.query(params, resp)
-  return
+	params := makeParams("DeleteTopic")
+	params["TopicArn"] = topic.TopicArn
+	err = sns.query(params, resp)
+	return
 }
 
 // GetTopicAttributes
