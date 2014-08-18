@@ -138,7 +138,6 @@ func (sns *SNS) ListSubscriptions(NextToken *string) (resp *ListSubscriptionsRes
 	if NextToken != nil {
 		params["NextToken"] = *NextToken
 	}
-
 	err = sns.query(params, resp)
 	return
 }
