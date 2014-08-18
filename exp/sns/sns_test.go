@@ -40,6 +40,7 @@ func (s *S) TestListTopicsOK(c *gocheck.C) {
 	c.Assert(req.URL.Path, gocheck.Equals, "/")
 	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
 
+	c.Assert(resp.Topics[0].SNS, gocheck.Equals, s.sns)
 	c.Assert(resp.ResponseMetadata.RequestId, gocheck.Equals, "bd10b26c-e30e-11e0-ba29-93c3aca2f103")
 	c.Assert(err, gocheck.IsNil)
 }
