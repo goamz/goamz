@@ -37,9 +37,43 @@ const debug = false
 type S3 struct {
 	aws.Auth
 	aws.Region
+
+	// ConnectTimeout is the maximum time a request attempt will
+	// wait for a successful connection to be made.
+	//
+	// A value of zero means no timeout.
 	ConnectTimeout time.Duration
-	ReadTimeout    time.Duration
-	private        byte // Reserve the right of using private data.
+
+	// ReadTimeout is the maximum time a request attempt will wait
+	// for an individual read to complete.
+	//
+	// A value of zero means no timeout.
+	ReadTimeout time.Duration
+
+	// WriteTimeout is the maximum time a request attempt will
+	// wait for an individual write to complete.
+	//
+	// A value of zero means no timeout.
+	WriteTimeout time.Duration
+
+	// RequestTimeout is the maximum time a request attempt can
+	// take before operations return a timeout error.
+	//
+	// This includes connection time, any redirects, and reading
+	// the response body. The timer remains running after the request
+	// is made so it can interrupt reading of the response data.
+	//
+	// A Timeout of zero means no timeout.
+	RequestTimeout time.Duration
+
+	// AttemptStrategy is the attempt strategy used for requests.
+	aws.AttemptStrategy
+
+	// Reserve the right of using private data.
+	private byte
+
+	// client used for requests
+	client *http.Client
 }
 
 // The Bucket type encapsulates operations with an S3 bucket.
@@ -81,7 +115,8 @@ type CopyObjectResult struct {
 	LastModified string
 }
 
-var attempts = aws.AttemptStrategy{
+// DefaultAttemptStrategy is the default AttemptStrategy used by S3 objects created by New.
+var DefaultAttemptStrategy = aws.AttemptStrategy{
 	Min:   5,
 	Total: 5 * time.Second,
 	Delay: 200 * time.Millisecond,
@@ -89,7 +124,7 @@ var attempts = aws.AttemptStrategy{
 
 // New creates a new S3.
 func New(auth aws.Auth, region aws.Region) *S3 {
-	return &S3{auth, region, 0, 0, 0}
+	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy}
 }
 
 // Bucket returns a Bucket with the given name.
@@ -154,7 +189,7 @@ func (b *Bucket) DelBucket() (err error) {
 		bucket: b.Name,
 		path:   "/",
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		err = b.S3.query(req, nil)
 		if !shouldRetry(err) {
 			break
@@ -215,7 +250,7 @@ func (b *Bucket) GetResponseWithHeaders(path string, headers map[string][]string
 	if err != nil {
 		return nil, err
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		resp, err := b.S3.run(req, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
@@ -239,7 +274,7 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 	if err != nil {
 		return
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		resp, err := b.S3.run(req, nil)
 
 		if shouldRetry(err) && attempt.HasNext() {
@@ -276,7 +311,7 @@ func (b *Bucket) Head(path string, headers map[string][]string) (*http.Response,
 		return nil, err
 	}
 
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		resp, err := b.S3.run(req, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
@@ -609,7 +644,7 @@ func (b *Bucket) List(prefix, delim, marker string, max int) (result *ListResp, 
 		params: params,
 	}
 	result = &ListResp{}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		err = b.S3.query(req, result)
 		if !shouldRetry(err) {
 			break
@@ -670,7 +705,7 @@ func (b *Bucket) Versions(prefix, delim, keyMarker string, versionIdMarker strin
 		params: params,
 	}
 	result = &VersionsResp{}
-	for attempt := attempts.Start(); attempt.Next(); {
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		err = b.S3.query(req, result)
 		if !shouldRetry(err) {
 			break
@@ -941,27 +976,36 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
 
-	c := http.Client{
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (c net.Conn, err error) {
-				deadline := time.Now().Add(s3.ReadTimeout)
-				if s3.ConnectTimeout > 0 {
+	if s3.client == nil {
+		s3.client = &http.Client{
+			Transport: &http.Transport{
+				Dial: func(netw, addr string) (c net.Conn, err error) {
 					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
-				} else {
-					c, err = net.Dial(netw, addr)
-				}
-				if err != nil {
+					if err != nil {
+						return
+					}
+
+					var deadline time.Time
+					if s3.RequestTimeout > 0 {
+						deadline = time.Now().Add(s3.RequestTimeout)
+						c.SetDeadline(deadline)
+					}
+
+					if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
+						c = &ioTimeoutConn{
+							TCPConn:         c.(*net.TCPConn),
+							readTimeout:     s3.ReadTimeout,
+							writeTimeout:    s3.WriteTimeout,
+							requestDeadline: deadline,
+						}
+					}
 					return
-				}
-				if s3.ReadTimeout > 0 {
-					err = c.SetDeadline(deadline)
-				}
-				return
+				},
 			},
-		},
+		}
 	}
 
-	hresp, err := c.Do(&hreq)
+	hresp, err := s3.client.Do(&hreq)
 	if err != nil {
 		return nil, err
 	}
@@ -1027,6 +1071,15 @@ func shouldRetry(err error) bool {
 	if err == nil {
 		return false
 	}
+	if e, ok := err.(*url.Error); ok {
+		// Transport returns this string if it detects a write on a connection which
+		// has already had an error
+		if e.Err.Error() == "http: can't write HTTP request on broken connection" {
+			return true
+		}
+		err = e.Err
+	}
+
 	switch err {
 	case io.ErrUnexpectedEOF, io.EOF:
 		return true
@@ -1036,7 +1089,7 @@ func shouldRetry(err error) bool {
 		return true
 	case *net.OpError:
 		switch e.Op {
-		case "read", "write":
+		case "read", "write", "WSARecv", "WSASend", "ConnectEx":
 			return true
 		}
 	case *Error:
@@ -1051,4 +1104,41 @@ func shouldRetry(err error) bool {
 func hasCode(err error, code string) bool {
 	s3err, ok := err.(*Error)
 	return ok && s3err.Code == code
+}
+
+// ioTimeoutConn is a net.Conn which sets a deadline for each Read or Write operation
+type ioTimeoutConn struct {
+	*net.TCPConn
+	readTimeout     time.Duration
+	writeTimeout    time.Duration
+	requestDeadline time.Time
+}
+
+func (c *ioTimeoutConn) deadline(timeout time.Duration) time.Time {
+	dl := time.Now().Add(timeout)
+	if c.requestDeadline.IsZero() || dl.Before(c.requestDeadline) {
+		return dl
+	}
+
+	return c.requestDeadline
+}
+
+func (c *ioTimeoutConn) Read(b []byte) (int, error) {
+	if c.readTimeout > 0 {
+		err := c.TCPConn.SetReadDeadline(c.deadline(c.readTimeout))
+		if err != nil {
+			return 0, err
+		}
+	}
+	return c.TCPConn.Read(b)
+}
+
+func (c *ioTimeoutConn) Write(b []byte) (int, error) {
+	if c.writeTimeout > 0 {
+		err := c.TCPConn.SetWriteDeadline(c.deadline(c.writeTimeout))
+		if err != nil {
+			return 0, err
+		}
+	}
+	return c.TCPConn.Write(b)
 }
