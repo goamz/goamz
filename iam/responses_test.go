@@ -161,3 +161,33 @@ var AddUserToGroupExample = `
    </ResponseMetadata>
 </AddUserToGroupResponse>
 `
+
+var ListAccountAliasesExample = `
+<ListAccountAliasesResponse>
+  <ListAccountAliasesResult>
+    <IsTruncated>false</IsTruncated>
+    <AccountAliases>
+      <member>foocorporation</member>
+    </AccountAliases>
+  </ListAccountAliasesResult>
+  <ResponseMetadata>
+    <RequestId>c5a076e9-f1b0-11df-8fbe-45274EXAMPLE</RequestId>
+  </ResponseMetadata>
+</ListAccountAliasesResponse>
+`
+
+var CreateAccountAliasExample = `
+<CreateAccountAliasResponse>
+  <ResponseMetadata>
+    <RequestId>36b5db08-f1b0-11df-8fbe-45274EXAMPLE</RequestId>
+  </ResponseMetadata>
+</CreateAccountAliasResponse>
+`
+
+var DeleteAccountAliasExample = `
+<DeleteAccountAliasResponse>
+  <ResponseMetadata>
+    <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+  </ResponseMetadata>
+</DeleteAccountAliasResponse>
+`

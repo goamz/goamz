@@ -1,12 +1,13 @@
 package iam_test
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/iam"
 	"github.com/goamz/goamz/testutil"
 	"github.com/motain/gocheck"
-	"strings"
-	"testing"
 )
 
 func Test(t *testing.T) {
@@ -284,6 +285,36 @@ func (s *S) TestAddUserToGroup(c *gocheck.C) {
 	c.Assert(values.Get("Action"), gocheck.Equals, "AddUserToGroup")
 	c.Assert(values.Get("GroupName"), gocheck.Equals, "Admins")
 	c.Assert(values.Get("UserName"), gocheck.Equals, "admin1")
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+}
+
+func (s *S) TestListAccountAliases(c *gocheck.C) {
+	testServer.Response(200, nil, ListAccountAliasesExample)
+	resp, err := s.iam.ListAccountAliases()
+	values := testServer.WaitRequest().URL.Query()
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListAccountAliases")
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.AccountAliases[0], gocheck.Equals, "foocorporation")
+	c.Assert(resp.RequestId, gocheck.Equals, "c5a076e9-f1b0-11df-8fbe-45274EXAMPLE")
+}
+
+func (s *S) TestCreateAccountAlias(c *gocheck.C) {
+	testServer.Response(200, nil, CreateAccountAliasExample)
+	resp, err := s.iam.CreateAccountAlias("foobaz")
+	values := testServer.WaitRequest().URL.Query()
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateAccountAlias")
+	c.Assert(values.Get("AccountAlias"), gocheck.Equals, "foobaz")
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "36b5db08-f1b0-11df-8fbe-45274EXAMPLE")
+}
+
+func (s *S) TestDeleteAccountAlias(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteAccountAliasExample)
+	resp, err := s.iam.DeleteAccountAlias("foobaz")
+	values := testServer.WaitRequest().URL.Query()
+	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteAccountAlias")
+	c.Assert(values.Get("AccountAlias"), gocheck.Equals, "foobaz")
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(resp.RequestId, gocheck.Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
 }

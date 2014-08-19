@@ -4,12 +4,13 @@ package iam
 
 import (
 	"encoding/xml"
-	"github.com/goamz/goamz/aws"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 // The IAM type encapsulates operations operations with the IAM endpoint.
@@ -422,6 +423,72 @@ func (iam *IAM) AddUserToGroup(name, group string) (*AddUserToGroupResp, error) 
 		"GroupName": group,
 		"UserName":  name}
 	resp := new(AddUserToGroupResp)
+	if err := iam.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Response for a ListAccountAliases request.
+//
+// See http://goo.gl/MMN79v for more details.
+type ListAccountAliasesResp struct {
+	AccountAliases []string `xml:"ListAccountAliasesResult>AccountAliases>member"`
+	RequestId      string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListAccountAliases lists the account aliases associated with the account
+//
+// See http://goo.gl/MMN79v for more details.
+func (iam *IAM) ListAccountAliases() (*ListAccountAliasesResp, error) {
+	params := map[string]string{
+		"Action": "ListAccountAliases",
+	}
+	resp := new(ListAccountAliasesResp)
+	if err := iam.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Response for a CreateAccountAlias request.
+//
+// See http://goo.gl/oU5C4H for more details.
+type CreateAccountAliasResp struct {
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// CreateAccountAlias creates an alias for your AWS account.
+//
+// See http://goo.gl/oU5C4H for more details.
+func (iam *IAM) CreateAccountAlias(alias string) (*CreateAccountAliasResp, error) {
+	params := map[string]string{
+		"Action":       "CreateAccountAlias",
+		"AccountAlias": alias,
+	}
+	resp := new(CreateAccountAliasResp)
+	if err := iam.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Response for a DeleteAccountAlias request.
+//
+// See http://goo.gl/hKalgg for more details.
+type DeleteAccountAliasResp struct {
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// DeleteAccountAlias deletes the specified AWS account alias.
+//
+// See http://goo.gl/hKalgg for more details.
+func (iam *IAM) DeleteAccountAlias(alias string) (*DeleteAccountAliasResp, error) {
+	params := map[string]string{
+		"Action":       "DeleteAccountAlias",
+		"AccountAlias": alias,
+	}
+	resp := new(DeleteAccountAliasResp)
 	if err := iam.query(params, resp); err != nil {
 		return nil, err
 	}
