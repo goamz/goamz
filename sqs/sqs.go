@@ -21,6 +21,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -409,23 +410,25 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 	params["Version"] = "2011-10-01"
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	var url_ *url.URL
-
 	var path string
-	if queueUrl != "" && len(queueUrl) > len(s.Region.SQSEndpoint) {
+
+	// fully qualified queueUrl
+	if strings.HasPrefix(queueUrl, "http") {
 		url_, err = url.Parse(queueUrl)
 		path = queueUrl[len(s.Region.SQSEndpoint):]
+		// non-qualified queueUrl
+	} else if strings.HasPrefix(queueUrl, "/") {
+		url_, err = url.Parse(s.Region.SQSEndpoint + queueUrl)
+		path = queueUrl
+		// everything else uses the SQSEndpoint by itself
 	} else {
 		url_, err = url.Parse(s.Region.SQSEndpoint)
 		path = "/"
 	}
+
 	if err != nil {
 		return err
 	}
-
-	//url_, err := url.Parse(s.Region.SQSEndpoint)
-	//if err != nil {
-	//	return err
-	//}
 
 	if s.Auth.Token() != "" {
 		params["SecurityToken"] = s.Auth.Token()
