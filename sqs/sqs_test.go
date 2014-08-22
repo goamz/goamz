@@ -116,6 +116,25 @@ func (s *S) TestSendMessage(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 }
 
+func (s *S) TestSendMessageRelativePath(c *gocheck.C) {
+	testServer.PrepareResponse(200, nil, TestSendMessageXmlOK)
+
+	q := &Queue{s.sqs, "/123456789012/testQueue/"}
+	resp, err := q.SendMessage("This is a test message")
+	req := testServer.WaitRequest()
+
+	c.Assert(req.Method, gocheck.Equals, "GET")
+	c.Assert(req.URL.Path, gocheck.Equals, "/123456789012/testQueue/")
+	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
+
+	msg := "This is a test message"
+	var h hash.Hash = md5.New()
+	h.Write([]byte(msg))
+	c.Assert(resp.MD5, gocheck.Equals, fmt.Sprintf("%x", h.Sum(nil)))
+	c.Assert(resp.Id, gocheck.Equals, "5fea7756-0ea4-451a-a703-a558b933e274")
+	c.Assert(err, gocheck.IsNil)
+}
+
 func (s *S) TestSendMessageBatch(c *gocheck.C) {
 	testServer.PrepareResponse(200, nil, TestSendMessageBatchXmlOk)
 
