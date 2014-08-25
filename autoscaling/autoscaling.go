@@ -9,10 +9,11 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
-const debug = false
+const debug = true
 
 var timeNow = time.Now
 
@@ -53,20 +54,33 @@ func New(auth aws.Auth, region aws.Region) *AutoScaling {
 
 func (as *AutoScaling) query(params map[string]string, resp interface{}) error {
 	params["Version"] = "2011-01-01"
-	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
-	endpoint, err := url.Parse(as.Region.AutoScalingEndpoint)
+	data := strings.NewReader(multimap(params).Encode())
+
+	hreq, err := http.NewRequest("POST", as.Region.AutoScalingEndpoint+"/", data)
 	if err != nil {
 		return err
 	}
-	sign(as.Auth, "GET", endpoint.Path, params, endpoint.Host)
-	endpoint.RawQuery = multimap(params).Encode()
+
+	hreq.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+
+	token := as.Auth.Token()
+	if token != "" {
+		hreq.Header.Set("X-Amz-Security-Token", token)
+	}
+
+	signer := aws.NewV4Signer(as.Auth, "autoscaling", as.Region)
+	signer.Sign(hreq)
+
 	if debug {
-		log.Printf("get { %v } -> {\n", endpoint.String())
+		log.Printf("%v -> {\n", hreq)
 	}
-	r, err := http.Get(endpoint.String())
+	r, err := http.DefaultClient.Do(hreq)
+
 	if err != nil {
+		log.Printf("Error calling Amazon %v", err)
 		return err
 	}
+
 	defer r.Body.Close()
 
 	if debug {
