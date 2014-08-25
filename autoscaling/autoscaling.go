@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const debug = true
+const debug = false
 
 var timeNow = time.Now
 
@@ -133,32 +133,91 @@ func buildError(r *http.Response) error {
 // ----------------------------------------------------------------------------
 // Auto Scaling base types and related functions.
 
-type AutoScalingGroup struct {
-	AutoScalingGroupARN     string     `xml:"AutoScalingGroupARN"`
-	AutoScalingGroupName    string     `xml:"AutoScalingGroupName"`
-	AvailabilityZones       []string   `xml:"AvailabilityZones>member"`
-	CreatedTime             string     `xml:"CreatedTime"`
-	DefaultCooldown         int64      `xml:"DefaultCooldown"`
-	DesiredCapacity         int64      `xml:"DesiredCapacity"`
-	HealthCheckGracePeriod  int64      `xml:"HealthCheckGracePeriod"`
-	HealthCheckType         string     `xml:"HealthCheckType"`
-	Instances               []Instance `xml:"Instances>member"`
-	LaunchConfigurationName string     `xml:"LaunchConfigurationName"`
-	LoadBalancerNames       []string   `xml:"LoadBalancerNames>member"`
-	MaxSize                 int64      `xml:"MaxSize"`
-	MinSize                 int64      `xml:"MinSize"`
-	TerminationPolicies     []string   `xml:"TerminationPolicies>member"`
-	VPCZoneIdentifier       string     `xml:"VPCZoneIdentifier"`
-	Tags                    []Tag      `xml:"Tags"`
-	SuspendedProcesses      []string   `xml:"SuspendedProcesses>member"`
+// EnabledMetric encapsulates a metric associated with an Auto Scaling Group
+//
+// See http://goo.gl/hXiH17 for more details
+type EnabledMetric struct {
+	Granularity string `xml:"Granularity"` // The granularity of the enabled metric.
+	Metric      string `xml:"Metric"`      // The name of the enabled metric.
 }
 
+// Instance encapsulates an instance type as returned by the Auto Scaling API
+//
+// See http://goo.gl/NwBxGh and http://goo.gl/OuoqhS for more details.
 type Instance struct {
-	InstanceId              string `xml:"InstanceId"`
-	HealthStatus            string `xml:"HealthStatus"`
+	// General instance information
+	AutoScalingGroupName    string `xml:"AutoScalingGroupName"`
 	AvailabilityZone        string `xml:"AvailabilityZone"`
+	HealthStatus            string `xml:"HealthStatus"`
+	InstanceId              string `xml:"InstanceId"`
 	LaunchConfigurationName string `xml:"LaunchConfigurationName"`
 	LifecycleState          string `xml:"LifecycleState"`
+}
+
+// SuspenedProcess encapsulates an Auto Scaling process that has been suspended
+//
+// See http://goo.gl/iObPgF for more details
+type SuspendedProcess struct {
+	ProcessName      string `xml:"ProcessName"`
+	SuspensionReason string `xml:"SuspensionReason"`
+}
+
+// Tag encapsulates tag applied to an Auto Scaling group.
+//
+// See http://goo.gl/MG1hqs for more details
+type Tag struct {
+	Key               string `xml:"Key"`
+	PropagateAtLaunch bool   `xml:"PropagateAtLaunch"` // Specifies whether the new tag will be applied to instances launched after the tag is created
+	ResourceId        string `xml:"ResourceId"`        // the name of the Auto Scaling group - not required if creating ASG
+	ResourceType      string `xml:"ResourceType"`      // currently only auto-scaling-group is supported - not required if creating ASG
+	Value             string `xml:"Value"`
+}
+
+// AutoScalingGroup encapsulates an Auto Scaling Group object
+//
+// See http://goo.gl/fJdYhg for more details.
+type AutoScalingGroup struct {
+	AutoScalingGroupARN     string             `xml:"AutoScalingGroupARN"`
+	AutoScalingGroupName    string             `xml:"AutoScalingGroupName"`
+	AvailabilityZones       []string           `xml:"AvailabilityZones>member"`
+	CreatedTime             time.Time          `xml:"CreatedTime"`
+	DefaultCooldown         int64              `xml:"DefaultCooldown"`
+	DesiredCapacity         int64              `xml:"DesiredCapacity"`
+	EnabledMetrics          []EnabledMetric    `xml:"EnabledMetric>member"`
+	HealthCheckGracePeriod  int64              `xml:"HealthCheckGracePeriod"`
+	HealthCheckType         string             `xml:"HealthCheckType"`
+	Instances               []Instance         `xml:"Instances>member"`
+	LaunchConfigurationName string             `xml:"LaunchConfigurationName"`
+	LoadBalancerNames       []string           `xml:"LoadBalancerNames>member"`
+	MaxSize                 int64              `xml:"MaxSize"`
+	MinSize                 int64              `xml:"MinSize"`
+	PlacementGroup          string             `xml:"PlacementGroup"`
+	Status                  string             `xml:"Status"`
+	SuspendedProcesses      []SuspendedProcess `xml:"SuspendedProcesses>member"`
+	Tags                    []Tag              `xml:"Tags>member"`
+	TerminationPolicies     []string           `xml:"TerminationPolicies>member"`
+	VPCZoneIdentifier       string             `xml:"VPCZoneIdentifier"`
+}
+
+// CreateAutoScalingGroupParams type encapsulates options for the respective request.
+//
+// See http://goo.gl/3S13Bv for more details.
+type CreateAutoScalingGroupParams struct {
+	AutoScalingGroupName    string
+	AvailabilityZones       []string
+	DefaultCooldown         int64
+	DesiredCapacity         int64
+	HealthCheckGracePeriod  int64
+	HealthCheckType         string
+	InstanceId              string
+	LaunchConfigurationName string
+	LoadBalancerNames       []string
+	MaxSize                 int64
+	MinSize                 int64
+	PlacementGroup          string
+	Tags                    []Tag
+	TerminationPolicies     []string
+	VPCZoneIdentifier       string
 }
 
 type LaunchConfiguration struct {
@@ -174,20 +233,6 @@ type LaunchConfiguration struct {
 	KeyName                  string   `xml:"KeyName"`
 	UserData                 string   `xml:"UserData"`
 	InstanceMonitoring       string   `xml:"InstanceMonitoring"`
-}
-
-type Tag struct {
-	Key               string `xml:"Key"`
-	PropagateAtLaunch bool   `xml:"PropagateAtLaunch"`
-	ResourceId        string `xml:"ResourceId"`
-	ResourceType      string `xml:"ResourceType"`
-	Value             string `xml:"Value"`
-}
-
-// AutoScalingGroupsResp defines the basic response structure.
-type AutoScalingGroupsResp struct {
-	RequestId         string             `xml:"ResponseMetadata>RequestId"`
-	AutoScalingGroups []AutoScalingGroup `xml:"DescribeAutoScalingGroupsResult>AutoScalingGroups>member"`
 }
 
 // LaunchConfigurationResp defines the basic response structure for launch configuration
@@ -216,58 +261,113 @@ type SetDesiredCapacityRequestParams struct {
 	HonorCooldown        bool
 }
 
-// DescribeAutoScalingGroups returns details about the groups provided in the list. If the list is nil
-// information is returned about all the groups in the region.
-func (as *AutoScaling) DescribeAutoScalingGroups(groupnames []string) (
-	resp *AutoScalingGroupsResp, err error) {
-	params := makeParams("DescribeAutoScalingGroups")
-	addParamsList(params, "AutoScalingGroupNames.member", groupnames)
-	resp = &AutoScalingGroupsResp{}
-	err = as.query(params, resp)
-	if err != nil {
+// CreateAutoScalingGroup creates an Auto Scaling Group on AWS
+//
+// Required params: AutoScalingGroupName, MinSize, MaxSize
+//
+// See http://goo.gl/3S13Bv for more details.
+func (as *AutoScaling) CreateAutoScalingGroup(options *CreateAutoScalingGroupParams) (
+	resp *SimpleResp, err error) {
+	params := makeParams("CreateAutoScalingGroup")
+
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["MaxSize"] = strconv.FormatInt(options.MaxSize, 10)
+	params["MinSize"] = strconv.FormatInt(options.MinSize, 10)
+	params["DesiredCapacity"] = strconv.FormatInt(options.DesiredCapacity, 10)
+
+	if options.DefaultCooldown > 0 {
+		params["DefaultCooldown"] = strconv.FormatInt(options.DefaultCooldown, 10)
+	}
+	if options.HealthCheckGracePeriod > 0 {
+		params["HealthCheckGracePeriod"] = strconv.FormatInt(options.HealthCheckGracePeriod, 10)
+	}
+	if options.HealthCheckType != "" {
+		params["HealthCheckType"] = options.HealthCheckType
+	}
+	if options.InstanceId != "" {
+		params["InstanceId"] = options.InstanceId
+	}
+	if options.LaunchConfigurationName != "" {
+		params["LaunchConfigurationName"] = options.LaunchConfigurationName
+	}
+	if options.PlacementGroup != "" {
+		params["PlacementGroup"] = options.PlacementGroup
+	}
+	if options.VPCZoneIdentifier != "" {
+		params["VPCZoneIdentifier"] = options.VPCZoneIdentifier
+	}
+	if len(options.LoadBalancerNames) > 0 {
+		addParamsList(params, "LoadBalancerNames.member", options.LoadBalancerNames)
+	}
+	if len(options.AvailabilityZones) > 0 {
+		addParamsList(params, "AvailabilityZones.member", options.AvailabilityZones)
+	}
+	if len(options.TerminationPolicies) > 0 {
+		addParamsList(params, "TerminationPolicies.member", options.TerminationPolicies)
+	}
+	for i, t := range options.Tags {
+		key := "Tags.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "Key")] = t.Key
+		params[fmt.Sprintf(key, index, "Value")] = t.Value
+		params[fmt.Sprintf(key, index, "PropagateAtLaunch")] = strconv.FormatBool(t.PropagateAtLaunch)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
 }
 
-// CreateAutoScalingGroup creates a new autoscaling group.
-func (as *AutoScaling) CreateAutoScalingGroup(ag AutoScalingGroup) (
-	resp *AutoScalingGroupsResp, err error) {
-	resp = &AutoScalingGroupsResp{}
-	params := makeParams("CreateAutoScalingGroup")
-	params["AutoScalingGroupName"] = ag.AutoScalingGroupName
-	params["MaxSize"] = strconv.FormatInt(ag.MaxSize, 10)
-	params["MinSize"] = strconv.FormatInt(ag.MinSize, 10)
-	params["LaunchConfigurationName"] = ag.LaunchConfigurationName
-	addParamsList(params, "AvailabilityZones.member", ag.AvailabilityZones)
-	if len(ag.LoadBalancerNames) > 0 {
-		addParamsList(params, "LoadBalancerNames.member", ag.LoadBalancerNames)
-	}
-	if ag.DefaultCooldown > 0 {
-		params["DefaultCooldown"] = strconv.FormatInt(ag.DefaultCooldown, 10)
-	}
-	if ag.DesiredCapacity > 0 {
-		params["DesiredCapacity"] = strconv.FormatInt(ag.DesiredCapacity, 10)
-	}
-	if ag.HealthCheckGracePeriod > 0 {
-		params["HealthCheckGracePeriod"] = strconv.FormatInt(ag.HealthCheckGracePeriod, 10)
-	}
-	if ag.HealthCheckType == "ELB" {
-		params["HealthCheckType"] = ag.HealthCheckType
-	}
-	if len(ag.VPCZoneIdentifier) > 0 {
-		params["VPCZoneIdentifier"] = ag.VPCZoneIdentifier
-	}
-	if len(ag.TerminationPolicies) > 0 {
-		addParamsList(params, "TerminationPolicies.member", ag.TerminationPolicies)
-	}
-	// TODO(JP) : Implement Tags
-	//if len(ag.Tags) > 0 {
-	//	addParamsList(params, "Tags", ag.Tags)
-	//}
+// DeleteAutoScalingGroup deletes an Auto Scaling Group
+//
+// See http://goo.gl/us7VSffor for more details.
+func (as *AutoScaling) DeleteAutoScalingGroup(asgName string, forceDelete bool) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteAutoScalingGroup")
+	params["AutoScalingGroupName"] = asgName
 
-	err = as.query(params, resp)
-	if err != nil {
+	if forceDelete {
+		params["ForceDelete"] = "true"
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+//DescribeAutoScalingGroups response wrapper
+//
+//See http://goo.gl/nW74Ut for more details.
+type DescribeAutoScalingGroupsResp struct {
+	AutoScalingGroups []AutoScalingGroup `xml:"DescribeAutoScalingGroupsResult>AutoScalingGroups>member"`
+	NextToken         string             `xml:"DescribeAutoScalingGroupsResult>NextToken"`
+	RequestId         string             `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeAutoScalingGroups - Returns a full description of each Auto Scaling group in the given list
+// If no autoscaling groups are provided, returns the details of all autoscaling groups
+// Supports pagination by using the returned "NextToken" parameter for subsequent calls
+//
+// See http://goo.gl/nW74Ut for more details.
+func (as *AutoScaling) DescribeAutoScalingGroups(names []string, maxRecords int, nextToken string) (
+	resp *DescribeAutoScalingGroupsResp, err error) {
+	params := makeParams("DescribeAutoScalingGroups")
+
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	addParamsList(params, "AutoScalingGroupNames.member", names)
+
+	resp = new(DescribeAutoScalingGroupsResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -325,7 +425,7 @@ func (as *AutoScaling) CreateLaunchConfiguration(lc LaunchConfiguration) (
 //
 // If you suspend either of the two primary processes (Launch or Terminate), this can prevent other
 // process types from functioning properly.
-func (as *AutoScaling) SuspendProcesses(ag AutoScalingGroup, processes []string) (
+func (as *AutoScaling) SuspendProcesses(ag *AutoScalingGroup, processes []string) (
 	resp *SimpleResp, err error) {
 	resp = &SimpleResp{}
 	params := makeParams("SuspendProcesses")
@@ -342,7 +442,7 @@ func (as *AutoScaling) SuspendProcesses(ag AutoScalingGroup, processes []string)
 
 // ResumeProcesses resumes the scaling processes for the scaling group. If no processes are
 // provided, all processes are resumed.
-func (as *AutoScaling) ResumeProcesses(ag AutoScalingGroup, processes []string) (
+func (as *AutoScaling) ResumeProcesses(ag *AutoScalingGroup, processes []string) (
 	resp *SimpleResp, err error) {
 	resp = &SimpleResp{}
 	params := makeParams("ResumeProcesses")
@@ -357,41 +457,69 @@ func (as *AutoScaling) ResumeProcesses(ag AutoScalingGroup, processes []string) 
 	return resp, nil
 }
 
+// UpdateAutoScalingGroupParams type encapsulates options for the respective request.
+//
+// See http://goo.gl/rqrmxy for more details.
+type UpdateAutoScalingGroupParams struct {
+	AutoScalingGroupName    string
+	AvailabilityZones       []string
+	DefaultCooldown         int64
+	DesiredCapacity         int64
+	HealthCheckGracePeriod  int64
+	HealthCheckType         string
+	InstanceId              string
+	LaunchConfigurationName string
+	MaxSize                 int64
+	MinSize                 int64
+	PlacementGroup          string
+	TerminationPolicies     []string
+	VPCZoneIdentifier       string
+}
+
 // UpdateAutoScalingGroup updates the scaling group.
 //
 // To update an auto scaling group with a launch configuration that has the InstanceMonitoring
 // flag set to False, you must first ensure that collection of group metrics is disabled.
 // Otherwise calls to UpdateAutoScalingGroup will fail.
-func (as *AutoScaling) UpdateAutoScalingGroup(ag AutoScalingGroup) (resp *SimpleResp, err error) {
-	resp = &SimpleResp{}
+func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupParams) (resp *SimpleResp, err error) {
 	params := makeParams("UpdateAutoScalingGroup")
-	params["AutoScalingGroupName"] = ag.AutoScalingGroupName
-	addParamsList(params, "AvailabilityZones.member", ag.AvailabilityZones)
-	if ag.DefaultCooldown > 0 {
-		params["DefaultCooldown"] = strconv.FormatInt(ag.DefaultCooldown, 10)
+
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["MaxSize"] = strconv.FormatInt(options.MaxSize, 10)
+	params["MinSize"] = strconv.FormatInt(options.MinSize, 10)
+	params["DesiredCapacity"] = strconv.FormatInt(options.DesiredCapacity, 10)
+
+	if options.DefaultCooldown > 0 {
+		params["DefaultCooldown"] = strconv.FormatInt(options.DefaultCooldown, 10)
 	}
-	params["DesiredCapacity"] = strconv.FormatInt(ag.DesiredCapacity, 10)
-	if ag.HealthCheckGracePeriod > 0 {
-		params["HealthCheckGracePeriod"] = strconv.FormatInt(ag.HealthCheckGracePeriod, 10)
+	if options.HealthCheckGracePeriod > 0 {
+		params["HealthCheckGracePeriod"] = strconv.FormatInt(options.HealthCheckGracePeriod, 10)
 	}
-	if ag.HealthCheckType == "ELB" {
-		params["HealthCheckType"] = ag.HealthCheckType
+	if options.HealthCheckType != "" {
+		params["HealthCheckType"] = options.HealthCheckType
 	}
-	params["LaunchConfigurationName"] = ag.LaunchConfigurationName
-	if ag.MaxSize > 0 {
-		params["MaxSize"] = strconv.FormatInt(ag.MaxSize, 10)
+	if options.InstanceId != "" {
+		params["InstanceId"] = options.InstanceId
 	}
-	if ag.MinSize > 0 {
-		params["MinSize"] = strconv.FormatInt(ag.MinSize, 10)
+	if options.LaunchConfigurationName != "" {
+		params["LaunchConfigurationName"] = options.LaunchConfigurationName
 	}
-	if len(ag.TerminationPolicies) > 0 {
-		addParamsList(params, "TerminationPolicies.member", ag.TerminationPolicies)
+	if options.PlacementGroup != "" {
+		params["PlacementGroup"] = options.PlacementGroup
 	}
-	if len(ag.VPCZoneIdentifier) > 0 {
-		params["VPCZoneIdentifier"] = ag.VPCZoneIdentifier
+	if options.VPCZoneIdentifier != "" {
+		params["VPCZoneIdentifier"] = options.VPCZoneIdentifier
 	}
-	err = as.query(params, resp)
-	if err != nil {
+
+	if len(options.TerminationPolicies) > 0 {
+		addParamsList(params, "TerminationPolicies.member", options.TerminationPolicies)
+	}
+	if len(options.AvailabilityZones) > 0 {
+		addParamsList(params, "AvailabilityZones.member", options.AvailabilityZones)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
