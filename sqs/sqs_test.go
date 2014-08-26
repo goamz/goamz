@@ -67,11 +67,11 @@ func (s *S) TestCreateQueueWithAttributes(c *gocheck.C) {
 		prefix := fmt.Sprintf("Attribute.%d.", i)
 		attr := req.FormValue(prefix + "Name")
 		value := req.FormValue(prefix + "Value")
-		switch {
-		case attr == "ReceiveMessageWaitTimeSeconds":
+		switch attr {
+		case "ReceiveMessageWaitTimeSeconds":
 			c.Assert(value, gocheck.DeepEquals, "20")
 			receiveMessageWaitSet = true
-		case attr == "VisibilityTimeout":
+		case "VisibilityTimeout":
 			c.Assert(value, gocheck.DeepEquals, "240")
 			visibilityTimeoutSet = true
 		}
