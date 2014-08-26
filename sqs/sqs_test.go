@@ -60,10 +60,24 @@ func (s *S) TestCreateQueueWithAttributes(c *gocheck.C) {
 	req := testServer.WaitRequest()
 
 	// TestCreateQueue() tests the core functionality, just check the timeout in this test
-	c.Assert(req.Form["Attribute.1.Name"], gocheck.DeepEquals, []string{"ReceiveMessageWaitTimeSeconds"})
-	c.Assert(req.Form["Attribute.1.Value"], gocheck.DeepEquals, []string{"20"})
-	c.Assert(req.Form["Attribute.2.Name"], gocheck.DeepEquals, []string{"VisibilityTimeout"})
-	c.Assert(req.Form["Attribute.2.Value"], gocheck.DeepEquals, []string{"240"})
+	var receiveMessageWaitSet bool
+	var visibilityTimeoutSet bool
+
+	for i := 1; i <= 2; i++ {
+		prefix := fmt.Sprintf("Attribute.%d.", i)
+		attr := req.FormValue(prefix + "Name")
+		value := req.FormValue(prefix + "Value")
+		switch {
+		case attr == "ReceiveMessageWaitTimeSeconds":
+			c.Assert(value, gocheck.DeepEquals, "20")
+			receiveMessageWaitSet = true
+		case attr == "VisibilityTimeout":
+			c.Assert(value, gocheck.DeepEquals, "240")
+			visibilityTimeoutSet = true
+		}
+	}
+	c.Assert(receiveMessageWaitSet, gocheck.Equals, true)
+	c.Assert(visibilityTimeoutSet, gocheck.Equals, true)
 }
 
 func (s *S) TestListQueues(c *gocheck.C) {
