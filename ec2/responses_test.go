@@ -884,4 +884,3 @@ var DescribeReservedInstancesExample = `
    </reservedInstancesSet> 
 </DescribeReservedInstancesResponse>
 `
-
