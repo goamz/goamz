@@ -268,6 +268,31 @@ func (s *S) TestChangeMessageVisibility(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 }
 
+func (s *S) TestChangeMessageVisibilityBatch(c *gocheck.C) {
+	testServer.PrepareResponse(200, nil, TestReceiveMessageXmlOK)
+
+	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
+
+	resp1, err := q.ReceiveMessage(1)
+	req := testServer.WaitRequest()
+
+	testServer.PrepareResponse(200, nil, TestChangeMessageVisibilityBatchXmlOK)
+
+	resp, err := q.ChangeMessageVisibilityBatch(resp1.Messages, 50)
+	req = testServer.WaitRequest()
+
+	c.Assert(req.Method, gocheck.Equals, "GET")
+	c.Assert(req.URL.Path, gocheck.Equals, "/123456789012/testQueue/")
+	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
+	c.Assert(req.FormValue("ChangeMessageVisibilityBatchRequestEntry.1.Id"), gocheck.Equals, "5fea7756-0ea4-451a-a703-a558b933e274")
+	c.Assert(req.FormValue("ChangeMessageVisibilityBatchRequestEntry.1.ReceiptHandle"), gocheck.Equals, "MbZj6wDWli+JvwwJaBV+3dcjk2YW2vA3+STFFljTM8tJJg6HRG6PYSasuWXPJB+CwLj1FjgXUv1uSj1gUPAWV66FU/WeR4mq2OKpEGYWbnLmpRCJVAyeMjeU5ZBdtcQ+QEauMZc8ZRv37sIW2iJKq3M9MFx1YvV11A2x/KSbkJ0=")
+	c.Assert(req.FormValue("ChangeMessageVisibilityBatchRequestEntry.1.VisibilityTimeout"), gocheck.Equals, "50")
+
+	c.Assert(resp.ChangeMessageVisibilityBatchResult[0].Id, gocheck.Equals, "5fea7756-0ea4-451a-a703-a558b933e274")
+	c.Assert(resp.ResponseMetadata.RequestId, gocheck.Equals, "6a7a282a-d013-4a59-aba9-335b0fa48bed")
+	c.Assert(err, gocheck.IsNil)
+}
+
 func (s *S) TestGetQueueAttributes(c *gocheck.C) {
 	testServer.PrepareResponse(200, nil, TestGetQueueAttributesXmlOK)
 

@@ -366,6 +366,44 @@ func (q *Queue) SendMessageBatchString(msgList []string) (resp *SendMessageBatch
 	return
 }
 
+type ChangeMessageVisibilityBatchResponse struct {
+	ChangeMessageVisibilityBatchResult []struct {
+		Id          string
+		SenderFault bool
+		Code        string
+		Message     string
+	} `xml:"ChangeMessageVisibilityBatchResult>ChangeMessageVisibilityBatchResultEntry"`
+	ResponseMetadata ResponseMetadata
+}
+
+/* ChangeMessageVisibilityBatch */
+func (q *Queue) ChangeMessageVisibilityBatch(msgList []Message, duration int) (resp *ChangeMessageVisibilityBatchResponse, err error) {
+	resp = &ChangeMessageVisibilityBatchResponse{}
+	params := makeParams("ChangeMessageVisibilityBatch")
+
+	for idx := range msgList {
+		params[fmt.Sprintf("ChangeMessageVisibilityBatchRequestEntry.%d.Id", idx+1)] = msgList[idx].MessageId
+		params[fmt.Sprintf("ChangeMessageVisibilityBatchRequestEntry.%d.ReceiptHandle", idx+1)] = msgList[idx].ReceiptHandle
+		params[fmt.Sprintf("ChangeMessageVisibilityBatchRequestEntry.%d.VisibilityTimeout", idx+1)] = strconv.Itoa(duration)
+	}
+
+	err = q.SQS.query(q.Url, params, resp)
+
+	var messagesWithErrors int
+
+	for idx := range resp.ChangeMessageVisibilityBatchResult {
+		if resp.ChangeMessageVisibilityBatchResult[idx].SenderFault {
+			messagesWithErrors++
+		}
+	}
+
+	if messagesWithErrors > 0 {
+		log.Printf("%d Messages have not had their visibility changed to %d seconds", messagesWithErrors, duration)
+	}
+
+	return
+}
+
 type DeleteMessageBatchResponse struct {
 	DeleteMessageBatchResult []struct {
 		Id          string
