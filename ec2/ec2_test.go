@@ -1080,19 +1080,19 @@ func (s *S) TestModifyInstance(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
 }
 
-func (s *S) TestDescribeReservedInstancesiExample(c *check.C) {
+func (s *S) TestDescribeReservedInstancesExample(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeReservedInstancesExample)
 
 	resp, err := s.ec2.DescribeReservedInstances([]string{"i-1", "i-2"}, nil)
 
 	req := testServer.WaitRequest()
-	c.Assert(req.Form["Action"], check.DeepEquals, []string{"DescribeReservedInstances"})
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DescribeReservedInstances"})
 
-	c.Assert(err, check.IsNil)
-	c.Assert(resp.RequestId, check.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
-	c.Assert(resp.ReservedInstances, check.HasLen, 1)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.ReservedInstances, gocheck.HasLen, 1)
 
 	r0 := resp.ReservedInstances[0]
-	c.Assert(r0.ReservedInstanceId, check.Equals, "e5a2ff3b-7d14-494f-90af-0b5d0EXAMPLE")
+	c.Assert(r0.ReservedInstanceId, gocheck.Equals, "e5a2ff3b-7d14-494f-90af-0b5d0EXAMPLE")
 
 }
