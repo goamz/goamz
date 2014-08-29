@@ -297,11 +297,15 @@ func (q *Queue) ChangeMessageVisibility(M *Message, VisibilityTimeout int) (resp
 	return
 }
 
-func (q *Queue) GetQueueAttributes(A string) (resp *GetQueueAttributesResponse, err error) {
+func (q *Queue) GetQueueAttributes(attributes ...string) (resp *GetQueueAttributesResponse, err error) {
 	resp = &GetQueueAttributesResponse{}
 	params := makeParams("GetQueueAttributes")
-	params["AttributeName"] = A
-
+	if attributes == nil {
+		attributes = []string{"All"}
+	}
+	for i, attributeValue := range attributes {
+		params[fmt.Sprintf("AttributeName.%d", i+1)] = attributeValue
+	}
 	err = q.SQS.query(q.Url, params, resp)
 	return
 }

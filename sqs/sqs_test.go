@@ -305,3 +305,22 @@ func (s *S) TestGetQueueAttributes(c *gocheck.C) {
 
 	c.Assert(err, gocheck.IsNil)
 }
+
+func (s *S) TestGetQueueAttributesMultiAttributes(c *gocheck.C) {
+	testServer.PrepareResponse(200, nil, TestGetQueueAttributesXmlOK)
+
+	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
+
+	attributes := []string{"ApproximateNumberOfMessages", "VisibilityTimeout", "MaximumMessageSize"}
+	_, err := q.GetQueueAttributes(attributes...)
+	c.Assert(err, gocheck.IsNil)
+
+	req := testServer.WaitRequest()
+
+	c.Assert(req.Method, gocheck.Equals, "GET")
+	c.Assert(req.URL.Path, gocheck.Equals, "/123456789012/testQueue/")
+
+	for i, attribute := range attributes {
+		c.Assert(req.FormValue(fmt.Sprintf("AttributeName.%d", i+1)), gocheck.Equals, attribute)
+	}
+}
