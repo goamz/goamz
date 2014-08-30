@@ -211,6 +211,9 @@ var DescribeLaunchConfigurations = `
             <Ebs> 
                <SnapshotId>snap-XXXXYYY</SnapshotId>
                <VolumeSize>100</VolumeSize>
+               <Iops>50</Iops>
+               <VolumeType>io1</VolumeType>
+               <DeleteOnTermination>true</DeleteOnTermination>
             </Ebs>
             <DeviceName>/dev/sdf</DeviceName>
           </member>

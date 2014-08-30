@@ -135,7 +135,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.DescribeLaunchConfigurationResponse)
 	}
-	_, err = as.DescribeLaunchConfigurations([]string{lcReq.LaunchConfigurationName})
+	_, err = as.DescribeLaunchConfigurations([]string{lcReq.LaunchConfigurationName}, 10, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -533,6 +533,49 @@ func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
 			},
 		},
 		RequestId: "0f02a07d-b677-11e2-9eb0-dd50EXAMPLE",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeLaunchConfigurations)
+	resp, err := s.as.DescribeLaunchConfigurations([]string{"my-test-lc"}, 0, "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	t, _ := time.Parse(time.RFC3339, "2013-01-21T23:04:42.200Z")
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeLaunchConfigurations")
+	c.Assert(values.Get("LaunchConfigurationNames.member.1"), gocheck.Equals, "my-test-lc")
+	expected := &DescribeLaunchConfigurationsResp{
+		LaunchConfigurations: []LaunchConfiguration{
+			{
+				AssociatePublicIpAddress: true,
+				BlockDeviceMappings: []BlockDeviceMapping{
+					{
+						DeviceName:  "/dev/sdb",
+						VirtualName: "ephemeral0",
+					},
+					{
+						DeviceName: "/dev/sdf",
+						Ebs: EBS{
+							SnapshotId:          "snap-XXXXYYY",
+							VolumeSize:          100,
+							Iops:                50,
+							VolumeType:          "io1",
+							DeleteOnTermination: true,
+						},
+					},
+				},
+				EbsOptimized:            false,
+				CreatedTime:             t,
+				LaunchConfigurationName: "my-test-lc",
+				InstanceType:            "m1.small",
+				ImageId:                 "ami-514ac838",
+				InstanceMonitoring:      InstanceMonitoring{Enabled: true},
+				LaunchConfigurationARN:  "arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc",
+			},
+		},
+		RequestId: "d05a22f8-b690-11e2-bf8e-2113fEXAMPLE",
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }

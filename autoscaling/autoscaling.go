@@ -229,28 +229,6 @@ type CreateAutoScalingGroupParams struct {
 	VPCZoneIdentifier       string
 }
 
-type LaunchConfiguration struct {
-	AssociatePublicIpAddress bool     `xml:"AssociatePublicIpAddress"`
-	CreatedTime              string   `xml:"CreatedTime"`
-	EbsOptimized             bool     `xml:"EbsOptimized"`
-	LaunchConfigurationARN   string   `xml:"LaunchConfigurationARN"`
-	LaunchConfigurationName  string   `xml:"LaunchConfigurationName"`
-	ImageId                  string   `xml:"ImageId"`
-	InstanceType             string   `xml:"InstanceType"`
-	KernelId                 string   `xml:"KernelId"`
-	SecurityGroups           []string `xml:"SecurityGroups>member"`
-	KeyName                  string   `xml:"KeyName"`
-	UserData                 string   `xml:"UserData"`
-	InstanceMonitoring       string   `xml:"InstanceMonitoring"`
-}
-
-// LaunchConfigurationResp defines the basic response structure for launch configuration
-// requests
-type LaunchConfigurationResp struct {
-	RequestId            string                `xml:"ResponseMetadata>RequestId"`
-	LaunchConfigurations []LaunchConfiguration `xml:"DescribeLaunchConfigurationsResult>LaunchConfigurations>member"`
-}
-
 // SimpleResp is the basic response from most actions.
 type SimpleResp struct {
 	XMLName   xml.Name
@@ -327,28 +305,28 @@ func (as *AutoScaling) CreateAutoScalingGroup(options *CreateAutoScalingGroupPar
 //
 // See http://goo.gl/nDUL2h for more details
 type EBS struct {
-	DeleteOnTermination bool
-	Iops                int64
-	SnapshotId          string
-	VolumeSize          int64
-	VolumeType          string
+	DeleteOnTermination bool   `xml:"DeleteOnTermination"`
+	Iops                int64  `xml:"Iops"`
+	SnapshotId          string `xml:"SnapshotId"`
+	VolumeSize          int64  `xml:"VolumeSize"`
+	VolumeType          string `xml:"VolumeType"`
 }
 
 // BlockDeviceMapping represents the association of a block device with ebs volume.
 //
 // See http://goo.gl/wEGwkU for more details.
 type BlockDeviceMapping struct {
-	DeviceName  string
-	Ebs         EBS
-	NoDevice    bool
-	VirtualName string
+	DeviceName  string `xml:"DeviceName"`
+	Ebs         EBS    `xml:"Ebs"`
+	NoDevice    bool   `xml:"NoDevice"`
+	VirtualName string `xml:"VirtualName"`
 }
 
 // InstanceMonitoring data type
 //
 // See http://goo.gl/TfaPwz for more details
 type InstanceMonitoring struct {
-	Enabled bool
+	Enabled bool `xml:"Enabled"`
 }
 
 // CreateLaunchConfiguration encapsulates options for the respective request.
@@ -629,18 +607,59 @@ func (as *AutoScaling) DescribeAutoScalingGroups(names []string, maxRecords int,
 	return resp, nil
 }
 
+// LaunchConfiguration encapsulates the LaunchConfiguration Data Type
+//
+// See http://goo.gl/TOJunp
+type LaunchConfiguration struct {
+	AssociatePublicIpAddress bool                 `xml:"AssociatePublicIpAddress"`
+	BlockDeviceMappings      []BlockDeviceMapping `xml:"BlockDeviceMappings>member"`
+	CreatedTime              time.Time            `xml:"CreatedTime"`
+	EbsOptimized             bool                 `xml:"EbsOptimized"`
+	IamInstanceProfile       string               `xml:"IamInstanceProfile"`
+	ImageId                  string               `xml:"ImageId"`
+	InstanceId               string               `xml:"InstanceId"`
+	InstanceMonitoring       InstanceMonitoring   `xml:"InstanceMonitoring"`
+	InstanceType             string               `xml:"InstanceType"`
+	KernelId                 string               `xml:"KernelId"`
+	KeyName                  string               `xml:"KeyName"`
+	LaunchConfigurationARN   string               `xml:"LaunchConfigurationARN"`
+	LaunchConfigurationName  string               `xml:"LaunchConfigurationName"`
+	RamdiskId                string               `xml:"RamdiskId"`
+	SecurityGroups           []string             `xml:"SecurityGroups>member"`
+	SpotPrice                string               `xml:"SpotPrice"`
+	UserData                 string               `xml:"UserData"`
+}
+
+// DescribeLaunchConfigurationResp defines the basic response structure for launch configuration
+// requests
+//
+// See http://goo.gl/y31YYE for more details.
+type DescribeLaunchConfigurationsResp struct {
+	LaunchConfigurations []LaunchConfiguration `xml:"DescribeLaunchConfigurationsResult>LaunchConfigurations>member"`
+	NextToken            string                `xml:"DescribeLaunchConfigurationsResult>NextToken"`
+	RequestId            string                `xml:"ResponseMetadata>RequestId"`
+}
+
 // DescribeLaunchConfigurations returns details about the launch configurations supplied in
 // the list. If the list is nil, information is returned about all launch configurations in the
 // region.
-func (as *AutoScaling) DescribeLaunchConfigurations(confnames []string) (
-	resp *LaunchConfigurationResp, err error) {
+func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords int, nextToken string) (
+	resp *DescribeLaunchConfigurationsResp, err error) {
 	params := makeParams("DescribeLaunchConfigurations")
-	addParamsList(params, "LaunchConfigurationNames.member", confnames)
-	resp = &LaunchConfigurationResp{}
-	err = as.query(params, resp)
-	if err != nil {
+
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+	addParamsList(params, "LaunchConfigurationNames.member", names)
+
+	resp = new(DescribeLaunchConfigurationsResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
+
 	return resp, nil
 }
 
