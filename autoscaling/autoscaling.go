@@ -1,9 +1,9 @@
 package autoscaling
 
 import (
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 const debug = false
@@ -24,16 +26,20 @@ type AutoScaling struct {
 }
 
 type xmlErrors struct {
-	RequestId string  `xml:"RequestID"`
-	Errors    []Error `xml:"Errors>Error"`
+	RequestId string  `xml:"RequestId"`
+	Errors    []Error `xml:"Error"`
 }
 
-// Error contains pertinent information from the failed operation.
+// Error encapsulates an error returned by the AWS Auto Scaling API.
+//
+// See http://goo.gl/VZGuC for more details.
 type Error struct {
 	// HTTP status code (200, 403, ...)
 	StatusCode int
 	// AutoScaling error code ("UnsupportedOperation", ...)
 	Code string
+	// The error type
+	Type string
 	// The human-oriented error message
 	Message   string
 	RequestId string `xml:"RequestID"`
@@ -116,12 +122,15 @@ func addParamsList(params map[string]string, label string, ids []string) {
 }
 
 func buildError(r *http.Response) error {
-	errors := xmlErrors{}
+	var (
+		err    Error
+		errors xmlErrors
+	)
 	xml.NewDecoder(r.Body).Decode(&errors)
-	var err Error
 	if len(errors.Errors) > 0 {
 		err = errors.Errors[0]
 	}
+
 	err.RequestId = errors.RequestId
 	err.StatusCode = r.StatusCode
 	if err.Message == "" {
@@ -248,12 +257,6 @@ type SimpleResp struct {
 	RequestId string `xml:"ResponseMetadata>RequestId"`
 }
 
-// CreateLaunchConfigurationResp is returned from the CreateLaunchConfiguration request.
-type CreateLaunchConfigurationResp struct {
-	LaunchConfiguration
-	RequestId string `xml:"ResponseMetadata>RequestId"`
-}
-
 // SetDesiredCapacityRequestParams contains the details for the SetDesiredCapacity action.
 type SetDesiredCapacityRequestParams struct {
 	AutoScalingGroupName string
@@ -320,10 +323,178 @@ func (as *AutoScaling) CreateAutoScalingGroup(options *CreateAutoScalingGroupPar
 	return resp, nil
 }
 
+// EBS represents the AWS EBS volume data type
+//
+// See http://goo.gl/nDUL2h for more details
+type EBS struct {
+	DeleteOnTermination bool
+	Iops                int64
+	SnapshotId          string
+	VolumeSize          int64
+	VolumeType          string
+}
+
+// BlockDeviceMapping represents the association of a block device with ebs volume.
+//
+// See http://goo.gl/wEGwkU for more details.
+type BlockDeviceMapping struct {
+	DeviceName  string
+	Ebs         EBS
+	NoDevice    bool
+	VirtualName string
+}
+
+// InstanceMonitoring data type
+//
+// See http://goo.gl/TfaPwz for more details
+type InstanceMonitoring struct {
+	Enabled bool
+}
+
+// CreateLaunchConfiguration encapsulates options for the respective request.
+//
+// See http://goo.gl/Uw916w for more details.
+type CreateLaunchConfigurationParams struct {
+	AssociatePublicIpAddress bool
+	BlockDeviceMappings      []BlockDeviceMapping
+	EbsOptimized             bool
+	IamInstanceProfile       string
+	ImageId                  string
+	InstanceId               string
+	InstanceMonitoring       InstanceMonitoring
+	InstanceType             string
+	KernelId                 string
+	KeyName                  string
+	LaunchConfigurationName  string
+	RamdiskId                string
+	SecurityGroups           []string
+	SpotPrice                string
+	UserData                 string
+}
+
+// CreateLaunchConfiguration creates a launch configuration
+//
+// See http://goo.gl/8e0BSF for more details.
+func (as *AutoScaling) CreateLaunchConfiguration(options *CreateLaunchConfigurationParams) (
+	resp *SimpleResp, err error) {
+
+	var b64 = base64.StdEncoding
+
+	params := makeParams("CreateLaunchConfiguration")
+	params["LaunchConfigurationName"] = options.LaunchConfigurationName
+
+	if options.AssociatePublicIpAddress {
+		params["AssociatePublicIpAddress"] = strconv.FormatBool(options.AssociatePublicIpAddress)
+	}
+	if options.EbsOptimized {
+		params["EbsOptimized"] = strconv.FormatBool(options.EbsOptimized)
+	}
+	if options.IamInstanceProfile != "" {
+		params["IamInstanceProfile"] = options.IamInstanceProfile
+	}
+	if options.ImageId != "" {
+		params["ImageId"] = options.ImageId
+	}
+	if options.InstanceId != "" {
+		params["InstanceId"] = options.InstanceId
+	}
+	if options.InstanceMonitoring != (InstanceMonitoring{}) {
+		params["InstanceMonitoring.Enabled"] = strconv.FormatBool(options.InstanceMonitoring.Enabled)
+	}
+	if options.InstanceType != "" {
+		params["InstanceType"] = options.InstanceType
+	}
+	if options.KernelId != "" {
+		params["KernelId"] = options.KernelId
+	}
+	if options.KeyName != "" {
+		params["KeyName"] = options.KeyName
+	}
+	if options.RamdiskId != "" {
+		params["RamdiskId"] = options.RamdiskId
+	}
+	if options.SpotPrice != "" {
+		params["SpotPrice"] = options.SpotPrice
+	}
+	if options.UserData != "" {
+		params["UserData"] = b64.EncodeToString([]byte(options.UserData))
+	}
+
+	// Add our block device mappings
+	for i, bdm := range options.BlockDeviceMappings {
+		key := "BlockDeviceMappings.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "DeviceName")] = bdm.DeviceName
+		params[fmt.Sprintf(key, index, "VirtualName")] = bdm.VirtualName
+
+		if bdm.NoDevice {
+			params[fmt.Sprintf(key, index, "NoDevice")] = "true"
+		}
+
+		if bdm.Ebs != (EBS{}) {
+			key := "BlockDeviceMappings.member.%d.Ebs.%s"
+
+			// Defaults to true
+			params[fmt.Sprintf(key, index, "DeleteOnTermination")] = strconv.FormatBool(bdm.Ebs.DeleteOnTermination)
+
+			if bdm.Ebs.Iops != 0 {
+				params[fmt.Sprintf(key, index, "Iops")] = strconv.FormatInt(bdm.Ebs.Iops, 10)
+			}
+			if bdm.Ebs.SnapshotId != "" {
+				params[fmt.Sprintf(key, index, "SnapshotId")] = bdm.Ebs.SnapshotId
+			}
+			if bdm.Ebs.VolumeSize != 0 {
+				params[fmt.Sprintf(key, index, "VolumeSize")] = strconv.FormatInt(bdm.Ebs.VolumeSize, 10)
+			}
+			if bdm.Ebs.VolumeType != "" {
+				params[fmt.Sprintf(key, index, "VolumeType")] = bdm.Ebs.VolumeType
+			}
+		}
+	}
+
+	if len(options.SecurityGroups) > 0 {
+		addParamsList(params, "SecurityGroups.member", options.SecurityGroups)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// CreateOrUpdateTags creates or updates Auto Scaling Group Tags
+//
+// See http://goo.gl/e1UIXb for more details.
+func (as *AutoScaling) CreateOrUpdateTags(tags []Tag) (resp *SimpleResp, err error) {
+	params := makeParams("CreateOrUpdateTags")
+
+	for i, t := range tags {
+		key := "Tags.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "Key")] = t.Key
+		params[fmt.Sprintf(key, index, "Value")] = t.Value
+		params[fmt.Sprintf(key, index, "PropagateAtLaunch")] = strconv.FormatBool(t.PropagateAtLaunch)
+		params[fmt.Sprintf(key, index, "ResourceId")] = t.ResourceId
+		if t.ResourceType != "" {
+			params[fmt.Sprintf(key, index, "ResourceType")] = t.ResourceType
+		} else {
+			params[fmt.Sprintf(key, index, "ResourceType")] = "auto-scaling-group"
+		}
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // DeleteAutoScalingGroup deletes an Auto Scaling Group
 //
 // See http://goo.gl/us7VSffor for more details.
-func (as *AutoScaling) DeleteAutoScalingGroup(asgName string, forceDelete bool) (resp *SimpleResp, err error) {
+func (as *AutoScaling) DeleteAutoScalingGroup(asgName string, forceDelete bool) (
+	resp *SimpleResp, err error) {
 	params := makeParams("DeleteAutoScalingGroup")
 	params["AutoScalingGroupName"] = asgName
 
@@ -338,9 +509,38 @@ func (as *AutoScaling) DeleteAutoScalingGroup(asgName string, forceDelete bool) 
 	return resp, nil
 }
 
-//DescribeAutoScalingGroups response wrapper
+// DeleteLaunchConfiguration deletes a Launch Configuration
 //
-//See http://goo.gl/nW74Ut for more details.
+// See http://goo.gl/xksfyR for more details.
+func (as *AutoScaling) DeleteLaunchConfiguration(name string) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteLaunchConfiguration")
+	params["LaunchConfigurationName"] = name
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DeleteScheduledAction deletes a scheduled action previously created using the PutScheduledUpdateGroupAction.
+//
+// See http://goo.gl/Zss9CH for more details
+func (as *AutoScaling) DeleteScheduledAction(asgName string, scheduledActionName string) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteScheduledAction")
+	params["AutoScalingGroupName"] = asgName
+	params["ScheduledActionName"] = scheduledActionName
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeAutoScalingGroups response wrapper
+//
+// See http://goo.gl/nW74Ut for more details.
 type DescribeAutoScalingGroupsResp struct {
 	AutoScalingGroups []AutoScalingGroup `xml:"DescribeAutoScalingGroupsResult>AutoScalingGroups>member"`
 	NextToken         string             `xml:"DescribeAutoScalingGroupsResult>NextToken"`
@@ -384,38 +584,6 @@ func (as *AutoScaling) DescribeLaunchConfigurations(confnames []string) (
 	err = as.query(params, resp)
 	if err != nil {
 		return nil, err
-	}
-	return resp, nil
-}
-
-// CreateLaunchConfiguration creates a new launch configuration.
-func (as *AutoScaling) CreateLaunchConfiguration(lc LaunchConfiguration) (
-	resp *CreateLaunchConfigurationResp, err error) {
-	resp = &CreateLaunchConfigurationResp{}
-	params := makeParams("CreateLaunchConfiguration")
-	params["LaunchConfigurationName"] = lc.LaunchConfigurationName
-	if len(lc.ImageId) > 0 {
-		params["ImageId"] = lc.ImageId
-		params["InstanceType"] = lc.InstanceType
-	}
-	if lc.AssociatePublicIpAddress {
-		params["AssociatePublicIpAddress"] = "true"
-	}
-	if len(lc.SecurityGroups) > 0 {
-		addParamsList(params, "SecurityGroups.member", lc.SecurityGroups)
-	}
-	if len(lc.KeyName) > 0 {
-		params["KeyName"] = lc.KeyName
-	}
-	if len(lc.KernelId) > 0 {
-		params["KernelId"] = lc.KernelId
-	}
-	if lc.InstanceMonitoring == "false" {
-		params["InstanceMonitoring.Enabled"] = "false"
-	}
-	err = as.query(params, resp)
-	if err != nil {
-		return resp, err
 	}
 	return resp, nil
 }
@@ -586,12 +754,6 @@ type PutScheduledActionRequestParams struct {
 	StartTime            string
 }
 
-// DeleteScheduledActionRequestParams contains the details of the scheduled action to delete.
-type DeleteScheduledActionRequestParams struct {
-	AutoScalingGroupName string
-	ScheduledActionName  string
-}
-
 // DescribeScheduledActions returns a list of the current scheduled actions. If the
 // AutoScalingGroup name is provided it will list all the scheduled actions for that group.
 func (as *AutoScaling) DescribeScheduledActions(rp ScheduledActionsRequestParams) (
@@ -648,20 +810,6 @@ func (as *AutoScaling) PutScheduledUpdateGroupAction(rp PutScheduledActionReques
 	if len(rp.Recurrence) > 0 {
 		params["Recurrence"] = rp.Recurrence
 	}
-	err = as.query(params, resp)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// DeleteScheduledAction deletes a scheduled action.
-func (as *AutoScaling) DeleteScheduledAction(rp DeleteScheduledActionRequestParams) (
-	resp *SimpleResp, err error) {
-	resp = &SimpleResp{}
-	params := makeParams("DeleteScheduledAction")
-	params["AutoScalingGroupName"] = rp.AutoScalingGroupName
-	params["ScheduledActionName"] = rp.ScheduledActionName
 	err = as.query(params, resp)
 	if err != nil {
 		return nil, err

@@ -68,17 +68,17 @@ func TestBasicGroupRequest(t *testing.T) {
 func TestAutoScalingGroup(t *testing.T) {
 	var as *AutoScaling
 	// Launch configuration test config
-	var lc LaunchConfiguration
-	lc.LaunchConfigurationName = "LConf1"
-	lc.ImageId = "ami-03e47533" // Octave debian ami
-	lc.KernelId = "aki-98e26fa8"
-	lc.KeyName = "testAWS" // Replace with valid key for your account
-	lc.InstanceType = "m1.small"
+	lcReq := new(CreateLaunchConfigurationParams)
+	lcReq.LaunchConfigurationName = "LConf1"
+	lcReq.ImageId = "ami-03e47533" // Octave debian ami
+	lcReq.KernelId = "aki-98e26fa8"
+	lcReq.KeyName = "testAWS" // Replace with valid key for your account
+	lcReq.InstanceType = "m1.small"
 
 	// CreateAutoScalingGroup params test config
 	asgReq := new(CreateAutoScalingGroupParams)
 	asgReq.AutoScalingGroupName = "ASGTest1"
-	asgReq.LaunchConfigurationName = lc.LaunchConfigurationName
+	asgReq.LaunchConfigurationName = lcReq.LaunchConfigurationName
 	asgReq.DefaultCooldown = 300
 	asgReq.HealthCheckGracePeriod = 300
 	asgReq.DesiredCapacity = 1
@@ -88,7 +88,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	asg := new(AutoScalingGroup)
 	asg.AutoScalingGroupName = "ASGTest1"
-	asg.LaunchConfigurationName = lc.LaunchConfigurationName
+	asg.LaunchConfigurationName = lcReq.LaunchConfigurationName
 	asg.DefaultCooldown = 300
 	asg.HealthCheckGracePeriod = 300
 	asg.DesiredCapacity = 1
@@ -126,7 +126,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.CreateLaunchConfigurationResponse)
 	}
-	_, err = as.CreateLaunchConfiguration(lc)
+	_, err = as.CreateLaunchConfiguration(lcReq)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.DescribeLaunchConfigurationResponse)
 	}
-	_, err = as.DescribeLaunchConfigurations([]string{lc.LaunchConfigurationName})
+	_, err = as.DescribeLaunchConfigurations([]string{lcReq.LaunchConfigurationName})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,20 +229,110 @@ func TestAutoScalingGroup(t *testing.T) {
 	}
 
 	// Delete the test scheduled action from the group
-	var dsar DeleteScheduledActionRequestParams
-	dsar.AutoScalingGroupName = asg.AutoScalingGroupName
-	dsar.ScheduledActionName = psar.ScheduledActionName
 	if mockTest {
 		testServer.Response(200, nil, astest.DeleteScheduledActionResponse)
 	}
-	_, err = as.DeleteScheduledAction(dsar)
+	_, err = as.DeleteScheduledAction(asg.AutoScalingGroupName, psar.ScheduledActionName)
 	if err != nil {
 		t.Fatal(err)
 	}
 	testServer.Flush()
 }
 
-// Detailed Function Tests
+// Detailed Unit Tests
+
+func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
+	testServer.Response(200, nil, CreateLaunchConfiguration)
+	testServer.Response(200, nil, DeleteLaunchConfiguration)
+
+	launchConfig := &CreateLaunchConfigurationParams{
+		LaunchConfigurationName:  "my-test-lc",
+		AssociatePublicIpAddress: true,
+		EbsOptimized:             true,
+		SecurityGroups:           []string{"sec-grp1", "sec-grp2"},
+		UserData:                 "1234",
+		KeyName:                  "secretKeyPair",
+		ImageId:                  "ami-0078da69",
+		InstanceType:             "m1.small",
+		SpotPrice:                "0.03",
+		BlockDeviceMappings: []BlockDeviceMapping{
+			{
+				DeviceName:  "/dev/sda1",
+				VirtualName: "ephemeral0",
+			},
+			{
+				DeviceName:  "/dev/sdb",
+				VirtualName: "ephemeral1",
+			},
+			{
+				DeviceName: "/dev/sdf",
+				Ebs: EBS{
+					DeleteOnTermination: true,
+					SnapshotId:          "snap-2a2b3c4d",
+					VolumeSize:          100,
+				},
+			},
+		},
+		InstanceMonitoring: InstanceMonitoring{
+			Enabled: true,
+		},
+	}
+	resp, err := s.as.CreateLaunchConfiguration(launchConfig)
+	c.Assert(err, gocheck.IsNil)
+	defer s.as.DeleteLaunchConfiguration(launchConfig.LaunchConfigurationName)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateLaunchConfiguration")
+	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
+	c.Assert(values.Get("AssociatePublicIpAddress"), gocheck.Equals, "true")
+	c.Assert(values.Get("EbsOptimized"), gocheck.Equals, "true")
+	c.Assert(values.Get("SecurityGroups.member.1"), gocheck.Equals, "sec-grp1")
+	c.Assert(values.Get("SecurityGroups.member.2"), gocheck.Equals, "sec-grp2")
+	c.Assert(values.Get("UserData"), gocheck.Equals, "MTIzNA==")
+	c.Assert(values.Get("KeyName"), gocheck.Equals, "secretKeyPair")
+	c.Assert(values.Get("ImageId"), gocheck.Equals, "ami-0078da69")
+	c.Assert(values.Get("InstanceType"), gocheck.Equals, "m1.small")
+	c.Assert(values.Get("SpotPrice"), gocheck.Equals, "0.03")
+	c.Assert(values.Get("BlockDeviceMappings.member.1.DeviceName"), gocheck.Equals, "/dev/sda1")
+	c.Assert(values.Get("BlockDeviceMappings.member.1.VirtualName"), gocheck.Equals, "ephemeral0")
+	c.Assert(values.Get("BlockDeviceMappings.member.2.DeviceName"), gocheck.Equals, "/dev/sdb")
+	c.Assert(values.Get("BlockDeviceMappings.member.2.VirtualName"), gocheck.Equals, "ephemeral1")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.DeviceName"), gocheck.Equals, "/dev/sdf")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.DeleteOnTermination"), gocheck.Equals, "true")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.SnapshotId"), gocheck.Equals, "snap-2a2b3c4d")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.VolumeSize"), gocheck.Equals, "100")
+	c.Assert(values.Get("InstanceMonitoring.Enabled"), gocheck.Equals, "true")
+	c.Assert(resp.RequestId, gocheck.Equals, "7c6e177f-f082-11e1-ac58-3714bEXAMPLE")
+}
+
+func (s *S) TestDeleteLaunchConfiguration(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteLaunchConfiguration)
+	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteLaunchConfiguration")
+	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
+	c.Assert(resp.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
+}
+
+func (s *S) TestDeleteLaunchConfigurationInUse(c *gocheck.C) {
+	testServer.Response(400, nil, DeleteLaunchConfigurationInUse)
+	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
+	testServer.WaitRequest()
+	c.Assert(resp, gocheck.IsNil)
+	c.Assert(err, gocheck.NotNil)
+	e, ok := err.(*Error)
+	if !ok {
+		c.Errorf("Unable to unmarshal error into AWS Autoscaling Error")
+	}
+	c.Logf("%v %v %v", e.Code, e.Message, e.RequestId)
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(e.Message, gocheck.Equals, "Cannot delete launch configuration my-test-lc because it is attached to AutoScalingGroup test")
+	c.Assert(e.Code, gocheck.Equals, "ResourceInUse")
+	c.Assert(e.StatusCode, gocheck.Equals, 400)
+	c.Assert(e.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
+}
 
 func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
 	testServer.Response(200, nil, CreateAutoScalingGroup)
@@ -302,6 +392,23 @@ func (s *S) TestDeleteAutoScalingGroup(c *gocheck.C) {
 	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteAutoScalingGroup")
 	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
 	c.Assert(resp.RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
+}
+
+func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *gocheck.C) {
+	testServer.Response(400, nil, DeleteAutoScalingGroupError)
+	resp, err := s.as.DeleteAutoScalingGroup("my-test-asg", false)
+	testServer.WaitRequest()
+	c.Assert(resp, gocheck.IsNil)
+	c.Assert(err, gocheck.NotNil)
+	e, ok := err.(*Error)
+	if !ok {
+		c.Errorf("Unable to unmarshal error into AWS Autoscaling Error")
+	}
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(e.Message, gocheck.Equals, "You cannot delete an AutoScalingGroup while there are instances or pending Spot instance request(s) still in the group.")
+	c.Assert(e.Code, gocheck.Equals, "ResourceInUse")
+	c.Assert(e.StatusCode, gocheck.Equals, 400)
+	c.Assert(e.RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
 }
 
 func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
