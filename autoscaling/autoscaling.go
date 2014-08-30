@@ -523,6 +523,39 @@ func (as *AutoScaling) DeleteLaunchConfiguration(name string) (resp *SimpleResp,
 	return resp, nil
 }
 
+// DeleteNotificationConfiguration deletes notifications created by PutNotificationConfiguration.
+//
+// See http://goo.gl/jTqoYz for more details
+func (as *AutoScaling) DeleteNotificationConfiguration(asgName string, topicARN string) (
+	resp *SimpleResp, err error) {
+	params := makeParams("DeleteNotificationConfiguration")
+	params["AutoScalingGroupName"] = asgName
+	params["TopicARN"] = topicARN
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DeletePolicy deletes a policy created by PutScalingPolicy.
+//
+// policyName might be the policy name or ARN
+//
+// See http://goo.gl/aOQPH2 for more details
+func (as *AutoScaling) DeletePolicy(asgName string, policyName string) (resp *SimpleResp, err error) {
+	params := makeParams("DeletePolicy")
+	params["AutoScalingGroupName"] = asgName
+	params["PolicyName"] = policyName
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // DeleteScheduledAction deletes a scheduled action previously created using the PutScheduledUpdateGroupAction.
 //
 // See http://goo.gl/Zss9CH for more details
@@ -530,6 +563,29 @@ func (as *AutoScaling) DeleteScheduledAction(asgName string, scheduledActionName
 	params := makeParams("DeleteScheduledAction")
 	params["AutoScalingGroupName"] = asgName
 	params["ScheduledActionName"] = scheduledActionName
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DeleteTags deletes autoscaling group tags
+//
+// See http://goo.gl/o8HzAk for more details.
+func (as *AutoScaling) DeleteTags(tags []Tag) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteTags")
+
+	for i, t := range tags {
+		key := "Tags.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "Key")] = t.Key
+		params[fmt.Sprintf(key, index, "Value")] = t.Value
+		params[fmt.Sprintf(key, index, "PropagateAtLaunch")] = strconv.FormatBool(t.PropagateAtLaunch)
+		params[fmt.Sprintf(key, index, "ResourceId")] = t.ResourceId
+		params[fmt.Sprintf(key, index, "ResourceType")] = "auto-scaling-group"
+	}
 
 	resp = new(SimpleResp)
 	if err := as.query(params, resp); err != nil {

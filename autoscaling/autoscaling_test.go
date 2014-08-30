@@ -411,6 +411,66 @@ func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *gocheck.C) {
 	c.Assert(e.RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
 }
 
+func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
+	testServer.Response(200, nil, CreateOrUpdateTags)
+	tags := []Tag{
+		{
+			Key:        "foo",
+			Value:      "bar",
+			ResourceId: "my-test-asg",
+		},
+		{
+			Key:               "baz",
+			Value:             "qux",
+			ResourceId:        "my-test-asg",
+			PropagateAtLaunch: true,
+		},
+	}
+	resp, err := s.as.CreateOrUpdateTags(tags)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateOrUpdateTags")
+	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
+	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
+	c.Assert(values.Get("Tags.member.1.ResourceId"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
+	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
+	c.Assert(values.Get("Tags.member.2.ResourceId"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), gocheck.Equals, "true")
+	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
+}
+
+func (s *S) TestDeleteTags(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteTags)
+	tags := []Tag{
+		{
+			Key:        "foo",
+			Value:      "bar",
+			ResourceId: "my-test-asg",
+		},
+		{
+			Key:               "baz",
+			Value:             "qux",
+			ResourceId:        "my-test-asg",
+			PropagateAtLaunch: true,
+		},
+	}
+	resp, err := s.as.DeleteTags(tags)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteTags")
+	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
+	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
+	c.Assert(values.Get("Tags.member.1.ResourceId"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
+	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
+	c.Assert(values.Get("Tags.member.2.ResourceId"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), gocheck.Equals, "true")
+	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
+}
+
 func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeAutoScalingGroups)
 	resp, err := s.as.DescribeAutoScalingGroups([]string{"my-test-asg-lbs"}, 0, "")
