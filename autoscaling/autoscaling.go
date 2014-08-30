@@ -142,6 +142,12 @@ func buildError(r *http.Response) error {
 // ----------------------------------------------------------------------------
 // Auto Scaling base types and related functions.
 
+// SimpleResp is the basic response from most actions.
+type SimpleResp struct {
+	XMLName   xml.Name
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
 // EnabledMetric encapsulates a metric associated with an Auto Scaling Group
 //
 // See http://goo.gl/hXiH17 for more details
@@ -227,19 +233,6 @@ type CreateAutoScalingGroupParams struct {
 	Tags                    []Tag
 	TerminationPolicies     []string
 	VPCZoneIdentifier       string
-}
-
-// SimpleResp is the basic response from most actions.
-type SimpleResp struct {
-	XMLName   xml.Name
-	RequestId string `xml:"ResponseMetadata>RequestId"`
-}
-
-// SetDesiredCapacityRequestParams contains the details for the SetDesiredCapacity action.
-type SetDesiredCapacityRequestParams struct {
-	AutoScalingGroupName string
-	DesiredCapacity      int64
-	HonorCooldown        bool
 }
 
 // CreateAutoScalingGroup creates an Auto Scaling Group on AWS
@@ -668,16 +661,19 @@ func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords i
 //
 // If you suspend either of the two primary processes (Launch or Terminate), this can prevent other
 // process types from functioning properly.
-func (as *AutoScaling) SuspendProcesses(ag *AutoScalingGroup, processes []string) (
+//
+// See http://goo.gl/DUJpQy for more details.
+func (as *AutoScaling) SuspendProcesses(asgName string, processes []string) (
 	resp *SimpleResp, err error) {
-	resp = &SimpleResp{}
 	params := makeParams("SuspendProcesses")
-	params["AutoScalingGroupName"] = ag.AutoScalingGroupName
+	params["AutoScalingGroupName"] = asgName
+
 	if len(processes) > 0 {
 		addParamsList(params, "ScalingProcesses.member", processes)
 	}
-	err = as.query(params, resp)
-	if err != nil {
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -685,16 +681,19 @@ func (as *AutoScaling) SuspendProcesses(ag *AutoScalingGroup, processes []string
 
 // ResumeProcesses resumes the scaling processes for the scaling group. If no processes are
 // provided, all processes are resumed.
-func (as *AutoScaling) ResumeProcesses(ag *AutoScalingGroup, processes []string) (
+//
+// See http://goo.gl/XWIIg1 for more details.
+func (as *AutoScaling) ResumeProcesses(asgName string, processes []string) (
 	resp *SimpleResp, err error) {
-	resp = &SimpleResp{}
 	params := makeParams("ResumeProcesses")
-	params["AutoScalingGroupName"] = ag.AutoScalingGroupName
+	params["AutoScalingGroupName"] = asgName
+
 	if len(processes) > 0 {
 		addParamsList(params, "ScalingProcesses.member", processes)
 	}
-	err = as.query(params, resp)
-	if err != nil {
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -769,16 +768,20 @@ func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupPar
 }
 
 // SetDesiredCapacity changes the DesiredCapacity of an AutoScaling group.
-func (as *AutoScaling) SetDesiredCapacity(rp SetDesiredCapacityRequestParams) (resp *SimpleResp, err error) {
-	resp = &SimpleResp{}
+//
+// See http://goo.gl/3WGZbI for more details.
+func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int64, honorCooldown bool) (
+	resp *SimpleResp, err error) {
 	params := makeParams("SetDesiredCapacity")
-	params["AutoScalingGroupName"] = rp.AutoScalingGroupName
-	params["DesiredCapacity"] = strconv.FormatInt(rp.DesiredCapacity, 10)
-	if rp.HonorCooldown {
+	params["AutoScalingGroupName"] = asgName
+	params["DesiredCapacity"] = strconv.FormatInt(desiredCapacity, 10)
+
+	if honorCooldown {
 		params["HonorCooldown"] = "true"
 	}
-	err = as.query(params, resp)
-	if err != nil {
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil

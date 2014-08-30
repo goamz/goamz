@@ -102,16 +102,6 @@ func TestAutoScalingGroup(t *testing.T) {
 	asgUpdate.MinSize = 1
 	asgUpdate.MaxSize = 6
 
-	// Parameters for setting desired capacity to 1
-	var sp1 SetDesiredCapacityRequestParams
-	sp1.AutoScalingGroupName = asg.AutoScalingGroupName
-	sp1.DesiredCapacity = 1
-
-	// Parameters for setting desired capacity to 2
-	var sp2 SetDesiredCapacityRequestParams
-	sp2.AutoScalingGroupName = asg.AutoScalingGroupName
-	sp2.DesiredCapacity = 2
-
 	awsAuth, err := aws.EnvAuth()
 	if err != nil {
 		mockTest = true
@@ -162,7 +152,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.SuspendProcessesResponse)
 	}
-	_, err = as.SuspendProcesses(asg, nil)
+	_, err = as.SuspendProcesses(asg.AutoScalingGroupName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +161,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.ResumeProcessesResponse)
 	}
-	_, err = as.ResumeProcesses(asg, nil)
+	_, err = as.ResumeProcesses(asg.AutoScalingGroupName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +170,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.SetDesiredCapacityResponse)
 	}
-	_, err = as.SetDesiredCapacity(sp2)
+	_, err = as.SetDesiredCapacity(asg.AutoScalingGroupName, 2, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +179,8 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, astest.SetDesiredCapacityResponse)
 	}
-	_, err = as.SetDesiredCapacity(sp1)
+
+	_, err = as.SetDesiredCapacity(asg.AutoScalingGroupName, 1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -607,5 +598,45 @@ func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
 	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
 	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
 	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestResumeProcesses(c *gocheck.C) {
+	testServer.Response(200, nil, ResumeProcesses)
+	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ResumeProcesses")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
+	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+
+}
+
+func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
+	testServer.Response(200, nil, SetDesiredCapacity)
+	resp, err := s.as.SetDesiredCapacity("my-test-asg", 3, true)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "SetDesiredCapacity")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("HonorCooldown"), gocheck.Equals, "true")
+	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
+	c.Assert(resp.RequestId, gocheck.Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
+}
+
+func (s *S) TestSuspendProcesses(c *gocheck.C) {
+	testServer.Response(200, nil, SuspendProcesses)
+	resp, err := s.as.SuspendProcesses("my-test-asg", []string{"Launch", "Terminate"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "SuspendProcesses")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
+	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
