@@ -666,7 +666,6 @@ func (as *AutoScaling) DescribeAutoScalingGroups(names []string, maxRecords int,
 	if maxRecords != 0 {
 		params["MaxRecords"] = strconv.Itoa(maxRecords)
 	}
-
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
@@ -695,23 +694,41 @@ type DescribeAutoScalingInstancesResp struct {
 // Supports pagination by using the returned "NextToken" parameter for subsequent calls
 //
 // See http://goo.gl/ckzORt for more details.
-func (as *AutoScaling) DescribeAutoScalingInstances(ids []string, maxRecords int, nextToken string) (resp *DescribeAutoScalingInstancesResp, err error) {
+func (as *AutoScaling) DescribeAutoScalingInstances(ids []string, maxRecords int, nextToken string) (
+	resp *DescribeAutoScalingInstancesResp, err error) {
 	params := makeParams("DescribeAutoScalingInstances")
 
 	if maxRecords != 0 {
 		params["MaxRecords"] = strconv.Itoa(maxRecords)
 	}
-
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
 
-	for i, id := range ids {
-		index := fmt.Sprintf("InstanceIds.member.%d", i+1)
-		params[index] = id
-	}
+	addParamsList(params, "InstanceIds.member", ids)
 
 	resp = new(DescribeAutoScalingInstancesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeAutoScalingNotificationTypes response wrapper
+//
+// See http://goo.gl/pmLIoE for more details.
+type DescribeAutoScalingNotificationTypesResp struct {
+	AutoScalingNotificationTypes []string `xml:"DescribeAutoScalingNotificationTypesResult>AutoScalingNotificationTypes>member"`
+	RequestId                    string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeAutoScalingNotificationTypes returns a list of all notification types that are supported by Auto Scaling
+//
+// See http://goo.gl/pmLIoE for more details.
+func (as *AutoScaling) DescribeAutoScalingNotificationTypes() (resp *DescribeAutoScalingNotificationTypesResp, err error) {
+	params := makeParams("DescribeAutoScalingNotificationTypes")
+
+	resp = new(DescribeAutoScalingNotificationTypesResp)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
@@ -771,6 +788,83 @@ func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords i
 		return nil, err
 	}
 
+	return resp, nil
+}
+
+// MetricGranularity encapsulates the MetricGranularityType
+//
+// See http://goo.gl/WJ82AA for more details
+type MetricGranularity struct {
+	Granularity string
+}
+
+//MetricCollection encapsulates the MetricCollectionType
+//
+// See http://goo.gl/YrEG6h for more details
+type MetricCollection struct {
+	Metric string
+}
+
+// DescribeMetricCollectionTypesResp response wrapper
+//
+// See http://goo.gl/UyYc3i for more details.
+type DescribeMetricCollectionTypesResp struct {
+	Granularities []MetricGranularity `xml:"DescribeMetricCollectionTypesResult>Granularities>member"`
+	Metrics       []MetricCollection  `xml:"DescribeMetricCollectionTypesResult>Metrics>member"`
+	RequestId     string              `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeMetricCollectionTypes returns a list of metrics and a corresponding list of granularities for each metric
+//
+// See http://goo.gl/UyYc3i for more details.
+func (as *AutoScaling) DescribeMetricCollectionTypes() (resp *DescribeMetricCollectionTypesResp, err error) {
+	params := makeParams("DescribeMetricCollectionTypes")
+
+	resp = new(DescribeMetricCollectionTypesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// NotificationConfiguration - Encapsulates the NotificationConfigurationType
+//
+// See http://goo.gl/M8xYOQ for more details
+type NotificationConfiguration struct {
+	AutoScalingGroupName string
+	NotificationType     string
+	TopicARN             string
+}
+
+// DescribeNotificationConfigurations response wrapper
+//
+// See http://goo.gl/qiAH31 for more details.
+type DescribeNotificationConfigurationsResp struct {
+	NotificationConfigurations []NotificationConfiguration `xml:"DescribeNotificationConfigurationsResult>NotificationConfigurations>member"`
+	NextToken                  string                      `xml:"DescribeNotificationConfigurationsResult>NextToken"`
+	RequestId                  string                      `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeNotificationConfigurations - Returns a list of notification actions associated with Auto Scaling groups for specified events.
+// Supports pagination by using the returned "NextToken" parameter for subsequent calls
+//
+// http://goo.gl/qiAH31 for more details.
+func (as *AutoScaling) DescribeNotificationConfigurations(asgNames []string, maxRecords int, nextToken string) (
+	resp *DescribeNotificationConfigurationsResp, err error) {
+	params := makeParams("DescribeNotificationConfigurations")
+
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+	addParamsList(params, "AutoScalingGroupNames.member", asgNames)
+
+	resp = new(DescribeNotificationConfigurationsResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
 

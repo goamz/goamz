@@ -630,6 +630,23 @@ func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
 
+func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeNotificationConfigurations)
+	resp, err := s.as.DescribeNotificationConfigurations([]string{"i-78e0d40b"}, 0, "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeNotificationConfigurations")
+	c.Assert(resp.RequestId, gocheck.Equals, "07f3fea2-bf3c-11e2-9b6f-f3cdbb80c073")
+	c.Assert(resp.NotificationConfigurations, gocheck.DeepEquals, []NotificationConfiguration{
+		{
+			AutoScalingGroupName: "my-test-asg",
+			NotificationType:     "autoscaling: EC2_INSTANCE_LAUNCH",
+			TopicARN:             "vajdoafj231j41231/topic",
+		},
+	})
+}
+
 func (s *S) DescribeScheduledActions(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
