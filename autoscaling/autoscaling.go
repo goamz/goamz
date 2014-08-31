@@ -955,32 +955,6 @@ func (as *AutoScaling) DescribeLifecycleHooks(asgName string, hookNames []string
 	return resp, nil
 }
 
-// DetachInstancesResult wraps a DetachInstances response
-type DetachInstancesResult struct {
-	Activities []Activity `xml:"DetachInstancesResult>Activities>member"`
-	RequestId  string     `xml:"ResponseMetadata>RequestId"`
-}
-
-// DetachInstances removes an instance from an Auto Scaling group
-//
-// See http://goo.gl/cNwrqF for more details
-func (as *AutoScaling) DetachInstances(asgName string, instanceIds []string, decrementCapacity bool) (
-	resp *DetachInstancesResult, err error) {
-	params := makeParams("DetachInstances")
-	params["AutoScalingGroupName"] = asgName
-	params["ShouldDecrementDesiredCapacity"] = strconv.FormatBool(decrementCapacity)
-
-	if len(instanceIds) > 0 {
-		addParamsList(params, "InstanceIds.member", instanceIds)
-	}
-
-	resp = new(DetachInstancesResult)
-	if err := as.query(params, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
 // MetricGranularity encapsulates the MetricGranularityType
 //
 // See http://goo.gl/WJ82AA for more details
@@ -1325,6 +1299,32 @@ func (as *AutoScaling) DescribeTerminationPolicyTypes() (resp *DescribeTerminati
 	return resp, nil
 }
 
+// DetachInstancesResult wraps a DetachInstances response
+type DetachInstancesResult struct {
+	Activities []Activity `xml:"DetachInstancesResult>Activities>member"`
+	RequestId  string     `xml:"ResponseMetadata>RequestId"`
+}
+
+// DetachInstances removes an instance from an Auto Scaling group
+//
+// See http://goo.gl/cNwrqF for more details
+func (as *AutoScaling) DetachInstances(asgName string, instanceIds []string, decrementCapacity bool) (
+	resp *DetachInstancesResult, err error) {
+	params := makeParams("DetachInstances")
+	params["AutoScalingGroupName"] = asgName
+	params["ShouldDecrementDesiredCapacity"] = strconv.FormatBool(decrementCapacity)
+
+	if len(instanceIds) > 0 {
+		addParamsList(params, "InstanceIds.member", instanceIds)
+	}
+
+	resp = new(DetachInstancesResult)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // DisableMetricsCollection disables monitoring of group metrics for the Auto Scaling group specified in asgName.
 // You can specify the list of affected metrics with the metrics parameter. If no metrics are specified, all metrics are disabled
 //
@@ -1368,6 +1368,32 @@ func (as *AutoScaling) EnableMetricsCollection(asgName string, metrics []string,
 	return resp, nil
 }
 
+// EnterStandbyResult wraps an EnterStandby response
+type EnterStandbyResult struct {
+	Activities []Activity `xml:"EnterStandbyResult>Activities>member"`
+	RequestId  string     `xml:"ResponseMetadata>RequestId"`
+}
+
+// EnterStandby moves instances in an Auto Scaling group into a Standby mode.
+//
+// See http://goo.gl/BJ3lXs for more information
+func (as *AutoScaling) EnterStandby(asgName string, instanceIds []string, decrementCapacity bool) (
+	resp *EnterStandbyResult, err error) {
+	params := makeParams("EnterStandby")
+	params["AutoScalingGroupName"] = asgName
+	params["ShouldDecrementDesiredCapacity"] = strconv.FormatBool(decrementCapacity)
+
+	if len(instanceIds) > 0 {
+		addParamsList(params, "InstanceIds.member", instanceIds)
+	}
+
+	resp = new(EnterStandbyResult)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // ExecutePolicy executes the specified policy.
 //
 // See http://goo.gl/BxHpFc for more details.
@@ -1390,7 +1416,88 @@ func (as *AutoScaling) ExecutePolicy(policyName string, asgName string, honorCoo
 	return resp, nil
 }
 
-// PutNotificationConfigurationconfigures an Auto Scaling group to send notifications when specified events take place.
+// ExitStandbyResult wraps an ExitStandby response
+type ExitStandbyResult struct {
+	Activities []Activity `xml:"ExitStandbyResult>Activities>member"`
+	RequestId  string     `xml:"ResponseMetadata>RequestId"`
+}
+
+// ExitStandby moves an instance out of Standby mode.
+//
+// See http://goo.gl/9zQV4G for more information
+func (as *AutoScaling) ExitStandby(asgName string, instanceIds []string) (
+	resp *ExitStandbyResult, err error) {
+	params := makeParams("ExitStandby")
+	params["AutoScalingGroupName"] = asgName
+
+	if len(instanceIds) > 0 {
+		addParamsList(params, "InstanceIds.member", instanceIds)
+	}
+
+	resp = new(ExitStandbyResult)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// PutLifecycleHookParams wraps a PutLifecycleHook request
+//
+// See http://goo.gl/zsNqp5 for more details
+type PutLifecycleHookParams struct {
+	AutoScalingGroupName  string
+	DefaultResult         string
+	HeartbeatTimeout      int
+	LifecycleHookName     string
+	LifecycleTransition   string
+	NotificationMetadata  string
+	NotificationTargetARN string
+	RoleARN               string
+}
+
+// PutLifecycleHook Creates or updates a lifecycle hook for an Auto Scaling Group.
+//
+// Part of the basic sequence for adding a lifecycle hook to an Auto Scaling group:
+// 1) Create a notification target (SQS queue || SNS Topic)
+// 2) Create an IAM role to allow the ASG topublish lifecycle notifications to the designated SQS queue or SNS topic
+// 3) *** Create the lifecycle hook. You can create a hook that acts when instances launch or when instances terminate***
+// 4) If necessary, record the lifecycle action heartbeat to keep the instance in a pending state
+// 5) Complete the lifecycle action
+//
+// See http://goo.gl/9XrROq for more details.
+func (as *AutoScaling) PutLifecycleHook(options *PutLifecycleHookParams) (
+	resp *SimpleResp, err error) {
+	params := makeParams("PutLifecycleHook")
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["LifecycleHookName"] = options.LifecycleHookName
+
+	if options.DefaultResult != "" {
+		params["DefaultResult"] = options.DefaultResult
+	}
+	if options.HeartbeatTimeout != 0 {
+		params["HeartbeatTimeout"] = strconv.Itoa(options.HeartbeatTimeout)
+	}
+	if options.LifecycleTransition != "" {
+		params["LifecycleTransition"] = options.LifecycleTransition
+	}
+	if options.NotificationMetadata != "" {
+		params["NotificationMetadata"] = options.NotificationMetadata
+	}
+	if options.NotificationTargetARN != "" {
+		params["NotificationTargetARN"] = options.NotificationTargetARN
+	}
+	if options.RoleARN != "" {
+		params["RoleARN"] = options.RoleARN
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// PutNotificationConfiguration configures an Auto Scaling group to send notifications when specified events take place.
 //
 // See http://goo.gl/9XrROq for more details.
 func (as *AutoScaling) PutNotificationConfiguration(asgName string, notificationTypes []string, topicARN string) (
@@ -1411,6 +1518,8 @@ func (as *AutoScaling) PutNotificationConfiguration(asgName string, notification
 }
 
 // PutScalingPolicyParams wraps a PutScalingPolicyParams request
+//
+// See http://goo.gl/o0E8hl for more details.
 type PutScalingPolicyParams struct {
 	AutoScalingGroupName string
 	PolicyName           string
@@ -1494,6 +1603,32 @@ func (as *AutoScaling) PutScheduledUpdateGroupAction(options *PutScheduledUpdate
 	if options.Recurrence != "" {
 		params["Recurrence"] = options.Recurrence
 	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// RecordLifecycleActionHeartbeat ecords a heartbeat for the lifecycle action associated with a specific token.
+// This extends the timeout by the length of time defined by the HeartbeatTimeout parameter of the
+// PutLifecycleHook operation.
+//
+// Part of the basic sequence for adding a lifecycle hook to an Auto Scaling group:
+// 1) Create a notification target (SQS queue || SNS Topic)
+// 2) Create an IAM role to allow the ASG topublish lifecycle notifications to the designated SQS queue or SNS topic
+// 3) Create the lifecycle hook. You can create a hook that acts when instances launch or when instances terminate
+// 4) ***If necessary, record the lifecycle action heartbeat to keep the instance in a pending state***
+// 5) Complete the lifecycle action
+//
+// See http://goo.gl/jc70xp for more details.
+func (as *AutoScaling) RecordLifecycleActionHeartbeat(asgName, lifecycleActionToken, hookName string) (
+	resp *SimpleResp, err error) {
+	params := makeParams("RecordLifecycleActionHeartbeat")
+	params["AutoScalingGroupName"] = asgName
+	params["LifecycleActionToken"] = lifecycleActionToken
+	params["LifecycleHookName"] = hookName
 
 	resp = new(SimpleResp)
 	if err := as.query(params, resp); err != nil {
@@ -1629,6 +1764,8 @@ type UpdateAutoScalingGroupParams struct {
 // To update an auto scaling group with a launch configuration that has the InstanceMonitoring
 // flag set to False, you must first ensure that collection of group metrics is disabled.
 // Otherwise calls to UpdateAutoScalingGroup will fail.
+//
+// See http://goo.gl/rqrmxy for more details.
 func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupParams) (resp *SimpleResp, err error) {
 	params := makeParams("UpdateAutoScalingGroup")
 
@@ -1659,11 +1796,11 @@ func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupPar
 		params["VPCZoneIdentifier"] = options.VPCZoneIdentifier
 	}
 
-	if len(options.TerminationPolicies) > 0 {
-		addParamsList(params, "TerminationPolicies.member", options.TerminationPolicies)
-	}
 	if len(options.AvailabilityZones) > 0 {
 		addParamsList(params, "AvailabilityZones.member", options.AvailabilityZones)
+	}
+	if len(options.TerminationPolicies) > 0 {
+		addParamsList(params, "TerminationPolicies.member", options.TerminationPolicies)
 	}
 
 	resp = new(SimpleResp)

@@ -24,7 +24,6 @@ var CreateAutoScalingGroupResponse = `
 	</ResponseMetadata>
 </CreateAutoScalingGroupResponse> 
 `
-
 var CreateLaunchConfigurationResponse = `
 <CreateLaunchConfigurationResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 <ResponseMetadata>
@@ -478,7 +477,6 @@ var DetachInstancesResponse = `
   </ResponseMetadata>
 </DetachInstancesResponse> 
 `
-
 var DisableMetricsCollectionResponse = `
 <DisableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
@@ -493,12 +491,62 @@ var EnableMetricsCollectionResponse = `
 	</ResponseMetadata>
 </EnableMetricsCollectionResponse> 
 `
+var EnterStandbyResponse = `
+<EnterStandbyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <EnterStandbyResult>
+    <Activities>
+      <member>
+        <ActivityId>462b4bc3-ad3b-4e67-a58d-96cd00f02f9e</ActivityId>
+        <Progress>50</Progress>
+        <StatusCode>InProgress</StatusCode>
+        <StartTime>2014-06-13T22:35:50.884Z</StartTime>
+        <Cause>At 2014-06-13T22:35:50Z instance i-5b73d709 was moved to standby in response to a user request, shrinking the capacity from 4 to 3.</Cause>
+        <AutoScalingGroupName>my-asg</AutoScalingGroupName>
+        <Details>{"Availability Zone":"us-east-1a"}</Details>
+        <Description>Moving EC2 instance to Standby: i-5b73d709</Description>
+      </member>
+    </Activities>
+  </EnterStandbyResult>
+  <ResponseMetadata>
+    <RequestId>126f2f31-f34b-11e3-bc51-b35178f0274f</RequestId>
+  </ResponseMetadata>
+</EnterStandbyResponse> 
+`
 var ExecutePolicyResponse = `
 <EnableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </EnableMetricsCollectionResponse> 
+`
+var ExitStandbyResponse = `
+<ExitStandbyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ExitStandbyResult>
+    <Activities>
+      <member>
+        <ActivityId>dca4efcf-eea6-4844-8064-cab1fecd1aa2</ActivityId>
+        <Progress>30</Progress>
+        <StatusCode>PreInService</StatusCode>
+        <StartTime>2014-06-13T22:43:53.523Z</StartTime>
+        <Cause>At 2014-06-13T22:43:53Z instance i-5b73d709 was moved out of standby in response to a user request, increasing the capacity from 3 to 4.</Cause>
+        <AutoScalingGroupName>my-asg</AutoScalingGroupName>
+        <Details>{"Availability Zone":"us-east-1a"}</Details>
+        <Description>Moving EC2 instance out of Standby: i-5b73d709</Description>
+      </member>
+    </Activities>
+  </ExitStandbyResult>
+  <ResponseMetadata>
+    <RequestId>321a11c8-f34c-11e3-a434-7f10009d5849</RequestId>
+  </ResponseMetadata>
+</ExitStandbyResponse> 
+`
+var PutLifecycleHookResponse = `
+<PutLifecycleHookResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <PutLifecycleHookResult/>
+  <ResponseMetadata>
+    <RequestId>1952f458-f645-11e3-bc51-b35178f0274f</RequestId>
+  </ResponseMetadata>
+</PutLifecycleHookResponse> 
 `
 var PutNotificationConfigurationResponse = `
 <EnableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
@@ -570,7 +618,6 @@ var TerminateInstanceInAutoScalingGroupResponse = `
   </ResponseMetadata>
 </TerminateInstanceInAutoScalingGroupResponse>
 `
-
 var UpdateAutoScalingGroupResponse = `
 <UpdateAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>

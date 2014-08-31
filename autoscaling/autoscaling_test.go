@@ -898,6 +898,35 @@ func (s *S) TestEnableMetricsCollection(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
+func (s *S) TestEnterStandby(c *gocheck.C) {
+	testServer.Response(200, nil, EnterStandbyResponse)
+	resp, err := s.as.EnterStandby("my-asg", []string{"i-5b73d709"}, true)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "EnterStandby")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
+	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), gocheck.Equals, "true")
+	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-5b73d709")
+	st, _ := time.Parse(time.RFC3339, "2014-06-13T22:35:50.884Z")
+	expected := &EnterStandbyResult{
+		RequestId: "126f2f31-f34b-11e3-bc51-b35178f0274f",
+		Activities: []Activity{
+			{
+				StatusCode:           "InProgress",
+				Progress:             50,
+				ActivityId:           "462b4bc3-ad3b-4e67-a58d-96cd00f02f9e",
+				StartTime:            st,
+				AutoScalingGroupName: "my-asg",
+				Details:              "{\"Availability Zone\":\"us-east-1a\"}",
+				Cause:                "At 2014-06-13T22:35:50Z instance i-5b73d709 was moved to standby in response to a user request, shrinking the capacity from 4 to 3.",
+				Description:          "Moving EC2 instance to Standby: i-5b73d709",
+			},
+		},
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
 func (s *S) TestExecutePolicy(c *gocheck.C) {
 	testServer.Response(200, nil, ExecutePolicyResponse)
 	resp, err := s.as.ExecutePolicy("my-scaleout-policy", "my-test-asg", true)
@@ -909,6 +938,59 @@ func (s *S) TestExecutePolicy(c *gocheck.C) {
 	c.Assert(values.Get("PolicyName"), gocheck.Equals, "my-scaleout-policy")
 	c.Assert(values.Get("HonorCooldown"), gocheck.Equals, "true")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestExitStandby(c *gocheck.C) {
+	testServer.Response(200, nil, ExitStandbyResponse)
+	resp, err := s.as.ExitStandby("my-asg", []string{"i-5b73d709"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ExitStandby")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
+	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-5b73d709")
+	st, _ := time.Parse(time.RFC3339, "2014-06-13T22:43:53.523Z")
+	expected := &ExitStandbyResult{
+		RequestId: "321a11c8-f34c-11e3-a434-7f10009d5849",
+		Activities: []Activity{
+			{
+				StatusCode:           "PreInService",
+				Progress:             30,
+				ActivityId:           "dca4efcf-eea6-4844-8064-cab1fecd1aa2",
+				StartTime:            st,
+				AutoScalingGroupName: "my-asg",
+				Details:              "{\"Availability Zone\":\"us-east-1a\"}",
+				Cause:                "At 2014-06-13T22:43:53Z instance i-5b73d709 was moved out of standby in response to a user request, increasing the capacity from 3 to 4.",
+				Description:          "Moving EC2 instance out of Standby: i-5b73d709",
+			},
+		},
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestPutLifecycleHook(c *gocheck.C) {
+	testServer.Response(200, nil, PutLifecycleHookResponse)
+	request := &PutLifecycleHookParams{
+		AutoScalingGroupName:  "my-asg",
+		LifecycleHookName:     "ReadyForSoftwareInstall",
+		LifecycleTransition:   "autoscaling:EC2_INSTANCE_LAUNCHING",
+		NotificationTargetARN: "arn:aws:sqs:us-east-1:896650972448:lifecyclehookqueue",
+		RoleARN:               "arn:aws:iam::896650972448:role/AutoScaling",
+	}
+	resp, err := s.as.PutLifecycleHook(request)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "PutLifecycleHook")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
+	c.Assert(values.Get("LifecycleHookName"), gocheck.Equals, "ReadyForSoftwareInstall")
+	c.Assert(values.Get("RoleARN"), gocheck.Equals, "arn:aws:iam::896650972448:role/AutoScaling")
+	c.Assert(values.Get("LifecycleTransition"), gocheck.Equals, "autoscaling:EC2_INSTANCE_LAUNCHING")
+	c.Assert(values.Get("NotificationTargetARN"), gocheck.Equals, "arn:aws:sqs:us-east-1:896650972448:lifecyclehookqueue")
+	c.Assert(values.Get("DefaultResult"), gocheck.Equals, "")
+	c.Assert(values.Get("HeartbeatTimeout"), gocheck.Equals, "")
+	c.Assert(values.Get("NotificationMetadata"), gocheck.Equals, "")
+	c.Assert(resp.RequestId, gocheck.Equals, "1952f458-f645-11e3-bc51-b35178f0274f")
 }
 
 func (s *S) TestPutNotificationConfiguration(c *gocheck.C) {
