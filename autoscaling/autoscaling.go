@@ -632,7 +632,7 @@ type DescribeAdjustmentTypesResp struct {
 	RequestId       string           `xml:"ResponseMetadata>RequestId"`
 }
 
-// DescribeAdjustmentTypes - Returns policy adjustment types for use in the PutScalingPolicy action.
+// DescribeAdjustmentTypes returns policy adjustment types for use in the PutScalingPolicy action.
 //
 // See http://goo.gl/hGx3Pc for more details.
 func (as *AutoScaling) DescribeAdjustmentTypes() (resp *DescribeAdjustmentTypesResp, err error) {
@@ -795,14 +795,14 @@ func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords i
 //
 // See http://goo.gl/WJ82AA for more details
 type MetricGranularity struct {
-	Granularity string
+	Granularity string `xml:"Granularity"`
 }
 
 //MetricCollection encapsulates the MetricCollectionType
 //
 // See http://goo.gl/YrEG6h for more details
 type MetricCollection struct {
-	Metric string
+	Metric string `xml:"Metric"`
 }
 
 // DescribeMetricCollectionTypesResp response wrapper
@@ -827,13 +827,13 @@ func (as *AutoScaling) DescribeMetricCollectionTypes() (resp *DescribeMetricColl
 	return resp, nil
 }
 
-// NotificationConfiguration - Encapsulates the NotificationConfigurationType
+// NotificationConfiguration encapsulates the NotificationConfigurationType
 //
 // See http://goo.gl/M8xYOQ for more details
 type NotificationConfiguration struct {
-	AutoScalingGroupName string
-	NotificationType     string
-	TopicARN             string
+	AutoScalingGroupName string `xml:"AutoScalingGroupName"`
+	NotificationType     string `xml:"NotificationType"`
+	TopicARN             string `xml:"TopicARN"`
 }
 
 // DescribeNotificationConfigurations response wrapper
@@ -845,7 +845,7 @@ type DescribeNotificationConfigurationsResp struct {
 	RequestId                  string                      `xml:"ResponseMetadata>RequestId"`
 }
 
-// DescribeNotificationConfigurations - Returns a list of notification actions associated with Auto Scaling groups for specified events.
+// DescribeNotificationConfigurations returns a list of notification actions associated with Auto Scaling groups for specified events.
 // Supports pagination by using the returned "NextToken" parameter for subsequent calls
 //
 // http://goo.gl/qiAH31 for more details.
@@ -862,6 +862,114 @@ func (as *AutoScaling) DescribeNotificationConfigurations(asgNames []string, max
 	addParamsList(params, "AutoScalingGroupNames.member", asgNames)
 
 	resp = new(DescribeNotificationConfigurationsResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Alarm encapsulates the Alarm data type.
+//
+// See http://goo.gl/Q0uPAB for more details
+type Alarm struct {
+	AlarmARN  string `xml:"AlarmARN"`
+	AlarmName string `xml:"AlarmName"`
+}
+
+// ScalingPolicy encapsulates the ScalingPolicyType
+//
+// See http://goo.gl/BYAT18 for more details
+type ScalingPolicy struct {
+	AdjustmentType       string  `xml:"AdjustmentType"` // ChangeInCapacity, ExactCapacity, and PercentChangeInCapacity
+	Alarms               []Alarm `xml:"Alarms>member"`  // A list of CloudWatch Alarms related to the policy
+	AutoScalingGroupName string  `xml:"AutoScalingGroupName"`
+	Cooldown             int     `xml:"Cooldown"`
+	MinAdjustmentStep    int     `xml:"MinAdjustmentStep"` // Changes the DesiredCapacity of ASG by at least the specified number of instances.
+	PolicyARN            string  `xml:"PolicyARN"`
+	PolicyName           string  `xml:"PolicyName"`
+	ScalingAdjustment    int     `xml:"ScalingAdjustment"`
+}
+
+// DescribePolicies response wrapper
+//
+// http://goo.gl/bN7A9T for more details.
+type DescribePoliciesResp struct {
+	ScalingPolicies []ScalingPolicy `xml:"DescribePoliciesResult>ScalingPolicies>member"`
+	NextToken       string          `xml:"DescribePoliciesResult>NextToken"`
+	RequestId       string          `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribePolicies returns descriptions of what each policy does.
+// Supports pagination by using the returned "NextToken" parameter for subsequent calls
+//
+// http://goo.gl/bN7A9Tfor more details.
+func (as *AutoScaling) DescribePolicies(asgName string, policyNames []string, maxRecords int, nextToken string) (
+	resp *DescribePoliciesResp, err error) {
+	params := makeParams("DescribePolicies")
+
+	if asgName != "" {
+		params["AutoScalingGroupName"] = asgName
+	}
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+	addParamsList(params, "PolicyNames.member", policyNames)
+
+	resp = new(DescribePoliciesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Activity encapsulates the Activity data type
+//
+// See http://goo.gl/fRaVi1 for more details
+type Activity struct {
+	ActivityId           string    `xml:"ActivityId"`
+	AutoScalingGroupName string    `xml:"AutoScalingGroupName"`
+	Cause                string    `xml:"Cause"`
+	Description          string    `xml:"Description"`
+	Details              string    `xml:"Details"`
+	EndTime              time.Time `xml:"EndTime"`
+	Progress             int       `xml:"Progress"`
+	StartTime            time.Time `xml:"StartTime"`
+	StatusCode           string    `xml:"StatusCode"`
+	StatusMessage        string    `xml:"StatusMessage"`
+}
+
+// DescribeScalingActivities response wrapper
+//
+// http://goo.gl/noOXIC for more details.
+type DescribeScalingActivitiesResp struct {
+	Activities []Activity `xml:"DescribeScalingActivitiesResult>Activities>member"`
+	NextToken  string     `xml:"DescribeScalingActivitiesResult>NextToken"`
+	RequestId  string     `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeScalingActivities returns the scaling activities for the specified Auto Scaling group.
+// Supports pagination by using the returned "NextToken" parameter for subsequent calls
+//
+// http://goo.gl/noOXIC more details.
+func (as *AutoScaling) DescribeScalingActivities(asgName string, activityIds []string, maxRecords int, nextToken string) (resp *DescribeScalingActivitiesResp, err error) {
+	params := makeParams("DescribeScalingActivities")
+
+	if asgName != "" {
+		params["AutoScalingGroupName"] = asgName
+	}
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	addParamsList(params, "ActivityIds.member", activityIds)
+
+	resp = new(DescribeScalingActivitiesResp)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}

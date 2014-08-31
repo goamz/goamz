@@ -647,6 +647,83 @@ func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
 	})
 }
 
+func (s *S) TestDescribePolicies(c *gocheck.C) {
+	testServer.Response(200, nil, DescribePolicies)
+	resp, err := s.as.DescribePolicies("my-test-asg", []string{}, 2, "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribePolicies")
+	c.Assert(values.Get("MaxRecords"), gocheck.Equals, "2")
+	expected := &DescribePoliciesResp{
+		RequestId: "ec3bffad-b739-11e2-b38d-15fbEXAMPLE",
+		NextToken: "3ef417fe-9202-12-8ddd-d13e1313413",
+		ScalingPolicies: []ScalingPolicy{
+			{
+				PolicyARN:            "arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:c322761b-3172-4d56-9a21-0ed9d6161d67:autoScalingGroupName/my-test-asg:policyName/MyScaleDownPolicy",
+				AdjustmentType:       "ChangeInCapacity",
+				ScalingAdjustment:    -1,
+				PolicyName:           "MyScaleDownPolicy",
+				AutoScalingGroupName: "my-test-asg",
+				Cooldown:             60,
+				Alarms: []Alarm{
+					{
+						AlarmName: "TestQueue",
+						AlarmARN:  "arn:aws:cloudwatch:us-east-1:803981987763:alarm:TestQueue",
+					},
+				},
+			},
+			{
+				PolicyARN:            "arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:c55a5cdd-9be0-435b-b60b-a8dd313159f5:autoScalingGroupName/my-test-asg:policyName/MyScaleUpPolicy",
+				AdjustmentType:       "ChangeInCapacity",
+				ScalingAdjustment:    1,
+				PolicyName:           "MyScaleUpPolicy",
+				AutoScalingGroupName: "my-test-asg",
+				Cooldown:             60,
+				Alarms: []Alarm{
+					{
+						AlarmName: "TestQueue",
+						AlarmARN:  "arn:aws:cloudwatch:us-east-1:803981987763:alarm:TestQueue",
+					},
+				},
+			},
+		},
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestDescribeScalingActivities(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeScalingActivities)
+	resp, err := s.as.DescribeScalingActivities("my-test-asg", []string{}, 1, "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScalingActivities")
+	c.Assert(values.Get("MaxRecords"), gocheck.Equals, "1")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	st, _ := time.Parse(time.RFC3339, "2012-04-12T17:32:07.882Z")
+	et, _ := time.Parse(time.RFC3339, "2012-04-12T17:32:08Z")
+	expected := &DescribeScalingActivitiesResp{
+		RequestId: "7a641adc-84c5-11e1-a8a5-217ebEXAMPLE",
+		NextToken: "3ef417fe-9202-12-8ddd-d13e1313413",
+		Activities: []Activity{
+			{
+				StatusCode:           "Failed",
+				Progress:             0,
+				ActivityId:           "063308ae-aa22-4a9b-94f4-9faeEXAMPLE",
+				StartTime:            st,
+				AutoScalingGroupName: "my-test-asg",
+				Details:              "{}",
+				Cause:                "At 2012-04-12T17:31:30Z a user request created an AutoScalingGroup changing the desired capacity from 0 to 1.  At 2012-04-12T17:32:07Z an instance was started in response to a difference between desired and actual capacity, increasing the capacity from 0 to 1.",
+				Description:          "Launching a new EC2 instance.  Status Reason: The image id 'ami-4edb0327' does not exist. Launching EC2 instance failed.",
+				EndTime:              et,
+				StatusMessage:        "The image id 'ami-4edb0327' does not exist. Launching EC2 instance failed.",
+			},
+		},
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
 func (s *S) DescribeScheduledActions(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
