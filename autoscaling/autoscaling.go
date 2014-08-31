@@ -373,6 +373,8 @@ type CreateLaunchConfigurationParams struct {
 
 // CreateLaunchConfiguration creates a launch configuration
 //
+// Required params: AutoScalingGroupName, MinSize, MaxSize
+//
 // See http://goo.gl/8e0BSF for more details.
 func (as *AutoScaling) CreateLaunchConfiguration(options *CreateLaunchConfigurationParams) (
 	resp *SimpleResp, err error) {
@@ -593,6 +595,56 @@ func (as *AutoScaling) DeleteTags(tags []Tag) (resp *SimpleResp, err error) {
 	return resp, nil
 }
 
+//DescribeAccountLimits response wrapper
+//
+// See http://goo.gl/tKsMN0 for more details.
+type DescribeAccountLimitsResp struct {
+	MaxNumberOfAutoScalingGroups    int64  `xml:"DescribeAccountLimitsResult>MaxNumberOfAutoScalingGroups"`
+	MaxNumberOfLaunchConfigurations int64  `xml:"DescribeAccountLimitsResult>MaxNumberOfLaunchConfigurations"`
+	RequestId                       string `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeAccountLimits - Returns the limits for the Auto Scaling resources currently allowed for your AWS account.
+//
+// See http://goo.gl/tKsMN0 for more details.
+func (as *AutoScaling) DescribeAccountLimits() (resp *DescribeAccountLimitsResp, err error) {
+	params := makeParams("DescribeAccountLimits")
+
+	resp = new(DescribeAccountLimitsResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// AdjustmentType specifies whether the PutScalingPolicy ScalingAdjustment parameter is an absolute number or a percentage of the current capacity.
+//
+// See http://goo.gl/tCFqeL for more details
+type AdjustmentType struct {
+	AdjustmentType string //Valid values are ChangeInCapacity, ExactCapacity, and PercentChangeInCapacity.
+}
+
+//DescribeAdjustmentTypes response wrapper
+//
+// See http://goo.gl/hGx3Pc for more details.
+type DescribeAdjustmentTypesResp struct {
+	AdjustmentTypes []AdjustmentType `xml:"DescribeAdjustmentTypesResult>AdjustmentTypes>member"`
+	RequestId       string           `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeAdjustmentTypes - Returns policy adjustment types for use in the PutScalingPolicy action.
+//
+// See http://goo.gl/hGx3Pc for more details.
+func (as *AutoScaling) DescribeAdjustmentTypes() (resp *DescribeAdjustmentTypesResp, err error) {
+	params := makeParams("DescribeAdjustmentTypes")
+
+	resp = new(DescribeAdjustmentTypesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // DescribeAutoScalingGroups response wrapper
 //
 // See http://goo.gl/nW74Ut for more details.
@@ -602,7 +654,7 @@ type DescribeAutoScalingGroupsResp struct {
 	RequestId         string             `xml:"ResponseMetadata>RequestId"`
 }
 
-// DescribeAutoScalingGroups - Returns a full description of each Auto Scaling group in the given list
+// DescribeAutoScalingGroups returns a full description of each Auto Scaling group in the given list
 // If no autoscaling groups are provided, returns the details of all autoscaling groups
 // Supports pagination by using the returned "NextToken" parameter for subsequent calls
 //
@@ -622,6 +674,44 @@ func (as *AutoScaling) DescribeAutoScalingGroups(names []string, maxRecords int,
 	addParamsList(params, "AutoScalingGroupNames.member", names)
 
 	resp = new(DescribeAutoScalingGroupsResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeAutoScalingInstances response wrapper
+//
+// See http://goo.gl/ckzORt for more details.
+type DescribeAutoScalingInstancesResp struct {
+	AutoScalingInstances []Instance `xml:"DescribeAutoScalingInstancesResult>AutoScalingInstances>member"`
+	NextToken            string     `xml:"DescribeAutoScalingInstancesResult>NextToken"`
+	RequestId            string     `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeAutoScalingInstances returns a description of each Auto Scaling instance in the InstanceIds list.
+// If a list is not provided, the service returns the full details of all instances up to a maximum of 50
+// By default, the service returns a list of 20 items.
+// Supports pagination by using the returned "NextToken" parameter for subsequent calls
+//
+// See http://goo.gl/ckzORt for more details.
+func (as *AutoScaling) DescribeAutoScalingInstances(ids []string, maxRecords int, nextToken string) (resp *DescribeAutoScalingInstancesResp, err error) {
+	params := makeParams("DescribeAutoScalingInstances")
+
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	for i, id := range ids {
+		index := fmt.Sprintf("InstanceIds.member.%d", i+1)
+		params[index] = id
+	}
+
+	resp = new(DescribeAutoScalingInstancesResp)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}

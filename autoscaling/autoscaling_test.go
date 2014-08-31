@@ -476,6 +476,31 @@ func (s *S) TestDeleteTags(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
 }
 
+func (s *S) TestDescribeAccountLimits(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeAccountLimits)
+
+	resp, err := s.as.DescribeAccountLimits()
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAccountLimits")
+	c.Assert(resp.RequestId, gocheck.Equals, "a32bd184-519d-11e3-a8a4-c1c467cbcc3b")
+	c.Assert(resp.MaxNumberOfAutoScalingGroups, gocheck.Equals, int64(20))
+	c.Assert(resp.MaxNumberOfLaunchConfigurations, gocheck.Equals, int64(100))
+
+}
+
+func (s *S) TestDescribeAdjustmentTypes(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeAdjustmentTypes)
+	resp, err := s.as.DescribeAdjustmentTypes()
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAdjustmentTypes")
+	c.Assert(resp.RequestId, gocheck.Equals, "cc5f0337-b694-11e2-afc0-6544dEXAMPLE")
+	c.Assert(resp.AdjustmentTypes, gocheck.DeepEquals, []AdjustmentType{{"ChangeInCapacity"}, {"ExactCapacity"}, {"PercentChangeInCapacity"}})
+}
+
 func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeAutoScalingGroups)
 	resp, err := s.as.DescribeAutoScalingGroups([]string{"my-test-asg-lbs"}, 0, "")
@@ -540,6 +565,26 @@ func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
 		RequestId: "0f02a07d-b677-11e2-9eb0-dd50EXAMPLE",
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestDescribeAutoScalingInstances(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeAutoScalingInstances)
+	resp, err := s.as.DescribeAutoScalingInstances([]string{"i-78e0d40b"}, 0, "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAutoScalingInstances")
+	c.Assert(resp.RequestId, gocheck.Equals, "df992dc3-b72f-11e2-81e1-750aa6EXAMPLE")
+	c.Assert(resp.AutoScalingInstances, gocheck.DeepEquals, []Instance{
+		{
+			AutoScalingGroupName:    "my-test-asg",
+			AvailabilityZone:        "us-east-1a",
+			HealthStatus:            "Healthy",
+			InstanceId:              "i-78e0d40b",
+			LaunchConfigurationName: "my-test-lc",
+			LifecycleState:          "InService",
+		},
+	})
 }
 
 func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
