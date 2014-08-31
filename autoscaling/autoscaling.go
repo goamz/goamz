@@ -714,8 +714,9 @@ func (as *AutoScaling) DescribeAutoScalingGroups(names []string, maxRecords int,
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
-
-	addParamsList(params, "AutoScalingGroupNames.member", names)
+	if len(names) > 0 {
+		addParamsList(params, "AutoScalingGroupNames.member", names)
+	}
 
 	resp = new(DescribeAutoScalingGroupsResp)
 	if err := as.query(params, resp); err != nil {
@@ -749,8 +750,9 @@ func (as *AutoScaling) DescribeAutoScalingInstances(ids []string, maxRecords int
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
-
-	addParamsList(params, "InstanceIds.member", ids)
+	if len(ids) > 0 {
+		addParamsList(params, "InstanceIds.member", ids)
+	}
 
 	resp = new(DescribeAutoScalingInstancesResp)
 	if err := as.query(params, resp); err != nil {
@@ -826,7 +828,9 @@ func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords i
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
-	addParamsList(params, "LaunchConfigurationNames.member", names)
+	if len(names) > 0 {
+		addParamsList(params, "LaunchConfigurationNames.member", names)
+	}
 
 	resp = new(DescribeLaunchConfigurationsResp)
 	if err := as.query(params, resp); err != nil {
@@ -904,7 +908,9 @@ func (as *AutoScaling) DescribeNotificationConfigurations(asgNames []string, max
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
-	addParamsList(params, "AutoScalingGroupNames.member", asgNames)
+	if len(asgNames) > 0 {
+		addParamsList(params, "AutoScalingGroupNames.member", asgNames)
+	}
 
 	resp = new(DescribeNotificationConfigurationsResp)
 	if err := as.query(params, resp); err != nil {
@@ -961,7 +967,9 @@ func (as *AutoScaling) DescribePolicies(asgName string, policyNames []string, ma
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
-	addParamsList(params, "PolicyNames.member", policyNames)
+	if len(policyNames) > 0 {
+		addParamsList(params, "PolicyNames.member", policyNames)
+	}
 
 	resp = new(DescribePoliciesResp)
 	if err := as.query(params, resp); err != nil {
@@ -1011,8 +1019,9 @@ func (as *AutoScaling) DescribeScalingActivities(asgName string, activityIds []s
 	if nextToken != "" {
 		params["NextToken"] = nextToken
 	}
-
-	addParamsList(params, "ActivityIds.member", activityIds)
+	if len(activityIds) > 0 {
+		addParamsList(params, "ActivityIds.member", activityIds)
+	}
 
 	resp = new(DescribeScalingActivitiesResp)
 	if err := as.query(params, resp); err != nil {
@@ -1129,7 +1138,7 @@ type DescribeTagsResp struct {
 	RequestId string `xml:"ResponseMetadata>RequestId"`
 }
 
-// DescribeTags - Lists the Auto Scaling group tags.
+// DescribeTags lists the Auto Scaling group tags.
 // Supports pagination by using the returned "NextToken" parameter for subsequent calls
 //
 // See http://goo.gl/ZTEU3G for more details.
@@ -1160,7 +1169,7 @@ type DescribeTerminationPolicyTypesResp struct {
 	RequestId              string   `xml:"ResponseMetadata>RequestId"`
 }
 
-// DescribeTerminationPolicyTypes - Returns a list of all termination policies supported by Auto Scaling
+// DescribeTerminationPolicyTypes returns a list of all termination policies supported by Auto Scaling
 //
 // See http://goo.gl/ZTEU3G for more details.
 func (as *AutoScaling) DescribeTerminationPolicyTypes() (resp *DescribeTerminationPolicyTypesResp, err error) {
