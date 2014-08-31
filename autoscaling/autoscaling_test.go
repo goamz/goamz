@@ -724,6 +724,26 @@ func (s *S) TestDescribeScalingActivities(c *gocheck.C) {
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
 
+func (s *S) TestDescribeScalingProcessTypes(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeScalingProcessTypes)
+	resp, err := s.as.DescribeScalingProcessTypes()
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScalingProcessTypes")
+	c.Assert(resp.RequestId, gocheck.Equals, "27f2eacc-b73f-11e2-ad99-c7aba3a9c963")
+	c.Assert(resp.Processes, gocheck.DeepEquals, []ProcessType{
+		{"AZRebalance"},
+		{"AddToLoadBalancer"},
+		{"AlarmNotification"},
+		{"HealthCheck"},
+		{"Launch"},
+		{"ReplaceUnhealthy"},
+		{"ScheduledActions"},
+		{"Terminate"},
+	})
+}
+
 func (s *S) DescribeScheduledActions(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
@@ -745,6 +765,41 @@ func (s *S) DescribeScheduledActions(c *gocheck.C) {
 	c.Assert(values.Get("StartTime"), gocheck.Equals, "2014-06-01T00:30:00Z")
 	c.Assert(values.Get("Time"), gocheck.Equals, "2014-06-01T00:30:00Z")
 	c.Assert(resp.RequestId, gocheck.Equals, "0eb4217f-8421-11e3-9233-7100ef811766")
+}
+
+func (s *S) TestDescribeTags(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeTags)
+	filter := NewFilter()
+	filter.Add("auto-scaling-group", "my-test-asg")
+	resp, err := s.as.DescribeTags(filter, 1, "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeTags")
+	c.Assert(values.Get("MaxRecords"), gocheck.Equals, "1")
+	c.Assert(values.Get("Filters.member.1.Name"), gocheck.Equals, "auto-scaling-group")
+	c.Assert(values.Get("Filters.member.1.Values.member.1"), gocheck.Equals, "my-test-asg")
+	c.Assert(resp.RequestId, gocheck.Equals, "086265fd-bf3e-11e2-85fc-fbb1EXAMPLE")
+	c.Assert(resp.Tags, gocheck.DeepEquals, []Tag{
+		{
+			Key:               "version",
+			Value:             "1.0",
+			ResourceId:        "my-test-asg",
+			PropagateAtLaunch: true,
+			ResourceType:      "auto-scaling-group",
+		},
+	})
+}
+
+func (s *S) TestDescribeTerminationPolicyTypes(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeTerminationPolicyTypes)
+	resp, err := s.as.DescribeTerminationPolicyTypes()
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeTerminationPolicyTypes")
+	c.Assert(resp.RequestId, gocheck.Equals, "d9a05827-b735-11e2-a40c-c79a5EXAMPLE")
+	c.Assert(resp.TerminationPolicyTypes, gocheck.DeepEquals, []string{"ClosestToNextInstanceHour", "Default", "NewestInstance", "OldestInstance", "OldestLaunchConfiguration"})
 }
 
 func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {

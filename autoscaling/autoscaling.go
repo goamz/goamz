@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -145,6 +146,50 @@ func makeParams(action string) map[string]string {
 func addParamsList(params map[string]string, label string, ids []string) {
 	for i, id := range ids {
 		params[label+"."+strconv.Itoa(i+1)] = id
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Filtering helper.
+
+// Filter builds filtering parameters to be used in an autoscaling query which supports
+// filtering.  For example:
+//
+//     filter := NewFilter()
+//     filter.Add("architecture", "i386")
+//     filter.Add("launch-index", "0")
+//     resp, err := as.DescribeTags(filter,nil,nil)
+//
+type Filter struct {
+	m map[string][]string
+}
+
+// NewFilter creates a new Filter.
+func NewFilter() *Filter {
+	return &Filter{make(map[string][]string)}
+}
+
+// Add appends a filtering parameter with the given name and value(s).
+func (f *Filter) Add(name string, value ...string) {
+	f.m[name] = append(f.m[name], value...)
+}
+
+func (f *Filter) addParams(params map[string]string) {
+	if f != nil {
+		a := make([]string, len(f.m))
+		i := 0
+		for k := range f.m {
+			a[i] = k
+			i++
+		}
+		sort.StringSlice(a).Sort()
+		for i, k := range a {
+			prefix := "Filters.member." + strconv.Itoa(i+1)
+			params[prefix+".Name"] = k
+			for j, v := range f.m[k] {
+				params[prefix+".Values.member."+strconv.Itoa(j+1)] = v
+			}
+		}
 	}
 }
 
@@ -976,6 +1021,158 @@ func (as *AutoScaling) DescribeScalingActivities(asgName string, activityIds []s
 	return resp, nil
 }
 
+// ProcessType encapsulates the Auto Scaling process data type
+//
+// See http://goo.gl/9BvNik for more details.
+type ProcessType struct {
+	ProcessName string `xml:"ProcessName"`
+}
+
+// DescribeScalingProcessTypes response wrapper
+//
+// See http://goo.gl/rkp2tw for more details.
+type DescribeScalingProcessTypesResp struct {
+	Processes []ProcessType `xml:"DescribeScalingProcessTypesResult>Processes>member"`
+	RequestId string        `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeScalingProcessTypes returns scaling process types for use in the ResumeProcesses and SuspendProcesses actions.
+//
+// See http://goo.gl/rkp2tw for more details.
+func (as *AutoScaling) DescribeScalingProcessTypes() (resp *DescribeScalingProcessTypesResp, err error) {
+	params := makeParams("DescribeScalingProcessTypes")
+
+	resp = new(DescribeScalingProcessTypesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// ScheduledUpdateGroupAction contains the information to be used in a scheduled update to an
+// AutoScalingGroup
+//
+// See http://goo.gl/z2Kfxe for more details
+type ScheduledUpdateGroupAction struct {
+	AutoScalingGroupName string    `xml:"AutoScalingGroupName"`
+	DesiredCapacity      int       `xml:"DesiredCapacity"`
+	EndTime              time.Time `xml:"EndTime"`
+	MaxSize              int       `xml:"MaxSize"`
+	MinSize              int       `xml:"MinSize"`
+	Recurrence           string    `xml:"Recurrence"`
+	ScheduledActionARN   string    `xml:"ScheduledActionARN"`
+	ScheduledActionName  string    `xml:"ScheduledActionName"`
+	StartTime            time.Time `xml:"StartTime"`
+	Time                 time.Time `xml:"Time"`
+}
+
+// DescribeScheduledActionsResult contains the response from a DescribeScheduledActions.
+//
+// See http://goo.gl/zqrJLx for more details.
+type DescribeScheduledActionsResult struct {
+	ScheduledUpdateGroupActions []ScheduledUpdateGroupAction `xml:"DescribeScheduledActions>ScheduledUpdateGroups>member"`
+	NextToken                   string                       `xml:"NextToken"`
+	RequestId                   string                       `xml:"ResponseMetadata>RequestId"`
+}
+
+// ScheduledActionsRequestParams contains the items that can be specified when making
+// a ScheduledActions request
+type DescribeScheduledActionsParams struct {
+	AutoScalingGroupName string
+	EndTime              time.Time
+	MaxRecords           int
+	ScheduledActionNames []string
+	StartTime            time.Time
+	NextToken            string
+}
+
+// DescribeScheduledActions returns a list of the current scheduled actions. If the
+// AutoScalingGroup name is provided it will list all the scheduled actions for that group.
+//
+// See http://goo.gl/zqrJLx for more details.
+func (as *AutoScaling) DescribeScheduledActions(options *DescribeScheduledActionsParams) (
+	resp *DescribeScheduledActionsResult, err error) {
+	params := makeParams("DescribeScheduledActions")
+
+	if options.AutoScalingGroupName != "" {
+		params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	}
+	if !options.StartTime.IsZero() {
+		params["StartTime"] = options.StartTime.Format(time.RFC3339)
+	}
+	if !options.EndTime.IsZero() {
+		params["EndTime"] = options.EndTime.Format(time.RFC3339)
+	}
+	if options.MaxRecords > 0 {
+		params["MaxRecords"] = strconv.Itoa(options.MaxRecords)
+	}
+	if options.NextToken != "" {
+		params["NextToken"] = options.NextToken
+	}
+	if len(options.ScheduledActionNames) > 0 {
+		addParamsList(params, "ScheduledActionNames.member", options.ScheduledActionNames)
+	}
+
+	resp = new(DescribeScheduledActionsResult)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeTags response wrapper
+//
+// See http://goo.gl/ZTEU3G for more details.
+type DescribeTagsResp struct {
+	Tags      []Tag  `xml:"DescribeTagsResult>Tags>member"`
+	NextToken string `xml:"DescribeTagsResult>NextToken"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeTags - Lists the Auto Scaling group tags.
+// Supports pagination by using the returned "NextToken" parameter for subsequent calls
+//
+// See http://goo.gl/ZTEU3G for more details.
+func (as *AutoScaling) DescribeTags(filter *Filter, maxRecords int, nextToken string) (resp *DescribeTagsResp, err error) {
+	params := makeParams("DescribeTags")
+
+	if maxRecords != 0 {
+		params["MaxRecords"] = strconv.Itoa(maxRecords)
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	filter.addParams(params)
+
+	resp = new(DescribeTagsResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeTerminationPolicyTypes response wrapper
+//
+// See http://goo.gl/ZTEU3G for more details.
+type DescribeTerminationPolicyTypesResp struct {
+	TerminationPolicyTypes []string `xml:"DescribeTerminationPolicyTypesResult>TerminationPolicyTypes>member"`
+	RequestId              string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeTerminationPolicyTypes - Returns a list of all termination policies supported by Auto Scaling
+//
+// See http://goo.gl/ZTEU3G for more details.
+func (as *AutoScaling) DescribeTerminationPolicyTypes() (resp *DescribeTerminationPolicyTypesResp, err error) {
+	params := makeParams("DescribeTerminationPolicyTypes")
+
+	resp = new(DescribeTerminationPolicyTypesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // SuspendProcesses suspends the processes for the autoscaling group. If no processes are
 // provided, all processes are suspended.
 //
@@ -1101,75 +1298,6 @@ func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int, h
 	}
 
 	resp = new(SimpleResp)
-	if err := as.query(params, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// ScheduledUpdateGroupAction contains the information to be used in a scheduled update to an
-// AutoScalingGroup
-//
-// See http://goo.gl/z2Kfxe for more details
-type ScheduledUpdateGroupAction struct {
-	AutoScalingGroupName string    `xml:"AutoScalingGroupName"`
-	DesiredCapacity      int       `xml:"DesiredCapacity"`
-	EndTime              time.Time `xml:"EndTime"`
-	MaxSize              int       `xml:"MaxSize"`
-	MinSize              int       `xml:"MinSize"`
-	Recurrence           string    `xml:"Recurrence"`
-	ScheduledActionARN   string    `xml:"ScheduledActionARN"`
-	ScheduledActionName  string    `xml:"ScheduledActionName"`
-	StartTime            time.Time `xml:"StartTime"`
-	Time                 time.Time `xml:"Time"`
-}
-
-// DescribeScheduledActionsResult contains the response from a DescribeScheduledActions.
-type DescribeScheduledActionsResult struct {
-	ScheduledUpdateGroupActions []ScheduledUpdateGroupAction `xml:"DescribeScheduledActions>ScheduledUpdateGroups>member"`
-	NextToken                   string                       `xml:"NextToken"`
-	RequestId                   string                       `xml:"ResponseMetadata>RequestId"`
-}
-
-// ScheduledActionsRequestParams contains the items that can be specified when making
-// a ScheduledActions request
-type DescribeScheduledActionsParams struct {
-	AutoScalingGroupName string
-	EndTime              time.Time
-	MaxRecords           int
-	ScheduledActionNames []string
-	StartTime            time.Time
-	NextToken            string
-}
-
-// DescribeScheduledActions returns a list of the current scheduled actions. If the
-// AutoScalingGroup name is provided it will list all the scheduled actions for that group.
-//
-// See http://goo.gl/zqrJLx for more details.
-func (as *AutoScaling) DescribeScheduledActions(options *DescribeScheduledActionsParams) (
-	resp *DescribeScheduledActionsResult, err error) {
-	params := makeParams("DescribeScheduledActions")
-
-	if options.AutoScalingGroupName != "" {
-		params["AutoScalingGroupName"] = options.AutoScalingGroupName
-	}
-	if !options.StartTime.IsZero() {
-		params["StartTime"] = options.StartTime.Format(time.RFC3339)
-	}
-	if !options.EndTime.IsZero() {
-		params["EndTime"] = options.EndTime.Format(time.RFC3339)
-	}
-	if options.MaxRecords > 0 {
-		params["MaxRecords"] = strconv.Itoa(options.MaxRecords)
-	}
-	if options.NextToken != "" {
-		params["NextToken"] = options.NextToken
-	}
-	if len(options.ScheduledActionNames) > 0 {
-		addParamsList(params, "ScheduledActionNames.member", options.ScheduledActionNames)
-	}
-
-	resp = new(DescribeScheduledActionsResult)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
