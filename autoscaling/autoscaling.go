@@ -536,6 +536,39 @@ func (as *AutoScaling) CreateOrUpdateTags(tags []Tag) (resp *SimpleResp, err err
 	return resp, nil
 }
 
+type CompleteLifecycleActionParams struct {
+	AutoScalingGroupName  string
+	LifecycleActionResult string
+	LifecycleActionToken  string
+	LifecycleHookName     string
+}
+
+// CompleteLifecycleAction completes the lifecycle action for the associated token initiated under the given lifecycle hook with the specified result.
+//
+// Part of the basic sequence for adding a lifecycle hook to an Auto Scaling group:
+// 1) Create a notification target (SQS queue || SNS Topic)
+// 2) Create an IAM role to allow the ASG topublish lifecycle notifications to the designated SQS queue or SNS topic
+// 3) Create the lifecycle hook. You can create a hook that acts when instances launch or when instances terminate
+// 4) If necessary, record the lifecycle action heartbeat to keep the instance in a pending state
+// 5) ***Complete the lifecycle action***
+//
+// See http://goo.gl/k4fl0p for more details
+func (as *AutoScaling) CompleteLifecycleAction(options *CompleteLifecycleActionParams) (
+	resp *SimpleResp, err error) {
+	params := makeParams("CompleteLifecycleAction")
+
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["LifecycleActionResult"] = options.LifecycleActionResult
+	params["LifecycleActionToken"] = options.LifecycleActionToken
+	params["LifecycleHookName"] = options.LifecycleHookName
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // DeleteAutoScalingGroup deletes an Auto Scaling Group
 //
 // See http://goo.gl/us7VSffor for more details.
@@ -561,6 +594,22 @@ func (as *AutoScaling) DeleteAutoScalingGroup(asgName string, forceDelete bool) 
 func (as *AutoScaling) DeleteLaunchConfiguration(name string) (resp *SimpleResp, err error) {
 	params := makeParams("DeleteLaunchConfiguration")
 	params["LaunchConfigurationName"] = name
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DeleteLifecycleHook eletes the specified lifecycle hook.
+// If there are any outstanding lifecycle actions, they are completed first
+//
+// See http://goo.gl/MwX1vG for more details.
+func (as *AutoScaling) DeleteLifecycleHook(asgName, lifecycleHookName string) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteLifecycleHook")
+	params["AutoScalingGroupName"] = asgName
+	params["LifecycleHookName"] = lifecycleHookName
 
 	resp = new(SimpleResp)
 	if err := as.query(params, resp); err != nil {
@@ -818,6 +867,8 @@ type DescribeLaunchConfigurationsResp struct {
 // DescribeLaunchConfigurations returns details about the launch configurations supplied in
 // the list. If the list is nil, information is returned about all launch configurations in the
 // region.
+//
+// See http://goo.gl/y31YYE for more details.
 func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords int, nextToken string) (
 	resp *DescribeLaunchConfigurationsResp, err error) {
 	params := makeParams("DescribeLaunchConfigurations")
@@ -833,6 +884,29 @@ func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords i
 	}
 
 	resp = new(DescribeLaunchConfigurationsResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// DescribeLifecycleHookTypesResult wraps a DescribeLifecycleHookTypes response
+//
+// See http://goo.gl/qiAH31 for more details.
+type DescribeLifecycleHookTypesResult struct {
+	NotificationConfigurations []string `xml:"DescribeLifecycleHookTypesResult>LifecycleHookTypes>member"`
+	RequestId                  string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeLifecycleHookTypes describes the available types of lifecycle hooks
+//
+// See http://goo.gl/E9IBtY for more information
+func (as *AutoScaling) DescribeLifecycleHookTypes() (
+	resp *DescribeLifecycleHookTypesResult, err error) {
+	params := makeParams("DescribeLifecycleHookTypes")
+
+	resp = new(DescribeLifecycleHookTypesResult)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
