@@ -1249,20 +1249,109 @@ func (as *AutoScaling) ExecutePolicy(policyName string, asgName string, honorCoo
 	return resp, nil
 }
 
-// SuspendProcesses suspends the processes for the autoscaling group. If no processes are
-// provided, all processes are suspended.
+// PutNotificationConfigurationconfigures an Auto Scaling group to send notifications when specified events take place.
 //
-// If you suspend either of the two primary processes (Launch or Terminate), this can prevent other
-// process types from functioning properly.
-//
-// See http://goo.gl/DUJpQy for more details.
-func (as *AutoScaling) SuspendProcesses(asgName string, processes []string) (
+// See http://goo.gl/9XrROq for more details.
+func (as *AutoScaling) PutNotificationConfiguration(asgName string, notificationTypes []string, topicARN string) (
 	resp *SimpleResp, err error) {
-	params := makeParams("SuspendProcesses")
+	params := makeParams("PutNotificationConfiguration")
 	params["AutoScalingGroupName"] = asgName
+	params["TopicARN"] = topicARN
 
-	if len(processes) > 0 {
-		addParamsList(params, "ScalingProcesses.member", processes)
+	if len(notificationTypes) > 0 {
+		addParamsList(params, "NotificationTypes.member", notificationTypes)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// PutScalingPolicyParams wraps a PutScalingPolicyParams request
+type PutScalingPolicyParams struct {
+	AutoScalingGroupName string
+	PolicyName           string
+	ScalingAdjustment    int
+	AdjustmentType       string
+	Cooldown             int
+	MinAdjustmentStep    int
+}
+
+// PutScalingPolicy response wrapper
+//
+// See http://goo.gl/o0E8hl for more details.
+type PutScalingPolicyResp struct {
+	PolicyARN string `xml:"PutScalingPolicyResult>PolicyARN"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// PutScalingPolicy creates or updates a policy for an Auto Scaling group
+//
+// See http://goo.gl/o0E8hl for more details.
+func (as *AutoScaling) PutScalingPolicy(options *PutScalingPolicyParams) (
+	resp *PutScalingPolicyResp, err error) {
+	params := makeParams("PutScalingPolicy")
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["PolicyName"] = options.PolicyName
+	params["ScalingAdjustment"] = strconv.Itoa(options.ScalingAdjustment)
+	params["AdjustmentType"] = options.AdjustmentType
+
+	if options.Cooldown != 0 {
+		params["Cooldown"] = strconv.Itoa(options.Cooldown)
+	}
+	if options.MinAdjustmentStep != 0 {
+		params["MinAdjustmentStep"] = strconv.Itoa(options.MinAdjustmentStep)
+	}
+
+	resp = new(PutScalingPolicyResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// PutScheduledUpdateGroupActionParams contains the details of the ScheduledAction to be added.
+//
+// See http://goo.gl/sLPi0d for more details
+type PutScheduledUpdateGroupActionParams struct {
+	AutoScalingGroupName string
+	DesiredCapacity      int
+	EndTime              time.Time
+	MaxSize              int
+	MinSize              int
+	Recurrence           string
+	ScheduledActionName  string
+	StartTime            time.Time
+}
+
+// PutScheduledUpdateGroupAction creates or updates a scheduled scaling action for an
+// AutoScaling group. Scheduled actions can be made up to thirty days in advance. When updating
+// a scheduled scaling action, if you leave a parameter unspecified, the corresponding value
+// remains unchanged in the affected AutoScaling group.
+//
+// Auto Scaling supports the date and time expressed in "YYYY-MM-DDThh:mm:ssZ" format in UTC/GMT
+// only.
+//
+// See http://goo.gl/sLPi0d for more details.
+func (as *AutoScaling) PutScheduledUpdateGroupAction(options *PutScheduledUpdateGroupActionParams) (
+	resp *SimpleResp, err error) {
+	params := makeParams("PutScheduledUpdateGroupAction")
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["ScheduledActionName"] = options.ScheduledActionName
+	params["MinSize"] = strconv.Itoa(options.MinSize)
+	params["MaxSize"] = strconv.Itoa(options.MaxSize)
+	params["DesiredCapacity"] = strconv.Itoa(options.DesiredCapacity)
+
+	if !options.StartTime.IsZero() {
+		params["StartTime"] = options.StartTime.Format(time.RFC3339)
+	}
+	if !options.EndTime.IsZero() {
+		params["EndTime"] = options.EndTime.Format(time.RFC3339)
+	}
+	if options.Recurrence != "" {
+		params["Recurrence"] = options.Recurrence
 	}
 
 	resp = new(SimpleResp)
@@ -1279,6 +1368,64 @@ func (as *AutoScaling) SuspendProcesses(asgName string, processes []string) (
 func (as *AutoScaling) ResumeProcesses(asgName string, processes []string) (
 	resp *SimpleResp, err error) {
 	params := makeParams("ResumeProcesses")
+	params["AutoScalingGroupName"] = asgName
+
+	if len(processes) > 0 {
+		addParamsList(params, "ScalingProcesses.member", processes)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// SetDesiredCapacity changes the DesiredCapacity of an AutoScaling group.
+//
+// See http://goo.gl/3WGZbI for more details.
+func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int, honorCooldown bool) (
+	resp *SimpleResp, err error) {
+	params := makeParams("SetDesiredCapacity")
+	params["AutoScalingGroupName"] = asgName
+	params["DesiredCapacity"] = strconv.Itoa(desiredCapacity)
+	params["HonorCooldown"] = strconv.FormatBool(honorCooldown)
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// SetInstanceHealth sets the health status of a specified instance that belongs to any of your Auto Scaling groups.
+//
+// See http://goo.gl/j4ZRxh for more details.
+func (as *AutoScaling) SetInstanceHealth(id string, healthStatus string, respectGracePeriod bool) (
+	resp *SimpleResp, err error) {
+	params := makeParams("SetInstanceHealth")
+	params["HealthStatus"] = healthStatus
+	params["InstanceId"] = id
+	// Default is true
+	params["ShouldRespectGracePeriod"] = strconv.FormatBool(respectGracePeriod)
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// SuspendProcesses suspends the processes for the autoscaling group. If no processes are
+// provided, all processes are suspended.
+//
+// If you suspend either of the two primary processes (Launch or Terminate), this can prevent other
+// process types from functioning properly.
+//
+// See http://goo.gl/DUJpQy for more details.
+func (as *AutoScaling) SuspendProcesses(asgName string, processes []string) (
+	resp *SimpleResp, err error) {
+	params := makeParams("SuspendProcesses")
 	params["AutoScalingGroupName"] = asgName
 
 	if len(processes) > 0 {
@@ -1351,76 +1498,6 @@ func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupPar
 	}
 	if len(options.AvailabilityZones) > 0 {
 		addParamsList(params, "AvailabilityZones.member", options.AvailabilityZones)
-	}
-
-	resp = new(SimpleResp)
-	if err := as.query(params, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// SetDesiredCapacity changes the DesiredCapacity of an AutoScaling group.
-//
-// See http://goo.gl/3WGZbI for more details.
-func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int, honorCooldown bool) (
-	resp *SimpleResp, err error) {
-	params := makeParams("SetDesiredCapacity")
-	params["AutoScalingGroupName"] = asgName
-	params["DesiredCapacity"] = strconv.Itoa(desiredCapacity)
-
-	if honorCooldown {
-		params["HonorCooldown"] = "true"
-	}
-
-	resp = new(SimpleResp)
-	if err := as.query(params, resp); err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// PutScheduledUpdateGroupActionParams contains the details of the ScheduledAction to be added.
-//
-// See http://goo.gl/sLPi0d for more details
-type PutScheduledUpdateGroupActionParams struct {
-	AutoScalingGroupName string
-	DesiredCapacity      int
-	EndTime              time.Time
-	MaxSize              int
-	MinSize              int
-	Recurrence           string
-	ScheduledActionName  string
-	StartTime            time.Time
-}
-
-// PutScheduledUpdateGroupAction creates or updates a scheduled scaling action for an
-// AutoScaling group. Scheduled actions can be made up to thirty days in advance. When updating
-// a scheduled scaling action, if you leave a parameter unspecified, the corresponding value
-// remains unchanged in the affected AutoScaling group.
-//
-// Auto Scaling supports the date and time expressed in "YYYY-MM-DDThh:mm:ssZ" format in UTC/GMT
-// only.
-//
-// See http://goo.gl/sLPi0d for more details.
-func (as *AutoScaling) PutScheduledUpdateGroupAction(options *PutScheduledUpdateGroupActionParams) (
-	resp *SimpleResp, err error) {
-	params := makeParams("PutScheduledUpdateGroupAction")
-	params["AutoScalingGroupName"] = options.AutoScalingGroupName
-	params["ScheduledActionName"] = options.ScheduledActionName
-	params["MinSize"] = strconv.Itoa(options.MinSize)
-	params["MaxSize"] = strconv.Itoa(options.MaxSize)
-	params["DesiredCapacity"] = strconv.Itoa(options.DesiredCapacity)
-
-	if !options.StartTime.IsZero() {
-		params["StartTime"] = options.StartTime.Format(time.RFC3339)
-	}
-	if !options.EndTime.IsZero() {
-		params["EndTime"] = options.EndTime.Format(time.RFC3339)
-	}
-
-	if options.Recurrence != "" {
-		params["Recurrence"] = options.Recurrence
 	}
 
 	resp = new(SimpleResp)

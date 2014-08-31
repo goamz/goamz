@@ -841,48 +841,41 @@ func (s *S) TestExecutePolicy(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
-	testServer.Response(200, nil, UpdateAutoScalingGroup)
-
-	asg := &UpdateAutoScalingGroupParams{
-		AutoScalingGroupName:    "my-test-asg",
-		AvailabilityZones:       []string{"us-east-1a", "us-east-1b"},
-		MinSize:                 3,
-		MaxSize:                 3,
-		DefaultCooldown:         600,
-		DesiredCapacity:         3,
-		LaunchConfigurationName: "my-test-lc",
-		VPCZoneIdentifier:       "subnet-610acd08,subnet-530fc83a",
-	}
-	resp, err := s.as.UpdateAutoScalingGroup(asg)
+func (s *S) TestPutNotificationConfiguration(c *gocheck.C) {
+	testServer.Response(200, nil, PutNotificationConfiguration)
+	resp, err := s.as.PutNotificationConfiguration("my-test-asg", []string{"autoscaling:EC2_INSTANCE_LAUNCH", "autoscaling:EC2_INSTANCE_LAUNCH_ERROR"}, "myTopicARN")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
 	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "UpdateAutoScalingGroup")
+	c.Assert(values.Get("Action"), gocheck.Equals, "PutNotificationConfiguration")
 	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("AvailabilityZones.member.1"), gocheck.Equals, "us-east-1a")
-	c.Assert(values.Get("AvailabilityZones.member.2"), gocheck.Equals, "us-east-1b")
-	c.Assert(values.Get("MinSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("MaxSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("DefaultCooldown"), gocheck.Equals, "600")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
+	c.Assert(values.Get("TopicARN"), gocheck.Equals, "myTopicARN")
+	c.Assert(values.Get("NotificationTypes.member.1"), gocheck.Equals, "autoscaling:EC2_INSTANCE_LAUNCH")
+	c.Assert(values.Get("NotificationTypes.member.2"), gocheck.Equals, "autoscaling:EC2_INSTANCE_LAUNCH_ERROR")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestResumeProcesses(c *gocheck.C) {
-	testServer.Response(200, nil, ResumeProcesses)
-	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
+func (s *S) TestPutScalingPolicy(c *gocheck.C) {
+	testServer.Response(200, nil, PutScalingPolicy)
+	request := &PutScalingPolicyParams{
+		AutoScalingGroupName: "my-test-asg",
+		PolicyName:           "my-scaleout-policy",
+		ScalingAdjustment:    30,
+		AdjustmentType:       "PercentChangeInCapacity",
+		Cooldown:             0,
+		MinAdjustmentStep:    0,
+	}
+	resp, err := s.as.PutScalingPolicy(request)
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
 	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ResumeProcesses")
+	c.Assert(values.Get("Action"), gocheck.Equals, "PutScalingPolicy")
 	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
-	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
-
+	c.Assert(values.Get("PolicyName"), gocheck.Equals, "my-scaleout-policy")
+	c.Assert(values.Get("AdjustmentType"), gocheck.Equals, "PercentChangeInCapacity")
+	c.Assert(values.Get("ScalingAdjustment"), gocheck.Equals, "30")
+	c.Assert(resp.RequestId, gocheck.Equals, "3cfc6fef-c08b-11e2-a697-2922EXAMPLE")
+	c.Assert(resp.PolicyARN, gocheck.Equals, "arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:b0dcf5e8-02e6-4e31-9719-0675d0dc31ae:autoScalingGroupName/my-test-asg:policyName/my-scaleout-policy")
 }
 
 func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
@@ -930,4 +923,48 @@ func (s *S) TestSuspendProcesses(c *gocheck.C) {
 	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
 	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
+	testServer.Response(200, nil, UpdateAutoScalingGroup)
+
+	asg := &UpdateAutoScalingGroupParams{
+		AutoScalingGroupName:    "my-test-asg",
+		AvailabilityZones:       []string{"us-east-1a", "us-east-1b"},
+		MinSize:                 3,
+		MaxSize:                 3,
+		DefaultCooldown:         600,
+		DesiredCapacity:         3,
+		LaunchConfigurationName: "my-test-lc",
+		VPCZoneIdentifier:       "subnet-610acd08,subnet-530fc83a",
+	}
+	resp, err := s.as.UpdateAutoScalingGroup(asg)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "UpdateAutoScalingGroup")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("AvailabilityZones.member.1"), gocheck.Equals, "us-east-1a")
+	c.Assert(values.Get("AvailabilityZones.member.2"), gocheck.Equals, "us-east-1b")
+	c.Assert(values.Get("MinSize"), gocheck.Equals, "3")
+	c.Assert(values.Get("MaxSize"), gocheck.Equals, "3")
+	c.Assert(values.Get("DefaultCooldown"), gocheck.Equals, "600")
+	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
+	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
+	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestResumeProcesses(c *gocheck.C) {
+	testServer.Response(200, nil, ResumeProcesses)
+	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ResumeProcesses")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
+	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+
 }
