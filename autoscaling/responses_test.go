@@ -457,6 +457,28 @@ var DescribeTagsResponse = `
   </ResponseMetadata>
 </DescribeTagsResponse> 
 `
+var DetachInstancesResponse = `
+<DetachInstancesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <DetachInstancesResult>
+    <Activities>
+      <member>
+        <ActivityId>e54ff599-bf05-4076-8b95-a0f090ed90bb</ActivityId>
+        <Progress>50</Progress>
+        <StatusCode>InProgress</StatusCode>
+        <StartTime>2014-06-14T00:07:30.280Z</StartTime>
+        <Cause>At 2014-06-14T00:07:30Z instance i-5f2e8a0d was detached in response to a user request, shrinking the capacity from 4 to 3.</Cause>
+        <AutoScalingGroupName>my-asg</AutoScalingGroupName>
+        <Details>{"Availability Zone":"us-east-1a"}</Details>
+        <Description>Detaching EC2 instance: i-5f2e8a0d</Description>
+      </member>
+    </Activities>
+  </DetachInstancesResult>
+  <ResponseMetadata>
+    <RequestId>e04f3b11-f357-11e3-a434-7f10009d5849</RequestId>
+  </ResponseMetadata>
+</DetachInstancesResponse> 
+`
+
 var DisableMetricsCollectionResponse = `
 <DisableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>

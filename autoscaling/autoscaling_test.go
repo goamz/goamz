@@ -843,6 +843,35 @@ func (s *S) TestDescribeTerminationPolicyTypes(c *gocheck.C) {
 	c.Assert(resp.TerminationPolicyTypes, gocheck.DeepEquals, []string{"ClosestToNextInstanceHour", "Default", "NewestInstance", "OldestInstance", "OldestLaunchConfiguration"})
 }
 
+func (s *S) TestDetachInstances(c *gocheck.C) {
+	testServer.Response(200, nil, DetachInstancesResponse)
+	resp, err := s.as.DetachInstances("my-asg", []string{"i-5f2e8a0d"}, true)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DetachInstances")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
+	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), gocheck.Equals, "true")
+	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-5f2e8a0d")
+	st, _ := time.Parse(time.RFC3339, "2014-06-14T00:07:30.280Z")
+	expected := &DetachInstancesResult{
+		RequestId: "e04f3b11-f357-11e3-a434-7f10009d5849",
+		Activities: []Activity{
+			{
+				StatusCode:           "InProgress",
+				Progress:             50,
+				ActivityId:           "e54ff599-bf05-4076-8b95-a0f090ed90bb",
+				StartTime:            st,
+				AutoScalingGroupName: "my-asg",
+				Details:              "{\"Availability Zone\":\"us-east-1a\"}",
+				Cause:                "At 2014-06-14T00:07:30Z instance i-5f2e8a0d was detached in response to a user request, shrinking the capacity from 4 to 3.",
+				Description:          "Detaching EC2 instance: i-5f2e8a0d",
+			},
+		},
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
 func (s *S) TestDisableMetricsCollection(c *gocheck.C) {
 	testServer.Response(200, nil, DisableMetricsCollectionResponse)
 	resp, err := s.as.DisableMetricsCollection("my-test-asg", []string{"GroupMinSize"})

@@ -895,8 +895,8 @@ func (as *AutoScaling) DescribeLaunchConfigurations(names []string, maxRecords i
 //
 // See http://goo.gl/qiAH31 for more details.
 type DescribeLifecycleHookTypesResult struct {
-	NotificationConfigurations []string `xml:"DescribeLifecycleHookTypesResult>LifecycleHookTypes>member"`
-	RequestId                  string   `xml:"ResponseMetadata>RequestId"`
+	LifecycleHookTypes []string `xml:"DescribeLifecycleHookTypesResult>LifecycleHookTypes>member"`
+	RequestId          string   `xml:"ResponseMetadata>RequestId"`
 }
 
 // DescribeLifecycleHookTypes describes the available types of lifecycle hooks
@@ -910,7 +910,74 @@ func (as *AutoScaling) DescribeLifecycleHookTypes() (
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
+	return resp, nil
+}
 
+// LifecycleHook represents a lifecyclehook object
+//
+// See http://goo.gl/j62Iqu for more information
+type LifecycleHook struct {
+	AutoScalingGroupName  string `xml:"AutoScalingGroupName"`
+	DefaultResult         string `xml:"DefaultResult"`
+	GlobalTimeout         int    `xml:"GlobalTimeout"`
+	HeartbeatTimeout      int    `xml:"HeartbeatTimeout"`
+	LifecycleHookName     string `xml:"LifecycleHookName"`
+	LifecycleTransition   string `xml:"LifecycleTransition"`
+	NotificationMetadata  string `xml:"NotificationMetadata"`
+	NotificationTargetARN string `xml:"NotificationTargetARN"`
+	RoleARN               string `xml:"RoleARN"`
+}
+
+// DescribeLifecycleHooks wraps a DescribeLifecycleHooks response
+//
+// See http://goo.gl/wQkWiz for more details.
+type DescribeLifecycleHooksResult struct {
+	LifecycleHooks []string `xml:"DescribeLifecycleHooksResult>LifecycleHooks>member"`
+	RequestId      string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeLifecycleHooks describes the lifecycle hooks that currently belong to the specified Auto Scaling group
+//
+// See http://goo.gl/wQkWiz for more information
+func (as *AutoScaling) DescribeLifecycleHooks(asgName string, hookNames []string) (
+	resp *DescribeLifecycleHooksResult, err error) {
+	params := makeParams("DescribeLifecycleHooks")
+	params["AutoScalingGroupName"] = asgName
+
+	if len(hookNames) > 0 {
+		addParamsList(params, "LifecycleHookNames.member", hookNames)
+	}
+
+	resp = new(DescribeLifecycleHooksResult)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DetachInstancesResult wraps a DetachInstances response
+type DetachInstancesResult struct {
+	Activities []Activity `xml:"DetachInstancesResult>Activities>member"`
+	RequestId  string     `xml:"ResponseMetadata>RequestId"`
+}
+
+// DetachInstances removes an instance from an Auto Scaling group
+//
+// See http://goo.gl/cNwrqF for more details
+func (as *AutoScaling) DetachInstances(asgName string, instanceIds []string, decrementCapacity bool) (
+	resp *DetachInstancesResult, err error) {
+	params := makeParams("DetachInstances")
+	params["AutoScalingGroupName"] = asgName
+	params["ShouldDecrementDesiredCapacity"] = strconv.FormatBool(decrementCapacity)
+
+	if len(instanceIds) > 0 {
+		addParamsList(params, "InstanceIds.member", instanceIds)
+	}
+
+	resp = new(DetachInstancesResult)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
 
