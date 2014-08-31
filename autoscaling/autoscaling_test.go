@@ -230,7 +230,70 @@ func TestAutoScalingGroup(t *testing.T) {
 	testServer.Flush()
 }
 
+// --------------------------------------------------------------------------
 // Detailed Unit Tests
+
+func (s *S) TestAttachInstances(c *gocheck.C) {
+	testServer.Response(200, nil, AttachInstances)
+	resp, err := s.as.AttachInstances("my-test-asg", []string{"i-21321afs", "i-baaffg23"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "AttachInstances")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-21321afs")
+	c.Assert(values.Get("InstanceIds.member.2"), gocheck.Equals, "i-baaffg23")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
+	testServer.Response(200, nil, CreateAutoScalingGroup)
+	testServer.Response(200, nil, DeleteAutoScalingGroup)
+
+	createAS := &CreateAutoScalingGroupParams{
+		AutoScalingGroupName:    "my-test-asg",
+		AvailabilityZones:       []string{"us-east-1a", "us-east-1b"},
+		MinSize:                 3,
+		MaxSize:                 3,
+		DefaultCooldown:         600,
+		DesiredCapacity:         0,
+		LaunchConfigurationName: "my-test-lc",
+		LoadBalancerNames:       []string{"elb-1", "elb-2"},
+		Tags: []Tag{
+			{
+				Key:   "foo",
+				Value: "bar",
+			},
+			{
+				Key:   "baz",
+				Value: "qux",
+			},
+		},
+		VPCZoneIdentifier: "subnet-610acd08,subnet-530fc83a",
+	}
+	resp, err := s.as.CreateAutoScalingGroup(createAS)
+	c.Assert(err, gocheck.IsNil)
+	defer s.as.DeleteAutoScalingGroup(createAS.AutoScalingGroupName, true)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateAutoScalingGroup")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("AvailabilityZones.member.1"), gocheck.Equals, "us-east-1a")
+	c.Assert(values.Get("AvailabilityZones.member.2"), gocheck.Equals, "us-east-1b")
+	c.Assert(values.Get("MinSize"), gocheck.Equals, "3")
+	c.Assert(values.Get("MaxSize"), gocheck.Equals, "3")
+	c.Assert(values.Get("DefaultCooldown"), gocheck.Equals, "600")
+	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "0")
+	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
+	c.Assert(values.Get("LoadBalancerNames.member.1"), gocheck.Equals, "elb-1")
+	c.Assert(values.Get("LoadBalancerNames.member.2"), gocheck.Equals, "elb-2")
+	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
+	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
+	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
+	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
+	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
 
 func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
 	testServer.Response(200, nil, CreateLaunchConfiguration)
@@ -296,82 +359,34 @@ func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "7c6e177f-f082-11e1-ac58-3714bEXAMPLE")
 }
 
-func (s *S) TestDeleteLaunchConfiguration(c *gocheck.C) {
-	testServer.Response(200, nil, DeleteLaunchConfiguration)
-	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
-	c.Assert(err, gocheck.IsNil)
-	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteLaunchConfiguration")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(resp.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
-}
-
-func (s *S) TestDeleteLaunchConfigurationInUse(c *gocheck.C) {
-	testServer.Response(400, nil, DeleteLaunchConfigurationInUse)
-	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
-	testServer.WaitRequest()
-	c.Assert(resp, gocheck.IsNil)
-	c.Assert(err, gocheck.NotNil)
-	e, ok := err.(*Error)
-	if !ok {
-		c.Errorf("Unable to unmarshal error into AWS Autoscaling Error")
-	}
-	c.Logf("%v %v %v", e.Code, e.Message, e.RequestId)
-	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(e.Message, gocheck.Equals, "Cannot delete launch configuration my-test-lc because it is attached to AutoScalingGroup test")
-	c.Assert(e.Code, gocheck.Equals, "ResourceInUse")
-	c.Assert(e.StatusCode, gocheck.Equals, 400)
-	c.Assert(e.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
-}
-
-func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
-	testServer.Response(200, nil, CreateAutoScalingGroup)
-	testServer.Response(200, nil, DeleteAutoScalingGroup)
-
-	createAS := &CreateAutoScalingGroupParams{
-		AutoScalingGroupName:    "my-test-asg",
-		AvailabilityZones:       []string{"us-east-1a", "us-east-1b"},
-		MinSize:                 3,
-		MaxSize:                 3,
-		DefaultCooldown:         600,
-		DesiredCapacity:         0,
-		LaunchConfigurationName: "my-test-lc",
-		LoadBalancerNames:       []string{"elb-1", "elb-2"},
-		Tags: []Tag{
-			{
-				Key:   "foo",
-				Value: "bar",
-			},
-			{
-				Key:   "baz",
-				Value: "qux",
-			},
+func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
+	testServer.Response(200, nil, CreateOrUpdateTags)
+	tags := []Tag{
+		{
+			Key:        "foo",
+			Value:      "bar",
+			ResourceId: "my-test-asg",
 		},
-		VPCZoneIdentifier: "subnet-610acd08,subnet-530fc83a",
+		{
+			Key:               "baz",
+			Value:             "qux",
+			ResourceId:        "my-test-asg",
+			PropagateAtLaunch: true,
+		},
 	}
-	resp, err := s.as.CreateAutoScalingGroup(createAS)
+	resp, err := s.as.CreateOrUpdateTags(tags)
 	c.Assert(err, gocheck.IsNil)
-	defer s.as.DeleteAutoScalingGroup(createAS.AutoScalingGroupName, true)
 	values := testServer.WaitRequest().PostForm
 	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateAutoScalingGroup")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("AvailabilityZones.member.1"), gocheck.Equals, "us-east-1a")
-	c.Assert(values.Get("AvailabilityZones.member.2"), gocheck.Equals, "us-east-1b")
-	c.Assert(values.Get("MinSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("MaxSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("DefaultCooldown"), gocheck.Equals, "600")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "0")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(values.Get("LoadBalancerNames.member.1"), gocheck.Equals, "elb-1")
-	c.Assert(values.Get("LoadBalancerNames.member.2"), gocheck.Equals, "elb-2")
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateOrUpdateTags")
 	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
 	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
+	c.Assert(values.Get("Tags.member.1.ResourceId"), gocheck.Equals, "my-test-asg")
 	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
 	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
-	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Tags.member.2.ResourceId"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), gocheck.Equals, "true")
+	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
 }
 
 func (s *S) TestDeleteAutoScalingGroup(c *gocheck.C) {
@@ -402,34 +417,33 @@ func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *gocheck.C) {
 	c.Assert(e.RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
 }
 
-func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
-	testServer.Response(200, nil, CreateOrUpdateTags)
-	tags := []Tag{
-		{
-			Key:        "foo",
-			Value:      "bar",
-			ResourceId: "my-test-asg",
-		},
-		{
-			Key:               "baz",
-			Value:             "qux",
-			ResourceId:        "my-test-asg",
-			PropagateAtLaunch: true,
-		},
-	}
-	resp, err := s.as.CreateOrUpdateTags(tags)
+func (s *S) TestDeleteLaunchConfiguration(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteLaunchConfiguration)
+	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
 	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateOrUpdateTags")
-	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
-	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
-	c.Assert(values.Get("Tags.member.1.ResourceId"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
-	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
-	c.Assert(values.Get("Tags.member.2.ResourceId"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), gocheck.Equals, "true")
-	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteLaunchConfiguration")
+	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
+	c.Assert(resp.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
+}
+
+func (s *S) TestDeleteLaunchConfigurationInUse(c *gocheck.C) {
+	testServer.Response(400, nil, DeleteLaunchConfigurationInUse)
+	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
+	testServer.WaitRequest()
+	c.Assert(resp, gocheck.IsNil)
+	c.Assert(err, gocheck.NotNil)
+	e, ok := err.(*Error)
+	if !ok {
+		c.Errorf("Unable to unmarshal error into AWS Autoscaling Error")
+	}
+	c.Logf("%v %v %v", e.Code, e.Message, e.RequestId)
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(e.Message, gocheck.Equals, "Cannot delete launch configuration my-test-lc because it is attached to AutoScalingGroup test")
+	c.Assert(e.Code, gocheck.Equals, "ResourceInUse")
+	c.Assert(e.StatusCode, gocheck.Equals, 400)
+	c.Assert(e.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
 }
 
 func (s *S) TestDeleteTags(c *gocheck.C) {
@@ -571,7 +585,7 @@ func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
 
-func (s *S) DescriveScheduledActions(c *gocheck.C) {
+func (s *S) DescribeScheduledActions(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
 	request := &DescribeScheduledActionsParams{

@@ -1,3 +1,9 @@
+//
+// autoscaling: This package provides types and functions to interact with the AWS Auto Scale API
+//
+// Depends on https://wiki.ubuntu.com/goamz
+//
+
 package autoscaling
 
 import (
@@ -25,10 +31,13 @@ type AutoScaling struct {
 	aws.Region
 }
 
-type xmlErrors struct {
-	RequestId string  `xml:"RequestId"`
-	Errors    []Error `xml:"Error"`
+// New creates a new AutoScaling Client.
+func New(auth aws.Auth, region aws.Region) *AutoScaling {
+	return &AutoScaling{auth, region}
 }
+
+// ----------------------------------------------------------------------------
+// Request dispatching logic.
 
 // Error encapsulates an error returned by the AWS Auto Scaling API.
 //
@@ -53,9 +62,9 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s (%s)", err.Message, err.Code)
 }
 
-// New creates a new AutoScaling
-func New(auth aws.Auth, region aws.Region) *AutoScaling {
-	return &AutoScaling{auth, region}
+type xmlErrors struct {
+	RequestId string  `xml:"RequestId"`
+	Errors    []Error `xml:"Error"`
 }
 
 func (as *AutoScaling) query(params map[string]string, resp interface{}) error {
@@ -101,6 +110,24 @@ func (as *AutoScaling) query(params map[string]string, resp interface{}) error {
 	return err
 }
 
+func buildError(r *http.Response) error {
+	var (
+		err    Error
+		errors xmlErrors
+	)
+	xml.NewDecoder(r.Body).Decode(&errors)
+	if len(errors.Errors) > 0 {
+		err = errors.Errors[0]
+	}
+
+	err.RequestId = errors.RequestId
+	err.StatusCode = r.StatusCode
+	if err.Message == "" {
+		err.Message = r.Status
+	}
+	return &err
+}
+
 func multimap(p map[string]string) url.Values {
 	q := make(url.Values, len(p))
 	for k, v := range p {
@@ -119,24 +146,6 @@ func addParamsList(params map[string]string, label string, ids []string) {
 	for i, id := range ids {
 		params[label+"."+strconv.Itoa(i+1)] = id
 	}
-}
-
-func buildError(r *http.Response) error {
-	var (
-		err    Error
-		errors xmlErrors
-	)
-	xml.NewDecoder(r.Body).Decode(&errors)
-	if len(errors.Errors) > 0 {
-		err = errors.Errors[0]
-	}
-
-	err.RequestId = errors.RequestId
-	err.StatusCode = r.StatusCode
-	if err.Message == "" {
-		err.Message = r.Status
-	}
-	return &err
 }
 
 // ----------------------------------------------------------------------------
@@ -233,6 +242,25 @@ type CreateAutoScalingGroupParams struct {
 	Tags                    []Tag
 	TerminationPolicies     []string
 	VPCZoneIdentifier       string
+}
+
+// AttachInstances Attach running instances to an autoscaling group
+//
+// See http://goo.gl/zDZbuQ for more details.
+func (as *AutoScaling) AttachInstances(name string, instanceIds []string) (resp *SimpleResp, err error) {
+	params := makeParams("AttachInstances")
+	params["AutoScalingGroupName"] = name
+
+	for i, id := range instanceIds {
+		key := fmt.Sprintf("InstanceIds.member.%d", i+1)
+		params[key] = id
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // CreateAutoScalingGroup creates an Auto Scaling Group on AWS
@@ -786,9 +814,6 @@ func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int64,
 	}
 	return resp, nil
 }
-
-// ----------------------------------------------------------------------------
-// Autoscaling scheduled actions types and methods
 
 // ScheduledUpdateGroupAction contains the information to be used in a scheduled update to an
 // AutoScalingGroup
