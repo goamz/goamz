@@ -1,14 +1,23 @@
 package autoscaling
 
-var AttachInstances = `
+var AttachInstancesResponse = `
 <AttachInstancesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </AttachInstancesResponse> 
 `
-
-var CreateAutoScalingGroup = `
+var BasicGroupResponse = `
+<DescribeAutoScalingGroupsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <DescribeAutoScalingGroupsResult>
+    <AutoScalingGroups/>
+  </DescribeAutoScalingGroupsResult>
+  <ResponseMetadata>
+    <RequestId>08c3bedc-8421-11e3-9bb5-bfa219b29cce</RequestId>
+  </ResponseMetadata>
+</DescribeAutoScalingGroupsResponse>
+`
+var CreateAutoScalingGroupResponse = `
 <CreateAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
@@ -16,21 +25,28 @@ var CreateAutoScalingGroup = `
 </CreateAutoScalingGroupResponse> 
 `
 
-var CreateLaunchConfiguration = `
+var CreateLaunchConfigurationResponse = `
 <CreateLaunchConfigurationResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 <ResponseMetadata>
    <RequestId>7c6e177f-f082-11e1-ac58-3714bEXAMPLE</RequestId>
 </ResponseMetadata>
 </CreateLaunchConfigurationResponse> 
 `
-var DeleteAutoScalingGroup = `
+var CreateOrUpdateTagsResponse = `
+<CreateOrUpdateTagsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>b0203919-bf1b-11e2-8a01-13263EXAMPLE</RequestId>
+  </ResponseMetadata>
+</CreateOrUpdateTagsResponse>
+`
+var DeleteAutoScalingGroupResponse = `
  <DeleteAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>
     <RequestId>70a76d42-9665-11e2-9fdf-211deEXAMPLE</RequestId>
   </ResponseMetadata>
  </DeleteAutoScalingGroupResponse> 
 `
-var DeleteAutoScalingGroupError = `
+var DeleteAutoScalingGroupErrorResponse = `
 <ErrorResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <Error>
     <Type>Sender</Type>
@@ -40,14 +56,14 @@ var DeleteAutoScalingGroupError = `
   <RequestId>70a76d42-9665-11e2-9fdf-211deEXAMPLE</RequestId>
 </ErrorResponse>
 `
-var DeleteLaunchConfiguration = `
+var DeleteLaunchConfigurationResponse = `
 <DeleteLaunchConfigurationResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>
     <RequestId>7347261f-97df-11e2-8756-35eEXAMPLE</RequestId>
   </ResponseMetadata>
 </DeleteLaunchConfigurationResponse> 
 `
-var DeleteLaunchConfigurationInUse = `
+var DeleteLaunchConfigurationInUseResponse = `
 <ErrorResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <Error>
     <Type>Sender</Type>
@@ -57,21 +73,21 @@ var DeleteLaunchConfigurationInUse = `
   <RequestId>7347261f-97df-11e2-8756-35eEXAMPLE</RequestId>
 </ErrorResponse>
 `
-var CreateOrUpdateTags = `
+var DeleteScheduledActionResponse = `
+<DeleteScheduledActionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <ResponseMetadata>
+    <RequestId>0f38bb02-8421-11e3-9bb5-bfa219b29cce</RequestId>
+  </ResponseMetadata>
+</DeleteScheduledActionResponse>
+`
+var DeleteTagsResponse = `
 <CreateOrUpdateTagsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>
     <RequestId>b0203919-bf1b-11e2-8a01-13263EXAMPLE</RequestId>
   </ResponseMetadata>
 </CreateOrUpdateTagsResponse>
 `
-var DeleteTags = `
-<CreateOrUpdateTagsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
-  <ResponseMetadata>
-    <RequestId>b0203919-bf1b-11e2-8a01-13263EXAMPLE</RequestId>
-  </ResponseMetadata>
-</CreateOrUpdateTagsResponse>
-`
-var DescribeAccountLimits = `
+var DescribeAccountLimitsResponse = `
 <DescribeAccountLimitsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeAccountLimitsResult>
     <MaxNumberOfLaunchConfigurations>100</MaxNumberOfLaunchConfigurations>
@@ -82,7 +98,7 @@ var DescribeAccountLimits = `
   </ResponseMetadata>
 </DescribeAccountLimitsResponse> 
 `
-var DescribeAdjustmentTypes = `
+var DescribeAdjustmentTypesResponse = `
 <DescribeAdjustmentTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/201-01-01/">
   <DescribeAdjustmentTypesResult>
     <AdjustmentTypes>
@@ -102,7 +118,7 @@ var DescribeAdjustmentTypes = `
   </ResponseMetadata>
 </DescribeAdjustmentTypesResponse> 
 `
-var DescribeAutoScalingGroups = `
+var DescribeAutoScalingGroupsResponse = `
 <DescribeAutoScalingGroupsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 <DescribeAutoScalingGroupsResult>
     <AutoScalingGroups>
@@ -170,7 +186,7 @@ var DescribeAutoScalingGroups = `
   </ResponseMetadata>
 </DescribeAutoScalingGroupsResponse>
 `
-var DescribeAutoScalingInstances = `
+var DescribeAutoScalingInstancesResponse = `
 <DescribeAutoScalingInstancesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeAutoScalingInstancesResult>
     <AutoScalingInstances>
@@ -189,7 +205,7 @@ var DescribeAutoScalingInstances = `
   </ResponseMetadata>
 </DescribeAutoScalingInstancesResponse>
 `
-var DescribeLaunchConfigurations = `
+var DescribeLaunchConfigurationsResponse = `
 <DescribeLaunchConfigurationsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeLaunchConfigurationsResult>
     <LaunchConfigurations>
@@ -233,7 +249,7 @@ var DescribeLaunchConfigurations = `
   </ResponseMetadata>
 </DescribeLaunchConfigurationsResponse> 
 `
-var DescribeMetricCollectionTypes = `
+var DescribeMetricCollectionTypesResponse = `
 <DescribeMetricCollectionTypesResponse xmlns="http://autoscaling.amazonaws.co
 oc/2011-01-01/">
   <DescribeMetricCollectionTypesResult>
@@ -271,7 +287,7 @@ oc/2011-01-01/">
   </ResponseMetadata>
 </DescribeMetricCollectionTypesResponse> 
 `
-var DescribeNotificationConfigurations = `
+var DescribeNotificationConfigurationsResponse = `
 <DescribeNotificationConfigurationsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeNotificationConfigurationsResult>
     <NotificationConfigurations>
@@ -287,7 +303,7 @@ var DescribeNotificationConfigurations = `
   </ResponseMetadata>
 </DescribeNotificationConfigurationsResponse>
 `
-var DescribePolicies = `
+var DescribePoliciesResponse = `
 <DescribePoliciesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribePoliciesResult>
    <NextToken>3ef417fe-9202-12-8ddd-d13e1313413</NextToken>
@@ -327,7 +343,7 @@ var DescribePolicies = `
   </ResponseMetadata>
 </DescribePoliciesResponse> 
 `
-var DescribeScalingActivities = `
+var DescribeScalingActivitiesResponse = `
 <DescribeScalingActivitiesResponse xmlns="http://ec2.amazonaws.com/doc/2011-01-01/">
 <DescribeScalingActivitiesResult>
  <NextToken>3ef417fe-9202-12-8ddd-d13e1313413</NextToken>
@@ -351,7 +367,7 @@ var DescribeScalingActivities = `
   </ResponseMetadata>
 </DescribeScalingActivitiesResponse> 
 `
-var DescribeScalingProcessTypes = `
+var DescribeScalingProcessTypesResponse = `
 <DescribeScalingProcessTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeScalingProcessTypesResult>
     <Processes>
@@ -407,7 +423,7 @@ var DescribeScheduledActionsResponse = `
 </DescribeScheduledActionsResponse>
 `
 
-var DescribeTerminationPolicyTypes = `
+var DescribeTerminationPolicyTypesResponse = `
 <DescribeTerminationPolicyTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeTerminationPolicyTypesResult>
     <TerminationPolicyTypes>
@@ -423,7 +439,7 @@ var DescribeTerminationPolicyTypes = `
   </ResponseMetadata>
 </DescribeTerminationPolicyTypesResponse> 
 `
-var DescribeTags = `
+var DescribeTagsResponse = `
 <DescribeTagsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeTagsResult>
     <Tags>      
@@ -441,35 +457,35 @@ var DescribeTags = `
   </ResponseMetadata>
 </DescribeTagsResponse> 
 `
-var DisableMetricsCollection = `
+var DisableMetricsCollectionResponse = `
 <DisableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </DisableMetricsCollectionResponse> 
 `
-var EnableMetricsCollection = `
+var EnableMetricsCollectionResponse = `
 <EnableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </EnableMetricsCollectionResponse> 
 `
-var ExecutePolicy = `
+var ExecutePolicyResponse = `
 <EnableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </EnableMetricsCollectionResponse> 
 `
-var PutNotificationConfiguration = `
+var PutNotificationConfigurationResponse = `
 <EnableMetricsCollectionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </EnableMetricsCollectionResponse> 
 `
-var PutScalingPolicy = `
+var PutScalingPolicyResponse = `
 <PutScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <PutScalingPolicyResult>
     <PolicyARN>arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:b0dcf5e8-02e6-4e31-9719-0675d0dc31ae:autoScalingGroupName/my-test-asg:policyName/my-scaleout-policy</PolicyARN>
@@ -479,42 +495,42 @@ var PutScalingPolicy = `
   </ResponseMetadata>
 </PutScalingPolicyResponse> 
 `
-var PutScheduledUpdateGroupAction = `
+var PutScheduledUpdateGroupActionResponse = `
 <PutScheduledUpdateGroupActionResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>
     <RequestId>3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE</RequestId>
   </ResponseMetadata>
   </PutScheduledUpdateGroupActionResponse>
   `
-var ResumeProcesses = `
+var ResumeProcessesResponse = `
 <ResumeProcessesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </ResumeProcessesResponse> 
 `
-var SetDesiredCapacity = `
+var SetDesiredCapacityResponse = `
 <SetDesiredCapacityResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>
     <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
   </ResponseMetadata>
 </SetDesiredCapacityResponse>
 `
-var SetInstanceHealth = `
+var SetInstanceHealthResponse = `
 <SetInstanceHealthResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <ResponseMetadata>
     <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
   </ResponseMetadata>
 </SetInstanceHealthResponse>
 `
-var SuspendProcesses = `
+var SuspendProcessesResponse = `
 <SuspendProcessesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
 </SuspendProcessesResponse> 
 `
-var TerminateInstanceInAutoScalingGroup = `
+var TerminateInstanceInAutoScalingGroupResponse = `
 <TerminateInstanceInAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <TerminateInstanceInAutoScalingGroupResult>
     <Activity>
@@ -533,7 +549,7 @@ var TerminateInstanceInAutoScalingGroup = `
 </TerminateInstanceInAutoScalingGroupResponse>
 `
 
-var UpdateAutoScalingGroup = `
+var UpdateAutoScalingGroupResponse = `
 <UpdateAutoScalingGroupResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
 	<ResponseMetadata>
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>

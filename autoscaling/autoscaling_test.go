@@ -6,7 +6,6 @@ import (
 
 	"github.com/motain/gocheck"
 
-	"github.com/goamz/goamz/autoscaling/astest"
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/testutil"
 )
@@ -45,7 +44,7 @@ func TestBasicGroupRequest(t *testing.T) {
 		as = New(awsAuth, aws.Region{AutoScalingEndpoint: testServer.URL})
 		testServer.Start()
 		go testServer.WaitRequest()
-		testServer.Response(200, nil, astest.BasicGroupResponse)
+		testServer.Response(200, nil, BasicGroupResponse)
 	} else {
 		as = New(awsAuth, aws.USWest2)
 	}
@@ -114,7 +113,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Create the launch configuration
 	if mockTest {
-		testServer.Response(200, nil, astest.CreateLaunchConfigurationResponse)
+		testServer.Response(200, nil, CreateLaunchConfigurationResponse)
 	}
 	_, err = as.CreateLaunchConfiguration(lcReq)
 	if err != nil {
@@ -123,7 +122,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Check that we can get the launch configuration details
 	if mockTest {
-		testServer.Response(200, nil, astest.DescribeLaunchConfigurationResponse)
+		testServer.Response(200, nil, DescribeLaunchConfigurationsResponse)
 	}
 	_, err = as.DescribeLaunchConfigurations([]string{lcReq.LaunchConfigurationName}, 10, "")
 	if err != nil {
@@ -132,7 +131,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Create the AutoScalingGroup
 	if mockTest {
-		testServer.Response(200, nil, astest.CreateAutoScalingGroupResponse)
+		testServer.Response(200, nil, CreateAutoScalingGroupResponse)
 	}
 	_, err = as.CreateAutoScalingGroup(asgReq)
 	if err != nil {
@@ -141,7 +140,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Check that we can get the autoscaling group details
 	if mockTest {
-		testServer.Response(200, nil, astest.DescribeAutoScalingGroupResponse)
+		testServer.Response(200, nil, DescribeAutoScalingGroupsResponse)
 	}
 	_, err = as.DescribeAutoScalingGroups(nil, 10, "")
 	if err != nil {
@@ -150,7 +149,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Suspend the scaling processes for the test AutoScalingGroup
 	if mockTest {
-		testServer.Response(200, nil, astest.SuspendProcessesResponse)
+		testServer.Response(200, nil, SuspendProcessesResponse)
 	}
 	_, err = as.SuspendProcesses(asg.AutoScalingGroupName, nil)
 	if err != nil {
@@ -159,7 +158,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Resume scaling processes for the test AutoScalingGroup
 	if mockTest {
-		testServer.Response(200, nil, astest.ResumeProcessesResponse)
+		testServer.Response(200, nil, ResumeProcessesResponse)
 	}
 	_, err = as.ResumeProcesses(asg.AutoScalingGroupName, nil)
 	if err != nil {
@@ -168,7 +167,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Change the desired capacity from 1 to 2. This will launch a second instance
 	if mockTest {
-		testServer.Response(200, nil, astest.SetDesiredCapacityResponse)
+		testServer.Response(200, nil, SetDesiredCapacityResponse)
 	}
 	_, err = as.SetDesiredCapacity(asg.AutoScalingGroupName, 2, false)
 	if err != nil {
@@ -177,7 +176,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Change the desired capacity from 2 to 1. This will terminate one of the instances
 	if mockTest {
-		testServer.Response(200, nil, astest.SetDesiredCapacityResponse)
+		testServer.Response(200, nil, SetDesiredCapacityResponse)
 	}
 
 	_, err = as.SetDesiredCapacity(asg.AutoScalingGroupName, 1, false)
@@ -187,7 +186,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Update the max capacity for the scaling group
 	if mockTest {
-		testServer.Response(200, nil, astest.UpdateAutoScalingGroupResponse)
+		testServer.Response(200, nil, UpdateAutoScalingGroupResponse)
 	}
 	_, err = as.UpdateAutoScalingGroup(asgUpdate)
 	if err != nil {
@@ -201,7 +200,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	psar.ScheduledActionName = "SATest1"
 	psar.Recurrence = "30 0 1 1,6,12 *"
 	if mockTest {
-		testServer.Response(200, nil, astest.PutScheduledUpdateGroupActionResponse)
+		testServer.Response(200, nil, PutScheduledUpdateGroupActionResponse)
 	}
 	_, err = as.PutScheduledUpdateGroupAction(psar)
 	if err != nil {
@@ -212,7 +211,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	sar := new(DescribeScheduledActionsParams)
 	sar.AutoScalingGroupName = asg.AutoScalingGroupName
 	if mockTest {
-		testServer.Response(200, nil, astest.DescribeScheduledActionsResponse)
+		testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	}
 	_, err = as.DescribeScheduledActions(sar)
 	if err != nil {
@@ -221,7 +220,7 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	// Delete the test scheduled action from the group
 	if mockTest {
-		testServer.Response(200, nil, astest.DeleteScheduledActionResponse)
+		testServer.Response(200, nil, DeleteScheduledActionResponse)
 	}
 	_, err = as.DeleteScheduledAction(asg.AutoScalingGroupName, psar.ScheduledActionName)
 	if err != nil {
@@ -234,7 +233,7 @@ func TestAutoScalingGroup(t *testing.T) {
 // Detailed Unit Tests
 
 func (s *S) TestAttachInstances(c *gocheck.C) {
-	testServer.Response(200, nil, AttachInstances)
+	testServer.Response(200, nil, AttachInstancesResponse)
 	resp, err := s.as.AttachInstances("my-test-asg", []string{"i-21321afs", "i-baaffg23"})
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -247,8 +246,8 @@ func (s *S) TestAttachInstances(c *gocheck.C) {
 }
 
 func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
-	testServer.Response(200, nil, CreateAutoScalingGroup)
-	testServer.Response(200, nil, DeleteAutoScalingGroup)
+	testServer.Response(200, nil, CreateAutoScalingGroupResponse)
+	testServer.Response(200, nil, DeleteAutoScalingGroupResponse)
 
 	createAS := &CreateAutoScalingGroupParams{
 		AutoScalingGroupName:    "my-test-asg",
@@ -296,8 +295,8 @@ func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
 }
 
 func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
-	testServer.Response(200, nil, CreateLaunchConfiguration)
-	testServer.Response(200, nil, DeleteLaunchConfiguration)
+	testServer.Response(200, nil, CreateLaunchConfigurationResponse)
+	testServer.Response(200, nil, DeleteLaunchConfigurationResponse)
 
 	launchConfig := &CreateLaunchConfigurationParams{
 		LaunchConfigurationName:  "my-test-lc",
@@ -360,7 +359,7 @@ func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
 }
 
 func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
-	testServer.Response(200, nil, CreateOrUpdateTags)
+	testServer.Response(200, nil, CreateOrUpdateTagsResponse)
 	tags := []Tag{
 		{
 			Key:        "foo",
@@ -390,7 +389,7 @@ func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
 }
 
 func (s *S) TestDeleteAutoScalingGroup(c *gocheck.C) {
-	testServer.Response(200, nil, DeleteAutoScalingGroup)
+	testServer.Response(200, nil, DeleteAutoScalingGroupResponse)
 	resp, err := s.as.DeleteAutoScalingGroup("my-test-asg", true)
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -401,7 +400,7 @@ func (s *S) TestDeleteAutoScalingGroup(c *gocheck.C) {
 }
 
 func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *gocheck.C) {
-	testServer.Response(400, nil, DeleteAutoScalingGroupError)
+	testServer.Response(400, nil, DeleteAutoScalingGroupErrorResponse)
 	resp, err := s.as.DeleteAutoScalingGroup("my-test-asg", false)
 	testServer.WaitRequest()
 	c.Assert(resp, gocheck.IsNil)
@@ -418,7 +417,7 @@ func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *gocheck.C) {
 }
 
 func (s *S) TestDeleteLaunchConfiguration(c *gocheck.C) {
-	testServer.Response(200, nil, DeleteLaunchConfiguration)
+	testServer.Response(200, nil, DeleteLaunchConfigurationResponse)
 	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -429,7 +428,7 @@ func (s *S) TestDeleteLaunchConfiguration(c *gocheck.C) {
 }
 
 func (s *S) TestDeleteLaunchConfigurationInUse(c *gocheck.C) {
-	testServer.Response(400, nil, DeleteLaunchConfigurationInUse)
+	testServer.Response(400, nil, DeleteLaunchConfigurationInUseResponse)
 	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
 	testServer.WaitRequest()
 	c.Assert(resp, gocheck.IsNil)
@@ -447,7 +446,7 @@ func (s *S) TestDeleteLaunchConfigurationInUse(c *gocheck.C) {
 }
 
 func (s *S) TestDeleteTags(c *gocheck.C) {
-	testServer.Response(200, nil, DeleteTags)
+	testServer.Response(200, nil, DeleteTagsResponse)
 	tags := []Tag{
 		{
 			Key:        "foo",
@@ -477,7 +476,7 @@ func (s *S) TestDeleteTags(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeAccountLimits(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeAccountLimits)
+	testServer.Response(200, nil, DescribeAccountLimitsResponse)
 
 	resp, err := s.as.DescribeAccountLimits()
 	c.Assert(err, gocheck.IsNil)
@@ -491,7 +490,7 @@ func (s *S) TestDescribeAccountLimits(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeAdjustmentTypes(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeAdjustmentTypes)
+	testServer.Response(200, nil, DescribeAdjustmentTypesResponse)
 	resp, err := s.as.DescribeAdjustmentTypes()
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -502,7 +501,7 @@ func (s *S) TestDescribeAdjustmentTypes(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeAutoScalingGroups)
+	testServer.Response(200, nil, DescribeAutoScalingGroupsResponse)
 	resp, err := s.as.DescribeAutoScalingGroups([]string{"my-test-asg-lbs"}, 0, "")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -568,7 +567,7 @@ func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeAutoScalingInstances(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeAutoScalingInstances)
+	testServer.Response(200, nil, DescribeAutoScalingInstancesResponse)
 	resp, err := s.as.DescribeAutoScalingInstances([]string{"i-78e0d40b"}, 0, "")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -588,7 +587,7 @@ func (s *S) TestDescribeAutoScalingInstances(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeLaunchConfigurations)
+	testServer.Response(200, nil, DescribeLaunchConfigurationsResponse)
 	resp, err := s.as.DescribeLaunchConfigurations([]string{"my-test-lc"}, 0, "")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -631,7 +630,7 @@ func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeMetricCollectionTypes(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeMetricCollectionTypes)
+	testServer.Response(200, nil, DescribeMetricCollectionTypesResponse)
 	resp, err := s.as.DescribeMetricCollectionTypes()
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -669,7 +668,7 @@ func (s *S) TestDescribeMetricCollectionTypes(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeNotificationConfigurations)
+	testServer.Response(200, nil, DescribeNotificationConfigurationsResponse)
 	resp, err := s.as.DescribeNotificationConfigurations([]string{"i-78e0d40b"}, 0, "")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -686,7 +685,7 @@ func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
 }
 
 func (s *S) TestDescribePolicies(c *gocheck.C) {
-	testServer.Response(200, nil, DescribePolicies)
+	testServer.Response(200, nil, DescribePoliciesResponse)
 	resp, err := s.as.DescribePolicies("my-test-asg", []string{}, 2, "")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -731,7 +730,7 @@ func (s *S) TestDescribePolicies(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeScalingActivities(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeScalingActivities)
+	testServer.Response(200, nil, DescribeScalingActivitiesResponse)
 	resp, err := s.as.DescribeScalingActivities("my-test-asg", []string{}, 1, "")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -763,7 +762,7 @@ func (s *S) TestDescribeScalingActivities(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeScalingProcessTypes(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeScalingProcessTypes)
+	testServer.Response(200, nil, DescribeScalingProcessTypesResponse)
 	resp, err := s.as.DescribeScalingProcessTypes()
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -810,7 +809,7 @@ func (s *S) TestDescribeScheduledActions(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeTags(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeTags)
+	testServer.Response(200, nil, DescribeTagsResponse)
 	filter := NewFilter()
 	filter.Add("auto-scaling-group", "my-test-asg")
 	resp, err := s.as.DescribeTags(filter, 1, "")
@@ -834,7 +833,7 @@ func (s *S) TestDescribeTags(c *gocheck.C) {
 }
 
 func (s *S) TestDescribeTerminationPolicyTypes(c *gocheck.C) {
-	testServer.Response(200, nil, DescribeTerminationPolicyTypes)
+	testServer.Response(200, nil, DescribeTerminationPolicyTypesResponse)
 	resp, err := s.as.DescribeTerminationPolicyTypes()
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -845,7 +844,7 @@ func (s *S) TestDescribeTerminationPolicyTypes(c *gocheck.C) {
 }
 
 func (s *S) TestDisableMetricsCollection(c *gocheck.C) {
-	testServer.Response(200, nil, DisableMetricsCollection)
+	testServer.Response(200, nil, DisableMetricsCollectionResponse)
 	resp, err := s.as.DisableMetricsCollection("my-test-asg", []string{"GroupMinSize"})
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -857,7 +856,7 @@ func (s *S) TestDisableMetricsCollection(c *gocheck.C) {
 }
 
 func (s *S) TestEnableMetricsCollection(c *gocheck.C) {
-	testServer.Response(200, nil, DisableMetricsCollection)
+	testServer.Response(200, nil, DisableMetricsCollectionResponse)
 	resp, err := s.as.EnableMetricsCollection("my-test-asg", []string{"GroupMinSize", "GroupMaxSize"}, "1Minute")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -871,7 +870,7 @@ func (s *S) TestEnableMetricsCollection(c *gocheck.C) {
 }
 
 func (s *S) TestExecutePolicy(c *gocheck.C) {
-	testServer.Response(200, nil, ExecutePolicy)
+	testServer.Response(200, nil, ExecutePolicyResponse)
 	resp, err := s.as.ExecutePolicy("my-scaleout-policy", "my-test-asg", true)
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -884,7 +883,7 @@ func (s *S) TestExecutePolicy(c *gocheck.C) {
 }
 
 func (s *S) TestPutNotificationConfiguration(c *gocheck.C) {
-	testServer.Response(200, nil, PutNotificationConfiguration)
+	testServer.Response(200, nil, PutNotificationConfigurationResponse)
 	resp, err := s.as.PutNotificationConfiguration("my-test-asg", []string{"autoscaling:EC2_INSTANCE_LAUNCH", "autoscaling:EC2_INSTANCE_LAUNCH_ERROR"}, "myTopicARN")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -898,7 +897,7 @@ func (s *S) TestPutNotificationConfiguration(c *gocheck.C) {
 }
 
 func (s *S) TestPutScalingPolicy(c *gocheck.C) {
-	testServer.Response(200, nil, PutScalingPolicy)
+	testServer.Response(200, nil, PutScalingPolicyResponse)
 	request := &PutScalingPolicyParams{
 		AutoScalingGroupName: "my-test-asg",
 		PolicyName:           "my-scaleout-policy",
@@ -921,7 +920,7 @@ func (s *S) TestPutScalingPolicy(c *gocheck.C) {
 }
 
 func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
-	testServer.Response(200, nil, PutScheduledUpdateGroupAction)
+	testServer.Response(200, nil, PutScheduledUpdateGroupActionResponse)
 	st, _ := time.Parse(time.RFC3339, "2013-05-25T08:00:00Z")
 	request := &PutScheduledUpdateGroupActionParams{
 		AutoScalingGroupName: "my-test-asg",
@@ -942,7 +941,7 @@ func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
 }
 
 func (s *S) TestPutScheduledUpdateGroupActionCron(c *gocheck.C) {
-	testServer.Response(200, nil, PutScheduledUpdateGroupAction)
+	testServer.Response(200, nil, PutScheduledUpdateGroupActionResponse)
 	st, _ := time.Parse(time.RFC3339, "2013-05-25T08:00:00Z")
 	request := &PutScheduledUpdateGroupActionParams{
 		AutoScalingGroupName: "my-test-asg",
@@ -965,7 +964,7 @@ func (s *S) TestPutScheduledUpdateGroupActionCron(c *gocheck.C) {
 }
 
 func (s *S) TestResumeProcesses(c *gocheck.C) {
-	testServer.Response(200, nil, ResumeProcesses)
+	testServer.Response(200, nil, ResumeProcessesResponse)
 	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -979,7 +978,7 @@ func (s *S) TestResumeProcesses(c *gocheck.C) {
 }
 
 func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
-	testServer.Response(200, nil, SetDesiredCapacity)
+	testServer.Response(200, nil, SetDesiredCapacityResponse)
 	resp, err := s.as.SetDesiredCapacity("my-test-asg", 3, true)
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -992,7 +991,7 @@ func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
 }
 
 func (s *S) TestSetInstanceHealth(c *gocheck.C) {
-	testServer.Response(200, nil, SetInstanceHealth)
+	testServer.Response(200, nil, SetInstanceHealthResponse)
 	resp, err := s.as.SetInstanceHealth("i-baha3121", "Unhealthy", false)
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -1005,7 +1004,7 @@ func (s *S) TestSetInstanceHealth(c *gocheck.C) {
 }
 
 func (s *S) TestSuspendProcesses(c *gocheck.C) {
-	testServer.Response(200, nil, SuspendProcesses)
+	testServer.Response(200, nil, SuspendProcessesResponse)
 	resp, err := s.as.SuspendProcesses("my-test-asg", []string{"Launch", "Terminate"})
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
@@ -1018,7 +1017,7 @@ func (s *S) TestSuspendProcesses(c *gocheck.C) {
 }
 
 func (s *S) TestTerminateInstanceInAutoScalingGroup(c *gocheck.C) {
-	testServer.Response(200, nil, TerminateInstanceInAutoScalingGroup)
+	testServer.Response(200, nil, TerminateInstanceInAutoScalingGroupResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-01-26T14:08:30.560Z")
 	resp, err := s.as.TerminateInstanceInAutoScalingGroup("i-br234123", false)
 	c.Assert(err, gocheck.IsNil)
@@ -1043,7 +1042,7 @@ func (s *S) TestTerminateInstanceInAutoScalingGroup(c *gocheck.C) {
 }
 
 func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
-	testServer.Response(200, nil, UpdateAutoScalingGroup)
+	testServer.Response(200, nil, UpdateAutoScalingGroupResponse)
 
 	asg := &UpdateAutoScalingGroupParams{
 		AutoScalingGroupName:    "my-test-asg",
