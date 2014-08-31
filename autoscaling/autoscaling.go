@@ -1007,7 +1007,8 @@ type DescribeScalingActivitiesResp struct {
 // Supports pagination by using the returned "NextToken" parameter for subsequent calls
 //
 // http://goo.gl/noOXIC more details.
-func (as *AutoScaling) DescribeScalingActivities(asgName string, activityIds []string, maxRecords int, nextToken string) (resp *DescribeScalingActivitiesResp, err error) {
+func (as *AutoScaling) DescribeScalingActivities(asgName string, activityIds []string, maxRecords int, nextToken string) (
+	resp *DescribeScalingActivitiesResp, err error) {
 	params := makeParams("DescribeScalingActivities")
 
 	if asgName != "" {
@@ -1142,7 +1143,8 @@ type DescribeTagsResp struct {
 // Supports pagination by using the returned "NextToken" parameter for subsequent calls
 //
 // See http://goo.gl/ZTEU3G for more details.
-func (as *AutoScaling) DescribeTags(filter *Filter, maxRecords int, nextToken string) (resp *DescribeTagsResp, err error) {
+func (as *AutoScaling) DescribeTags(filter *Filter, maxRecords int, nextToken string) (
+	resp *DescribeTagsResp, err error) {
 	params := makeParams("DescribeTags")
 
 	if maxRecords != 0 {
@@ -1176,6 +1178,71 @@ func (as *AutoScaling) DescribeTerminationPolicyTypes() (resp *DescribeTerminati
 	params := makeParams("DescribeTerminationPolicyTypes")
 
 	resp = new(DescribeTerminationPolicyTypesResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DisableMetricsCollection disables monitoring of group metrics for the Auto Scaling group specified in asgName.
+// You can specify the list of affected metrics with the metrics parameter. If no metrics are specified, all metrics are disabled
+//
+// See http://goo.gl/kAvzQw for more details.
+func (as *AutoScaling) DisableMetricsCollection(asgName string, metrics []string) (
+	resp *SimpleResp, err error) {
+	params := makeParams("DisableMetricsCollection")
+	params["AutoScalingGroupName"] = asgName
+
+	if len(metrics) > 0 {
+		addParamsList(params, "Metrics.member", metrics)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// EnableMetricsCollection enables monitoring of group metrics for the Auto Scaling group specified in asNmae.
+// You can specify the list of affected metrics with the metrics parameter.
+// Auto Scaling metrics collection can be turned on only if the InstanceMonitoring flag is set to true.
+// Currently, the only legal granularity is "1Minute".
+//
+// See http://goo.gl/UcVDWn for more details.
+func (as *AutoScaling) EnableMetricsCollection(asgName string, metrics []string, granularity string) (
+	resp *SimpleResp, err error) {
+	params := makeParams("EnableMetricsCollection")
+	params["AutoScalingGroupName"] = asgName
+	params["Granularity"] = granularity
+
+	if len(metrics) > 0 {
+		addParamsList(params, "Metrics.member", metrics)
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// ExecutePolicy executes the specified policy.
+//
+// See http://goo.gl/BxHpFc for more details.
+func (as *AutoScaling) ExecutePolicy(policyName string, asgName string, honorCooldown bool) (
+	resp *SimpleResp, err error) {
+	params := makeParams("ExecutePolicy")
+	params["PolicyName"] = policyName
+
+	if asgName != "" {
+		params["AutoScalingGroupName"] = asgName
+	}
+	if honorCooldown {
+		params["HonorCooldown"] = strconv.FormatBool(honorCooldown)
+	}
+
+	resp = new(SimpleResp)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}

@@ -802,6 +802,45 @@ func (s *S) TestDescribeTerminationPolicyTypes(c *gocheck.C) {
 	c.Assert(resp.TerminationPolicyTypes, gocheck.DeepEquals, []string{"ClosestToNextInstanceHour", "Default", "NewestInstance", "OldestInstance", "OldestLaunchConfiguration"})
 }
 
+func (s *S) TestDisableMetricsCollection(c *gocheck.C) {
+	testServer.Response(200, nil, DisableMetricsCollection)
+	resp, err := s.as.DisableMetricsCollection("my-test-asg", []string{"GroupMinSize"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DisableMetricsCollection")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Metrics.member.1"), gocheck.Equals, "GroupMinSize")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestEnableMetricsCollection(c *gocheck.C) {
+	testServer.Response(200, nil, DisableMetricsCollection)
+	resp, err := s.as.EnableMetricsCollection("my-test-asg", []string{"GroupMinSize", "GroupMaxSize"}, "1Minute")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "EnableMetricsCollection")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Granularity"), gocheck.Equals, "1Minute")
+	c.Assert(values.Get("Metrics.member.1"), gocheck.Equals, "GroupMinSize")
+	c.Assert(values.Get("Metrics.member.2"), gocheck.Equals, "GroupMaxSize")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestExecutePolicy(c *gocheck.C) {
+	testServer.Response(200, nil, ExecutePolicy)
+	resp, err := s.as.ExecutePolicy("my-scaleout-policy", "my-test-asg", true)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ExecutePolicy")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("PolicyName"), gocheck.Equals, "my-scaleout-policy")
+	c.Assert(values.Get("HonorCooldown"), gocheck.Equals, "true")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
 func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
 	testServer.Response(200, nil, UpdateAutoScalingGroup)
 
