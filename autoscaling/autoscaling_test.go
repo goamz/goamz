@@ -630,6 +630,44 @@ func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
 
+func (s *S) TestDescribeMetricCollectionTypes(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeMetricCollectionTypes)
+	resp, err := s.as.DescribeMetricCollectionTypes()
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeMetricCollectionTypes")
+	c.Assert(resp.RequestId, gocheck.Equals, "07f3fea2-bf3c-11e2-9b6f-f3cdbb80c073")
+	c.Assert(resp.Metrics, gocheck.DeepEquals, []MetricCollection{
+		{
+			Metric: "GroupMinSize",
+		},
+		{
+			Metric: "GroupMaxSize",
+		},
+		{
+			Metric: "GroupDesiredCapacity",
+		},
+		{
+			Metric: "GroupInServiceInstances",
+		},
+		{
+			Metric: "GroupPendingInstances",
+		},
+		{
+			Metric: "GroupTerminatingInstances",
+		},
+		{
+			Metric: "GroupTotalInstances",
+		},
+	})
+	c.Assert(resp.Granularities, gocheck.DeepEquals, []MetricGranularity{
+		{
+			Granularity: "1Minute",
+		},
+	})
+}
+
 func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeNotificationConfigurations)
 	resp, err := s.as.DescribeNotificationConfigurations([]string{"i-78e0d40b"}, 0, "")
@@ -744,7 +782,7 @@ func (s *S) TestDescribeScalingProcessTypes(c *gocheck.C) {
 	})
 }
 
-func (s *S) DescribeScheduledActions(c *gocheck.C) {
+func (s *S) TestDescribeScheduledActions(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
 	request := &DescribeScheduledActionsParams{
@@ -757,14 +795,18 @@ func (s *S) DescribeScheduledActions(c *gocheck.C) {
 	values := testServer.WaitRequest().PostForm
 	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
 	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScheduledActions")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "ASGTest1")
-	c.Assert(values.Get("ScheduledActionArn"), gocheck.Equals, "arn:aws:autoscaling:us-west-2:193024542802:scheduledUpdateGroupAction:61f68b2c-bde3-4316-9a81-eb95dc246509:autoScalingGroupName/ASGTest1:scheduledActionName/SATest1")
-	c.Assert(values.Get("ScheduledActionName"), gocheck.Equals, "SATest1")
-	c.Assert(values.Get("Recurrence"), gocheck.Equals, "30 0 1 1,6,12 *")
-	c.Assert(values.Get("MaxSize"), gocheck.Equals, "4")
-	c.Assert(values.Get("StartTime"), gocheck.Equals, "2014-06-01T00:30:00Z")
-	c.Assert(values.Get("Time"), gocheck.Equals, "2014-06-01T00:30:00Z")
 	c.Assert(resp.RequestId, gocheck.Equals, "0eb4217f-8421-11e3-9233-7100ef811766")
+	c.Assert(resp.ScheduledUpdateGroupActions, gocheck.DeepEquals, []ScheduledUpdateGroupAction{
+		{
+			AutoScalingGroupName: "ASGTest1",
+			ScheduledActionARN:   "arn:aws:autoscaling:us-west-2:193024542802:scheduledUpdateGroupAction:61f68b2c-bde3-4316-9a81-eb95dc246509:autoScalingGroupName/ASGTest1:scheduledActionName/SATest1",
+			ScheduledActionName:  "SATest1",
+			Recurrence:           "30 0 1 1,6,12 *",
+			MaxSize:              4,
+			StartTime:            st,
+			Time:                 st,
+		},
+	})
 }
 
 func (s *S) TestDescribeTags(c *gocheck.C) {
@@ -899,6 +941,43 @@ func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
 }
 
+func (s *S) TestPutScheduledUpdateGroupActionCron(c *gocheck.C) {
+	testServer.Response(200, nil, PutScheduledUpdateGroupAction)
+	st, _ := time.Parse(time.RFC3339, "2013-05-25T08:00:00Z")
+	request := &PutScheduledUpdateGroupActionParams{
+		AutoScalingGroupName: "my-test-asg",
+		DesiredCapacity:      3,
+		ScheduledActionName:  "scaleup-schedule-year",
+		StartTime:            st,
+		Recurrence:           "30 0 1 1,6,12 *",
+	}
+	resp, err := s.as.PutScheduledUpdateGroupAction(request)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "PutScheduledUpdateGroupAction")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("ScheduledActionName"), gocheck.Equals, "scaleup-schedule-year")
+	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
+	c.Assert(values.Get("Recurrence"), gocheck.Equals, "30 0 1 1,6,12 *")
+	c.Assert(resp.RequestId, gocheck.Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
+
+}
+
+func (s *S) TestResumeProcesses(c *gocheck.C) {
+	testServer.Response(200, nil, ResumeProcesses)
+	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ResumeProcesses")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
+	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+
+}
+
 func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
 	testServer.Response(200, nil, SetDesiredCapacity)
 	resp, err := s.as.SetDesiredCapacity("my-test-asg", 3, true)
@@ -909,6 +988,19 @@ func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
 	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
 	c.Assert(values.Get("HonorCooldown"), gocheck.Equals, "true")
 	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
+	c.Assert(resp.RequestId, gocheck.Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
+}
+
+func (s *S) TestSetInstanceHealth(c *gocheck.C) {
+	testServer.Response(200, nil, SetInstanceHealth)
+	resp, err := s.as.SetInstanceHealth("i-baha3121", "Unhealthy", false)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "SetInstanceHealth")
+	c.Assert(values.Get("HealthStatus"), gocheck.Equals, "Unhealthy")
+	c.Assert(values.Get("InstanceId"), gocheck.Equals, "i-baha3121")
+	c.Assert(values.Get("ShouldRespectGracePeriod"), gocheck.Equals, "false")
 	c.Assert(resp.RequestId, gocheck.Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
 }
 
@@ -923,6 +1015,31 @@ func (s *S) TestSuspendProcesses(c *gocheck.C) {
 	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
 	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestTerminateInstanceInAutoScalingGroup(c *gocheck.C) {
+	testServer.Response(200, nil, TerminateInstanceInAutoScalingGroup)
+	st, _ := time.Parse(time.RFC3339, "2014-01-26T14:08:30.560Z")
+	resp, err := s.as.TerminateInstanceInAutoScalingGroup("i-br234123", false)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "TerminateInstanceInAutoScalingGroup")
+	c.Assert(values.Get("InstanceId"), gocheck.Equals, "i-br234123")
+	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), gocheck.Equals, "false")
+	expected := &TerminateInstanceInAutoScalingGroupResp{
+		Activity: Activity{
+			ActivityId:  "cczc44a87-7d04-dsa15-31-d27c219864c5",
+			Cause:       "At 2014-01-26T14:08:30Z instance i-br234123 was taken out of service in response to a user request.",
+			Description: "Terminating EC2 instance: i-br234123",
+			Details:     "{\"Availability Zone\":\"us-east-1b\"}",
+			Progress:    0,
+			StartTime:   st,
+			StatusCode:  "InProgress",
+		},
+		RequestId: "8d798a29-f083-11e1-bdfb-cb223EXAMPLE",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
@@ -953,18 +1070,4 @@ func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
 	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
 	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
-}
-
-func (s *S) TestResumeProcesses(c *gocheck.C) {
-	testServer.Response(200, nil, ResumeProcesses)
-	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
-	c.Assert(err, gocheck.IsNil)
-	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ResumeProcesses")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
-	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
-
 }

@@ -1080,8 +1080,8 @@ type ScheduledUpdateGroupAction struct {
 //
 // See http://goo.gl/zqrJLx for more details.
 type DescribeScheduledActionsResult struct {
-	ScheduledUpdateGroupActions []ScheduledUpdateGroupAction `xml:"DescribeScheduledActions>ScheduledUpdateGroups>member"`
-	NextToken                   string                       `xml:"NextToken"`
+	ScheduledUpdateGroupActions []ScheduledUpdateGroupAction `xml:"DescribeScheduledActionsResult>ScheduledUpdateGroupActions>member"`
+	NextToken                   string                       `xml:"DescribeScheduledActionsResult>NextToken"`
 	RequestId                   string                       `xml:"ResponseMetadata>RequestId"`
 }
 
@@ -1433,6 +1433,31 @@ func (as *AutoScaling) SuspendProcesses(asgName string, processes []string) (
 	}
 
 	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// TerminateInstanceInAutoScalingGroupResp response wrapper
+//
+// See http://goo.gl/ki5hMh for more details.
+type TerminateInstanceInAutoScalingGroupResp struct {
+	Activity  Activity `xml:"TerminateInstanceInAutoScalingGroupResult>Activity"`
+	RequestId string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// TerminateInstanceInAutoScalingGroup terminates the specified instance.
+// Optionally, the desired group size can be adjusted by setting decrCap to true
+//
+// See http://goo.gl/ki5hMh for more details.
+func (as *AutoScaling) TerminateInstanceInAutoScalingGroup(id string, decrCap bool) (
+	resp *TerminateInstanceInAutoScalingGroupResp, err error) {
+	params := makeParams("TerminateInstanceInAutoScalingGroup")
+	params["InstanceId"] = id
+	params["ShouldDecrementDesiredCapacity"] = strconv.FormatBool(decrCap)
+
+	resp = new(TerminateInstanceInAutoScalingGroupResp)
 	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
