@@ -485,8 +485,8 @@ func (s *S) TestDescribeAccountLimits(c *gocheck.C) {
 	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
 	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAccountLimits")
 	c.Assert(resp.RequestId, gocheck.Equals, "a32bd184-519d-11e3-a8a4-c1c467cbcc3b")
-	c.Assert(resp.MaxNumberOfAutoScalingGroups, gocheck.Equals, int64(20))
-	c.Assert(resp.MaxNumberOfLaunchConfigurations, gocheck.Equals, int64(100))
+	c.Assert(resp.MaxNumberOfAutoScalingGroups, gocheck.Equals, 20)
+	c.Assert(resp.MaxNumberOfLaunchConfigurations, gocheck.Equals, 100)
 
 }
 

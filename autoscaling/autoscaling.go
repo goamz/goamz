@@ -205,16 +205,16 @@ type AutoScalingGroup struct {
 	AutoScalingGroupName    string             `xml:"AutoScalingGroupName"`
 	AvailabilityZones       []string           `xml:"AvailabilityZones>member"`
 	CreatedTime             time.Time          `xml:"CreatedTime"`
-	DefaultCooldown         int64              `xml:"DefaultCooldown"`
-	DesiredCapacity         int64              `xml:"DesiredCapacity"`
+	DefaultCooldown         int                `xml:"DefaultCooldown"`
+	DesiredCapacity         int                `xml:"DesiredCapacity"`
 	EnabledMetrics          []EnabledMetric    `xml:"EnabledMetric>member"`
-	HealthCheckGracePeriod  int64              `xml:"HealthCheckGracePeriod"`
+	HealthCheckGracePeriod  int                `xml:"HealthCheckGracePeriod"`
 	HealthCheckType         string             `xml:"HealthCheckType"`
 	Instances               []Instance         `xml:"Instances>member"`
 	LaunchConfigurationName string             `xml:"LaunchConfigurationName"`
 	LoadBalancerNames       []string           `xml:"LoadBalancerNames>member"`
-	MaxSize                 int64              `xml:"MaxSize"`
-	MinSize                 int64              `xml:"MinSize"`
+	MaxSize                 int                `xml:"MaxSize"`
+	MinSize                 int                `xml:"MinSize"`
 	PlacementGroup          string             `xml:"PlacementGroup"`
 	Status                  string             `xml:"Status"`
 	SuspendedProcesses      []SuspendedProcess `xml:"SuspendedProcesses>member"`
@@ -229,15 +229,15 @@ type AutoScalingGroup struct {
 type CreateAutoScalingGroupParams struct {
 	AutoScalingGroupName    string
 	AvailabilityZones       []string
-	DefaultCooldown         int64
-	DesiredCapacity         int64
-	HealthCheckGracePeriod  int64
+	DefaultCooldown         int
+	DesiredCapacity         int
+	HealthCheckGracePeriod  int
 	HealthCheckType         string
 	InstanceId              string
 	LaunchConfigurationName string
 	LoadBalancerNames       []string
-	MaxSize                 int64
-	MinSize                 int64
+	MaxSize                 int
+	MinSize                 int
 	PlacementGroup          string
 	Tags                    []Tag
 	TerminationPolicies     []string
@@ -273,15 +273,15 @@ func (as *AutoScaling) CreateAutoScalingGroup(options *CreateAutoScalingGroupPar
 	params := makeParams("CreateAutoScalingGroup")
 
 	params["AutoScalingGroupName"] = options.AutoScalingGroupName
-	params["MaxSize"] = strconv.FormatInt(options.MaxSize, 10)
-	params["MinSize"] = strconv.FormatInt(options.MinSize, 10)
-	params["DesiredCapacity"] = strconv.FormatInt(options.DesiredCapacity, 10)
+	params["MaxSize"] = strconv.Itoa(options.MaxSize)
+	params["MinSize"] = strconv.Itoa(options.MinSize)
+	params["DesiredCapacity"] = strconv.Itoa(options.DesiredCapacity)
 
 	if options.DefaultCooldown > 0 {
-		params["DefaultCooldown"] = strconv.FormatInt(options.DefaultCooldown, 10)
+		params["DefaultCooldown"] = strconv.Itoa(options.DefaultCooldown)
 	}
 	if options.HealthCheckGracePeriod > 0 {
-		params["HealthCheckGracePeriod"] = strconv.FormatInt(options.HealthCheckGracePeriod, 10)
+		params["HealthCheckGracePeriod"] = strconv.Itoa(options.HealthCheckGracePeriod)
 	}
 	if options.HealthCheckType != "" {
 		params["HealthCheckType"] = options.HealthCheckType
@@ -327,9 +327,9 @@ func (as *AutoScaling) CreateAutoScalingGroup(options *CreateAutoScalingGroupPar
 // See http://goo.gl/nDUL2h for more details
 type EBS struct {
 	DeleteOnTermination bool   `xml:"DeleteOnTermination"`
-	Iops                int64  `xml:"Iops"`
+	Iops                int    `xml:"Iops"`
 	SnapshotId          string `xml:"SnapshotId"`
-	VolumeSize          int64  `xml:"VolumeSize"`
+	VolumeSize          int    `xml:"VolumeSize"`
 	VolumeType          string `xml:"VolumeType"`
 }
 
@@ -438,14 +438,14 @@ func (as *AutoScaling) CreateLaunchConfiguration(options *CreateLaunchConfigurat
 			// Defaults to true
 			params[fmt.Sprintf(key, index, "DeleteOnTermination")] = strconv.FormatBool(bdm.Ebs.DeleteOnTermination)
 
-			if bdm.Ebs.Iops != 0 {
-				params[fmt.Sprintf(key, index, "Iops")] = strconv.FormatInt(bdm.Ebs.Iops, 10)
+			if bdm.Ebs.Iops > 0 {
+				params[fmt.Sprintf(key, index, "Iops")] = strconv.Itoa(bdm.Ebs.Iops)
 			}
 			if bdm.Ebs.SnapshotId != "" {
 				params[fmt.Sprintf(key, index, "SnapshotId")] = bdm.Ebs.SnapshotId
 			}
-			if bdm.Ebs.VolumeSize != 0 {
-				params[fmt.Sprintf(key, index, "VolumeSize")] = strconv.FormatInt(bdm.Ebs.VolumeSize, 10)
+			if bdm.Ebs.VolumeSize > 0 {
+				params[fmt.Sprintf(key, index, "VolumeSize")] = strconv.Itoa(bdm.Ebs.VolumeSize)
 			}
 			if bdm.Ebs.VolumeType != "" {
 				params[fmt.Sprintf(key, index, "VolumeType")] = bdm.Ebs.VolumeType
@@ -599,8 +599,8 @@ func (as *AutoScaling) DeleteTags(tags []Tag) (resp *SimpleResp, err error) {
 //
 // See http://goo.gl/tKsMN0 for more details.
 type DescribeAccountLimitsResp struct {
-	MaxNumberOfAutoScalingGroups    int64  `xml:"DescribeAccountLimitsResult>MaxNumberOfAutoScalingGroups"`
-	MaxNumberOfLaunchConfigurations int64  `xml:"DescribeAccountLimitsResult>MaxNumberOfLaunchConfigurations"`
+	MaxNumberOfAutoScalingGroups    int    `xml:"DescribeAccountLimitsResult>MaxNumberOfAutoScalingGroups"`
+	MaxNumberOfLaunchConfigurations int    `xml:"DescribeAccountLimitsResult>MaxNumberOfLaunchConfigurations"`
 	RequestId                       string `xml:"ResponseMetadata>RequestId"`
 }
 
@@ -1025,14 +1025,14 @@ func (as *AutoScaling) ResumeProcesses(asgName string, processes []string) (
 type UpdateAutoScalingGroupParams struct {
 	AutoScalingGroupName    string
 	AvailabilityZones       []string
-	DefaultCooldown         int64
-	DesiredCapacity         int64
-	HealthCheckGracePeriod  int64
+	DefaultCooldown         int
+	DesiredCapacity         int
+	HealthCheckGracePeriod  int
 	HealthCheckType         string
 	InstanceId              string
 	LaunchConfigurationName string
-	MaxSize                 int64
-	MinSize                 int64
+	MaxSize                 int
+	MinSize                 int
 	PlacementGroup          string
 	TerminationPolicies     []string
 	VPCZoneIdentifier       string
@@ -1047,15 +1047,15 @@ func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupPar
 	params := makeParams("UpdateAutoScalingGroup")
 
 	params["AutoScalingGroupName"] = options.AutoScalingGroupName
-	params["MaxSize"] = strconv.FormatInt(options.MaxSize, 10)
-	params["MinSize"] = strconv.FormatInt(options.MinSize, 10)
-	params["DesiredCapacity"] = strconv.FormatInt(options.DesiredCapacity, 10)
+	params["MaxSize"] = strconv.Itoa(options.MaxSize)
+	params["MinSize"] = strconv.Itoa(options.MinSize)
+	params["DesiredCapacity"] = strconv.Itoa(options.DesiredCapacity)
 
 	if options.DefaultCooldown > 0 {
-		params["DefaultCooldown"] = strconv.FormatInt(options.DefaultCooldown, 10)
+		params["DefaultCooldown"] = strconv.Itoa(options.DefaultCooldown)
 	}
 	if options.HealthCheckGracePeriod > 0 {
-		params["HealthCheckGracePeriod"] = strconv.FormatInt(options.HealthCheckGracePeriod, 10)
+		params["HealthCheckGracePeriod"] = strconv.Itoa(options.HealthCheckGracePeriod)
 	}
 	if options.HealthCheckType != "" {
 		params["HealthCheckType"] = options.HealthCheckType
@@ -1090,11 +1090,11 @@ func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupPar
 // SetDesiredCapacity changes the DesiredCapacity of an AutoScaling group.
 //
 // See http://goo.gl/3WGZbI for more details.
-func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int64, honorCooldown bool) (
+func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int, honorCooldown bool) (
 	resp *SimpleResp, err error) {
 	params := makeParams("SetDesiredCapacity")
 	params["AutoScalingGroupName"] = asgName
-	params["DesiredCapacity"] = strconv.FormatInt(desiredCapacity, 10)
+	params["DesiredCapacity"] = strconv.Itoa(desiredCapacity)
 
 	if honorCooldown {
 		params["HonorCooldown"] = "true"
@@ -1113,10 +1113,10 @@ func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int64,
 // See http://goo.gl/z2Kfxe for more details
 type ScheduledUpdateGroupAction struct {
 	AutoScalingGroupName string    `xml:"AutoScalingGroupName"`
-	DesiredCapacity      int64     `xml:"DesiredCapacity"`
+	DesiredCapacity      int       `xml:"DesiredCapacity"`
 	EndTime              time.Time `xml:"EndTime"`
-	MaxSize              int64     `xml:"MaxSize"`
-	MinSize              int64     `xml:"MinSize"`
+	MaxSize              int       `xml:"MaxSize"`
+	MinSize              int       `xml:"MinSize"`
 	Recurrence           string    `xml:"Recurrence"`
 	ScheduledActionARN   string    `xml:"ScheduledActionARN"`
 	ScheduledActionName  string    `xml:"ScheduledActionName"`
@@ -1136,7 +1136,7 @@ type DescribeScheduledActionsResult struct {
 type DescribeScheduledActionsParams struct {
 	AutoScalingGroupName string
 	EndTime              time.Time
-	MaxRecords           int64
+	MaxRecords           int
 	ScheduledActionNames []string
 	StartTime            time.Time
 	NextToken            string
@@ -1160,7 +1160,7 @@ func (as *AutoScaling) DescribeScheduledActions(options *DescribeScheduledAction
 		params["EndTime"] = options.EndTime.Format(time.RFC3339)
 	}
 	if options.MaxRecords > 0 {
-		params["MaxRecords"] = strconv.FormatInt(options.MaxRecords, 10)
+		params["MaxRecords"] = strconv.Itoa(options.MaxRecords)
 	}
 	if options.NextToken != "" {
 		params["NextToken"] = options.NextToken
@@ -1181,10 +1181,10 @@ func (as *AutoScaling) DescribeScheduledActions(options *DescribeScheduledAction
 // See http://goo.gl/sLPi0d for more details
 type PutScheduledUpdateGroupActionParams struct {
 	AutoScalingGroupName string
-	DesiredCapacity      int64
+	DesiredCapacity      int
 	EndTime              time.Time
-	MaxSize              int64
-	MinSize              int64
+	MaxSize              int
+	MinSize              int
 	Recurrence           string
 	ScheduledActionName  string
 	StartTime            time.Time
@@ -1204,22 +1204,17 @@ func (as *AutoScaling) PutScheduledUpdateGroupAction(options *PutScheduledUpdate
 	params := makeParams("PutScheduledUpdateGroupAction")
 	params["AutoScalingGroupName"] = options.AutoScalingGroupName
 	params["ScheduledActionName"] = options.ScheduledActionName
+	params["MinSize"] = strconv.Itoa(options.MinSize)
+	params["MaxSize"] = strconv.Itoa(options.MaxSize)
+	params["DesiredCapacity"] = strconv.Itoa(options.DesiredCapacity)
 
-	if options.DesiredCapacity != 0 {
-		params["DesiredCapacity"] = strconv.FormatInt(options.DesiredCapacity, 10)
-	}
 	if !options.StartTime.IsZero() {
 		params["StartTime"] = options.StartTime.Format(time.RFC3339)
 	}
 	if !options.EndTime.IsZero() {
 		params["EndTime"] = options.EndTime.Format(time.RFC3339)
 	}
-	if options.MaxSize > 0 {
-		params["MaxSize"] = strconv.FormatInt(options.MaxSize, 10)
-	}
-	if options.MinSize > 0 {
-		params["MinSize"] = strconv.FormatInt(options.MinSize, 10)
-	}
+
 	if options.Recurrence != "" {
 		params["Recurrence"] = options.Recurrence
 	}
