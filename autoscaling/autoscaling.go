@@ -792,72 +792,85 @@ func (as *AutoScaling) SetDesiredCapacity(asgName string, desiredCapacity int64,
 
 // ScheduledUpdateGroupAction contains the information to be used in a scheduled update to an
 // AutoScalingGroup
+//
+// See http://goo.gl/z2Kfxe for more details
 type ScheduledUpdateGroupAction struct {
-	AutoScalingGroupName string `xml:"AutoScalingGroupName"`
-	DesiredCapacity      int64  `xml:"DesiredCapacity"`
-	EndTime              string `xml:"EndTime"`
-	MaxSize              int64  `xml:"MaxSize"`
-	MinSize              int64  `xml:"MinSize"`
-	Recurrence           string `xml:"Recurrence"`
-	ScheduledActionARN   string `xml:"ScheduledActionARN"`
-	ScheduledActionName  string `xml:"ScheduledActionName"`
-	StartTime            string `xml:"StartTime"`
+	AutoScalingGroupName string    `xml:"AutoScalingGroupName"`
+	DesiredCapacity      int64     `xml:"DesiredCapacity"`
+	EndTime              time.Time `xml:"EndTime"`
+	MaxSize              int64     `xml:"MaxSize"`
+	MinSize              int64     `xml:"MinSize"`
+	Recurrence           string    `xml:"Recurrence"`
+	ScheduledActionARN   string    `xml:"ScheduledActionARN"`
+	ScheduledActionName  string    `xml:"ScheduledActionName"`
+	StartTime            time.Time `xml:"StartTime"`
+	Time                 time.Time `xml:"Time"`
 }
 
 // DescribeScheduledActionsResult contains the response from a DescribeScheduledActions.
 type DescribeScheduledActionsResult struct {
-	NextToken                   string                       `xml:"NextToken"`
 	ScheduledUpdateGroupActions []ScheduledUpdateGroupAction `xml:"DescribeScheduledActions>ScheduledUpdateGroups>member"`
+	NextToken                   string                       `xml:"NextToken"`
+	RequestId                   string                       `xml:"ResponseMetadata>RequestId"`
 }
 
 // ScheduledActionsRequestParams contains the items that can be specified when making
 // a ScheduledActions request
-type ScheduledActionsRequestParams struct {
+type DescribeScheduledActionsParams struct {
 	AutoScalingGroupName string
-	EndTime              string
+	EndTime              time.Time
 	MaxRecords           int64
 	ScheduledActionNames []string
-	StartTime            string
-}
-
-// PutScheduledActionRequestParams contains the details of the ScheduledAction to be added.
-type PutScheduledActionRequestParams struct {
-	AutoScalingGroupName string
-	DesiredCapacity      int64
-	EndTime              string
-	MaxSize              int64
-	MinSize              int64
-	Recurrence           string
-	ScheduledActionName  string
-	StartTime            string
+	StartTime            time.Time
+	NextToken            string
 }
 
 // DescribeScheduledActions returns a list of the current scheduled actions. If the
 // AutoScalingGroup name is provided it will list all the scheduled actions for that group.
-func (as *AutoScaling) DescribeScheduledActions(rp ScheduledActionsRequestParams) (
+//
+// See http://goo.gl/zqrJLx for more details.
+func (as *AutoScaling) DescribeScheduledActions(options *DescribeScheduledActionsParams) (
 	resp *DescribeScheduledActionsResult, err error) {
-	resp = &DescribeScheduledActionsResult{}
 	params := makeParams("DescribeScheduledActions")
-	if rp.AutoScalingGroupName != "" {
-		params["AutoScalingGroupName"] = rp.AutoScalingGroupName
+
+	if options.AutoScalingGroupName != "" {
+		params["AutoScalingGroupName"] = options.AutoScalingGroupName
 	}
-	if rp.StartTime != "" {
-		params["StartTime"] = rp.StartTime
+	if !options.StartTime.IsZero() {
+		params["StartTime"] = options.StartTime.Format(time.RFC3339)
 	}
-	if rp.EndTime != "" {
-		params["EndTime"] = rp.EndTime
+	if !options.EndTime.IsZero() {
+		params["EndTime"] = options.EndTime.Format(time.RFC3339)
 	}
-	if rp.MaxRecords > 0 {
-		params["MaxRecords"] = strconv.FormatInt(rp.MaxRecords, 10)
+	if options.MaxRecords > 0 {
+		params["MaxRecords"] = strconv.FormatInt(options.MaxRecords, 10)
 	}
-	if len(rp.ScheduledActionNames) > 0 {
-		addParamsList(params, "ScheduledActionNames.member", rp.ScheduledActionNames)
+	if options.NextToken != "" {
+		params["NextToken"] = options.NextToken
 	}
-	err = as.query(params, resp)
-	if err != nil {
+	if len(options.ScheduledActionNames) > 0 {
+		addParamsList(params, "ScheduledActionNames.member", options.ScheduledActionNames)
+	}
+
+	resp = new(DescribeScheduledActionsResult)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
+}
+
+// PutScheduledUpdateGroupActionParams contains the details of the ScheduledAction to be added.
+//
+// See http://goo.gl/sLPi0d for more details
+type PutScheduledUpdateGroupActionParams struct {
+	AutoScalingGroupName string
+	DesiredCapacity      int64
+	EndTime              time.Time
+	MaxSize              int64
+	MinSize              int64
+	Recurrence           string
+	ScheduledActionName  string
+	StartTime            time.Time
 }
 
 // PutScheduledUpdateGroupAction creates or updates a scheduled scaling action for an
@@ -867,29 +880,35 @@ func (as *AutoScaling) DescribeScheduledActions(rp ScheduledActionsRequestParams
 //
 // Auto Scaling supports the date and time expressed in "YYYY-MM-DDThh:mm:ssZ" format in UTC/GMT
 // only.
-func (as *AutoScaling) PutScheduledUpdateGroupAction(rp PutScheduledActionRequestParams) (
+//
+// See http://goo.gl/sLPi0d for more details.
+func (as *AutoScaling) PutScheduledUpdateGroupAction(options *PutScheduledUpdateGroupActionParams) (
 	resp *SimpleResp, err error) {
-	resp = &SimpleResp{}
 	params := makeParams("PutScheduledUpdateGroupAction")
-	params["AutoScalingGroupName"] = rp.AutoScalingGroupName
-	params["ScheduledActionName"] = rp.ScheduledActionName
-	if len(rp.EndTime) > 0 {
-		params["EndTime"] = rp.EndTime
+	params["AutoScalingGroupName"] = options.AutoScalingGroupName
+	params["ScheduledActionName"] = options.ScheduledActionName
+
+	if options.DesiredCapacity != 0 {
+		params["DesiredCapacity"] = strconv.FormatInt(options.DesiredCapacity, 10)
 	}
-	if len(rp.StartTime) > 0 {
-		params["StartTime"] = rp.StartTime
+	if !options.StartTime.IsZero() {
+		params["StartTime"] = options.StartTime.Format(time.RFC3339)
 	}
-	if rp.MaxSize > 0 {
-		params["MaxSize"] = strconv.FormatInt(rp.MaxSize, 10)
+	if !options.EndTime.IsZero() {
+		params["EndTime"] = options.EndTime.Format(time.RFC3339)
 	}
-	if rp.MinSize > 0 {
-		params["MinSize"] = strconv.FormatInt(rp.MinSize, 10)
+	if options.MaxSize > 0 {
+		params["MaxSize"] = strconv.FormatInt(options.MaxSize, 10)
 	}
-	if len(rp.Recurrence) > 0 {
-		params["Recurrence"] = rp.Recurrence
+	if options.MinSize > 0 {
+		params["MinSize"] = strconv.FormatInt(options.MinSize, 10)
 	}
-	err = as.query(params, resp)
-	if err != nil {
+	if options.Recurrence != "" {
+		params["Recurrence"] = options.Recurrence
+	}
+
+	resp = new(SimpleResp)
+	if err := as.query(params, resp); err != nil {
 		return nil, err
 	}
 	return resp, nil

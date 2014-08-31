@@ -386,6 +386,27 @@ var DescribeScalingProcessTypes = `
   </ResponseMetadata>
 </DescribeScalingProcessTypesResponse> 
 `
+var DescribeScheduledActionsResponse = `
+<DescribeScheduledActionsResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
+  <DescribeScheduledActionsResult>
+    <ScheduledUpdateGroupActions>
+      <member>
+        <ScheduledActionName>SATest1</ScheduledActionName>
+        <StartTime>2014-06-01T00:30:00Z</StartTime>
+        <Time>2014-06-01T00:30:00Z</Time>
+        <ScheduledActionARN>arn:aws:autoscaling:us-west-2:193024542802:scheduledUpdateGroupAction:61f68b2c-bde3-4316-9a81-eb95dc246509:autoScalingGroupName/ASGTest1:scheduledActionName/SATest1</ScheduledActionARN>
+        <AutoScalingGroupName>ASGTest1</AutoScalingGroupName>
+        <Recurrence>30 0 1 1,6,12 *</Recurrence>
+        <MaxSize>4</MaxSize>
+      </member>
+    </ScheduledUpdateGroupActions>
+  </DescribeScheduledActionsResult>
+  <ResponseMetadata>
+    <RequestId>0eb4217f-8421-11e3-9233-7100ef811766</RequestId>
+  </ResponseMetadata>
+</DescribeScheduledActionsResponse>
+`
+
 var DescribeTerminationPolicyTypes = `
 <DescribeTerminationPolicyTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/2011-01-01/">
   <DescribeTerminationPolicyTypesResult>

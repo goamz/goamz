@@ -195,7 +195,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	}
 
 	// Add a scheduled action to the group
-	var psar PutScheduledActionRequestParams
+	psar := new(PutScheduledUpdateGroupActionParams)
 	psar.AutoScalingGroupName = asg.AutoScalingGroupName
 	psar.MaxSize = 4
 	psar.ScheduledActionName = "SATest1"
@@ -209,7 +209,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	}
 
 	// List the scheduled actions for the group
-	var sar ScheduledActionsRequestParams
+	sar := new(DescribeScheduledActionsParams)
 	sar.AutoScalingGroupName = asg.AutoScalingGroupName
 	if mockTest {
 		testServer.Response(200, nil, astest.DescribeScheduledActionsResponse)
@@ -571,6 +571,29 @@ func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
 
+func (s *S) DescriveScheduledActions(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeScheduledActionsResponse)
+	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
+	request := &DescribeScheduledActionsParams{
+		AutoScalingGroupName: "ASGTest1",
+		MaxRecords:           1,
+		StartTime:            st,
+	}
+	resp, err := s.as.DescribeScheduledActions(request)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScheduledActions")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "ASGTest1")
+	c.Assert(values.Get("ScheduledActionArn"), gocheck.Equals, "arn:aws:autoscaling:us-west-2:193024542802:scheduledUpdateGroupAction:61f68b2c-bde3-4316-9a81-eb95dc246509:autoScalingGroupName/ASGTest1:scheduledActionName/SATest1")
+	c.Assert(values.Get("ScheduledActionName"), gocheck.Equals, "SATest1")
+	c.Assert(values.Get("Recurrence"), gocheck.Equals, "30 0 1 1,6,12 *")
+	c.Assert(values.Get("MaxSize"), gocheck.Equals, "4")
+	c.Assert(values.Get("StartTime"), gocheck.Equals, "2014-06-01T00:30:00Z")
+	c.Assert(values.Get("Time"), gocheck.Equals, "2014-06-01T00:30:00Z")
+	c.Assert(resp.RequestId, gocheck.Equals, "0eb4217f-8421-11e3-9233-7100ef811766")
+}
+
 func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
 	testServer.Response(200, nil, UpdateAutoScalingGroup)
 
@@ -613,6 +636,27 @@ func (s *S) TestResumeProcesses(c *gocheck.C) {
 	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 
+}
+
+func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
+	testServer.Response(200, nil, PutScheduledUpdateGroupAction)
+	st, _ := time.Parse(time.RFC3339, "2013-05-25T08:00:00Z")
+	request := &PutScheduledUpdateGroupActionParams{
+		AutoScalingGroupName: "my-test-asg",
+		DesiredCapacity:      3,
+		ScheduledActionName:  "ScaleUp",
+		StartTime:            st,
+	}
+	resp, err := s.as.PutScheduledUpdateGroupAction(request)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), gocheck.Equals, "PutScheduledUpdateGroupAction")
+	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("ScheduledActionName"), gocheck.Equals, "ScaleUp")
+	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
+	c.Assert(values.Get("StartTime"), gocheck.Equals, "2013-05-25T08:00:00Z")
+	c.Assert(resp.RequestId, gocheck.Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
 }
 
 func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
