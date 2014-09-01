@@ -23,6 +23,10 @@ type STS struct {
 // New creates a new STS Client.
 // We can only use us-east for region because AWS..
 func New(auth aws.Auth, region aws.Region) *STS {
+	// Make sure we can run the package tests
+	if region.Name == "" {
+		return &STS{auth, region, 0}
+	}
 	return &STS{auth, aws.Regions["us-east-1"], 0}
 }
 
@@ -166,6 +170,7 @@ type AssumeRoleResp struct {
 	AssumedRoleUser  AssumedRoleUser `xml:"AssumeRoleResult>AssumedRoleUser"`
 	Credentials      Credentials     `xml:"AssumeRoleResult>Credentials"`
 	PackedPolicySize int             `xml:"AssumeRoleResult>PackedPolicySize"`
+	RequestId        string          `xml:"ResponseMetadata>RequestId"`
 }
 
 // AssumeRole assumes the specified role
