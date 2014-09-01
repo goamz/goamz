@@ -3,7 +3,7 @@ package sts
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/hailocab/goamz/aws"
+	"github.com/goamz/goamz/aws"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -142,7 +142,7 @@ func prepareParams(params map[string]string) string {
 // options for the AssumeRole function
 //
 // See http://goo.gl/Ld6Dbk for details
-type AssumeRoleOptions struct {
+type AssumeRoleParams struct {
 	DurationSeconds int
 	ExternalId      string
 	Policy          string
@@ -151,15 +151,15 @@ type AssumeRoleOptions struct {
 }
 
 type AssumedRoleUser struct {
-	Arn           string
-	AssumedRoleId string
+	Arn           string `xml:"Arn"`
+	AssumedRoleId string `xml:"AssumedRoleId"`
 }
 
 type Credentials struct {
-	AccessKeyId     string
-	Expiration      time.Time
-	SecretAccessKey string
-	SessionToken    string
+	AccessKeyId     string    `xml:"AccessKeyId"`
+	Expiration      time.Time `xml:"Expiration"`
+	SecretAccessKey string    `xml:"SecretAccessKey"`
+	SessionToken    string    `xml:"SessionToken"`
 }
 
 type AssumeRoleResp struct {
@@ -171,7 +171,7 @@ type AssumeRoleResp struct {
 // AssumeRole assumes the specified role
 //
 // See http://goo.gl/zDZbuQ for more details.
-func (sts *STS) AssumeRole(options *AssumeRoleOptions) (resp *AssumeRoleResp, err error) {
+func (sts *STS) AssumeRole(options *AssumeRoleParams) (resp *AssumeRoleResp, err error) {
 	params := makeParams("AssumeRole")
 
 	params["RoleArn"] = options.RoleArn

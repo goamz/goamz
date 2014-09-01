@@ -192,7 +192,7 @@ func (a *Auth) Expiration() time.Time {
 	return a.expiration
 }
 
-//To be used with other APIs that return auth credentials such as STS
+// To be used with other APIs that return auth credentials such as STS
 func NewAuth(accessKey, secretKey, token string, expiration time.Time) *Auth {
 	return &Auth{
 		AccessKey:  accessKey,
