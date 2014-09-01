@@ -3,14 +3,15 @@ package sts
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"sort"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 // The STS type encapsulates operations within a specific EC2 region.
@@ -64,7 +65,7 @@ type xmlErrors struct {
 func (sts *STS) query(params map[string]string, resp interface{}) error {
 	params["Version"] = "2011-06-15"
 
-	data := strings.NewReader(prepareParams(params))
+	data := strings.NewReader(multimap(params).Encode())
 
 	hreq, err := http.NewRequest("POST", sts.Region.STSEndpoint+"/", data)
 	if err != nil {
@@ -129,18 +130,12 @@ func makeParams(action string) map[string]string {
 	return params
 }
 
-func prepareParams(params map[string]string) string {
-	var keys, sarray []string
-
-	for k, _ := range params {
-		keys = append(keys, k)
+func multimap(p map[string]string) url.Values {
+	q := make(url.Values, len(p))
+	for k, v := range p {
+		q[k] = []string{v}
 	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		sarray = append(sarray, aws.Encode(k)+"="+aws.Encode(params[k]))
-	}
-
-	return strings.Join(sarray, "&")
+	return q
 }
 
 // options for the AssumeRole function
