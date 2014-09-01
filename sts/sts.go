@@ -1,3 +1,9 @@
+//
+// sts: This package provides types and functions to interact with the AWS STS API
+//
+// Depends on https://github.com/goamz/goamz
+//
+
 package sts
 
 import (
@@ -161,7 +167,7 @@ type Credentials struct {
 	SessionToken    string    `xml:"SessionToken"`
 }
 
-type AssumeRoleResp struct {
+type AssumeRoleResult struct {
 	AssumedRoleUser  AssumedRoleUser `xml:"AssumeRoleResult>AssumedRoleUser"`
 	Credentials      Credentials     `xml:"AssumeRoleResult>Credentials"`
 	PackedPolicySize int             `xml:"AssumeRoleResult>PackedPolicySize"`
@@ -171,7 +177,7 @@ type AssumeRoleResp struct {
 // AssumeRole assumes the specified role
 //
 // See http://goo.gl/zDZbuQ for more details.
-func (sts *STS) AssumeRole(options *AssumeRoleParams) (resp *AssumeRoleResp, err error) {
+func (sts *STS) AssumeRole(options *AssumeRoleParams) (resp *AssumeRoleResult, err error) {
 	params := makeParams("AssumeRole")
 
 	params["RoleArn"] = options.RoleArn
@@ -180,16 +186,46 @@ func (sts *STS) AssumeRole(options *AssumeRoleParams) (resp *AssumeRoleResp, err
 	if options.DurationSeconds != 0 {
 		params["DurationSeconds"] = strconv.Itoa(options.DurationSeconds)
 	}
-
 	if options.ExternalId != "" {
 		params["ExternalId"] = options.ExternalId
 	}
-
 	if options.Policy != "" {
 		params["Policy"] = options.Policy
 	}
 
-	resp = new(AssumeRoleResp)
+	resp = new(AssumeRoleResult)
+	if err := sts.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// GetSessionToken wraps GetSessionToken response
+//
+// See http://goo.gl/v8s5Y for more details
+type GetSessionTokenResult struct {
+	Credentials Credentials `xml:"GetSessionTokenResult>Credentials"`
+	RequestId   string      `xml:"ResponseMetadata>RequestId"`
+}
+
+// GetSessionToken returns a set of temporary credentials for an AWS account or IAM user
+//
+// See http://goo.gl/v8s5Y for more details
+func (sts *STS) GetSessionToken(durationSeconds int, serialnNumber, tokenCode string) (
+	resp *GetSessionTokenResult, err error) {
+	params := makeParams("GetSessionToken")
+
+	if durationSeconds != 0 {
+		params["DurationSeconds"] = strconv.Itoa(durationSeconds)
+	}
+	if serialnNumber != "" {
+		params["SerialNumber"] = serialnNumber
+	}
+	if tokenCode != "" {
+		params["TokenCode"] = tokenCode
+	}
+
+	resp = new(GetSessionTokenResult)
 	if err := sts.query(params, resp); err != nil {
 		return nil, err
 	}

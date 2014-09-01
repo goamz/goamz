@@ -12,7 +12,9 @@ var AssumeRoleResponse = `
        9HFvlRd8Tx6q6fE8YQcHNVXAkiY9q6d+xo0rKwT38xVqr7ZD0u0iPPkUL64lIZbqBAz
        +scqKmlzm8FDrypNC9Yjc8fPOLn9FX9KSYvKTr4rvx3iSIlTJabIQwj2ICCR/oLxBA==
       </SessionToken>
-      <SecretAccessKey>wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY</SecretAccessKey>
+      <SecretAccessKey>
+       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
+      </SecretAccessKey>
       <Expiration>2011-07-15T23:28:33.359Z</Expiration>
       <AccessKeyId>AKIAIOSFODNN7EXAMPLE</AccessKeyId>
     </Credentials>
@@ -26,4 +28,26 @@ var AssumeRoleResponse = `
     <RequestId>c6104cbe-af31-11e0-8154-cbc7ccf896c7</RequestId>
   </ResponseMetadata>
 </AssumeRoleResponse>
+`
+var GetSessionTokenResponse = `
+<GetSessionTokenResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+  <GetSessionTokenResult>
+    <Credentials>
+      <SessionToken>
+       AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/L
+       To6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3z
+       rkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtp
+       Z3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE
+      </SessionToken>
+      <SecretAccessKey>
+       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
+      </SecretAccessKey>
+      <Expiration>2011-07-11T19:55:29.611Z</Expiration>
+      <AccessKeyId>AKIAIOSFODNN7EXAMPLE</AccessKeyId>
+    </Credentials>
+  </GetSessionTokenResult>
+  <ResponseMetadata>
+    <RequestId>58c5dbae-abef-11e0-8cfe-09039844ac7d</RequestId>
+  </ResponseMetadata>
+</GetSessionTokenResponse>
 `

@@ -71,9 +71,41 @@ func (s *S) TestAssumeRole(c *gocheck.C) {
        9HFvlRd8Tx6q6fE8YQcHNVXAkiY9q6d+xo0rKwT38xVqr7ZD0u0iPPkUL64lIZbqBAz
        +scqKmlzm8FDrypNC9Yjc8fPOLn9FX9KSYvKTr4rvx3iSIlTJabIQwj2ICCR/oLxBA==
       `,
-		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY",
-		AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
-		Expiration:      exp,
+		SecretAccessKey: `
+       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
+      `,
+		AccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+		Expiration:  exp,
+	})
+
+}
+
+func (s *S) TestGetSessionToken(c *gocheck.C) {
+	testServer.Response(200, nil, GetSessionTokenResponse)
+	resp, err := s.sts.GetSessionToken(3600, "YourMFADeviceSerialNumber", "123456")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-06-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "GetSessionToken")
+	c.Assert(values.Get("DurationSeconds"), gocheck.Equals, "3600")
+	c.Assert(values.Get("SerialNumber"), gocheck.Equals, "YourMFADeviceSerialNumber")
+	c.Assert(values.Get("TokenCode"), gocheck.Equals, "123456")
+	// Response test
+	exp, _ := time.Parse(time.RFC3339, "2011-07-11T19:55:29.611Z")
+	c.Assert(resp.RequestId, gocheck.Equals, "58c5dbae-abef-11e0-8cfe-09039844ac7d")
+	c.Assert(resp.Credentials, gocheck.DeepEquals, sts.Credentials{
+		SessionToken: `
+       AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/L
+       To6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3z
+       rkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtp
+       Z3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE
+      `,
+		SecretAccessKey: `
+       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
+      `,
+		AccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+		Expiration:  exp,
 	})
 
 }
