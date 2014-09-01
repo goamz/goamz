@@ -200,6 +200,46 @@ func (sts *STS) AssumeRole(options *AssumeRoleParams) (resp *AssumeRoleResult, e
 	return resp, nil
 }
 
+// FederatedUser presents dentifiers for the federated user that is associated with the credentials.
+//
+// See http://goo.gl/uPtr7V for more details
+type FederatedUser struct {
+	Arn             string `xml:"Arn"`
+	FederatedUserId string `xml:"FederatedUserId"`
+}
+
+// GetFederationToken wraps GetFederationToken response
+//
+// See http://goo.gl/Iujjeg for more details
+type GetFederationTokenResult struct {
+	Credentials      Credentials   `xml:"GetFederationTokenResult>Credentials"`
+	FederatedUser    FederatedUser `xml:"GetFederationTokenResult>FederatedUser"`
+	PackedPolicySize int           `xml:"GetFederationTokenResult>PackedPolicySize"`
+	RequestId        string        `xml:"ResponseMetadata>RequestId"`
+}
+
+// GetFederationToken returns a set of temporary credentials for an AWS account or IAM user
+//
+// See http://goo.gl/Iujjeg for more details
+func (sts *STS) GetFederationToken(name, policy string, durationSeconds int) (
+	resp *GetFederationTokenResult, err error) {
+	params := makeParams("GetFederationToken")
+	params["Name"] = name
+
+	if durationSeconds != 0 {
+		params["DurationSeconds"] = strconv.Itoa(durationSeconds)
+	}
+	if policy != "" {
+		params["Policy"] = policy
+	}
+
+	resp = new(GetFederationTokenResult)
+	if err := sts.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // GetSessionToken wraps GetSessionToken response
 //
 // See http://goo.gl/v8s5Y for more details

@@ -80,6 +80,46 @@ func (s *S) TestAssumeRole(c *gocheck.C) {
 
 }
 
+func (s *S) TestGetFederationToken(c *gocheck.C) {
+	testServer.Response(200, nil, GetFederationTokenResponse)
+	resp, err := s.sts.GetFederationToken(
+		"Bob",
+		`{"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:*","Resource":"*"}]}`,
+		3600,
+	)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2011-06-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "GetFederationToken")
+	c.Assert(values.Get("DurationSeconds"), gocheck.Equals, "3600")
+	c.Assert(values.Get("Policy"), gocheck.Equals, `{"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:*","Resource":"*"}]}`)
+	c.Assert(values.Get("Name"), gocheck.Equals, "Bob")
+	// Response test
+	exp, _ := time.Parse(time.RFC3339, "2011-07-15T23:28:33.359Z")
+	c.Assert(resp.RequestId, gocheck.Equals, "c6104cbe-af31-11e0-8154-cbc7ccf896c7")
+	c.Assert(resp.PackedPolicySize, gocheck.Equals, 6)
+	c.Assert(resp.FederatedUser, gocheck.DeepEquals, sts.FederatedUser{
+		Arn:             "arn:aws:sts::123456789012:federated-user/Bob",
+		FederatedUserId: "123456789012:Bob",
+	})
+	c.Assert(resp.Credentials, gocheck.DeepEquals, sts.Credentials{
+		SessionToken: `
+       AQoDYXdzEPT//////////wEXAMPLEtc764bNrC9SAPBSM22wDOk4x4HIZ8j4FZTwdQW
+       LWsKWHGBuFqwAeMicRXmxfpSPfIeoIYRqTflfKD8YUuwthAx7mSEI/qkPpKPi/kMcGd
+       QrmGdeehM4IC1NtBmUpp2wUE8phUZampKsburEDy0KPkyQDYwT7WZ0wq5VSXDvp75YU
+       9HFvlRd8Tx6q6fE8YQcHNVXAkiY9q6d+xo0rKwT38xVqr7ZD0u0iPPkUL64lIZbqBAz
+       +scqKmlzm8FDrypNC9Yjc8fPOLn9FX9KSYvKTr4rvx3iSIlTJabIQwj2ICCR/oLxBA==
+      `,
+		SecretAccessKey: `
+       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
+      `,
+		AccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+		Expiration:  exp,
+	})
+
+}
+
 func (s *S) TestGetSessionToken(c *gocheck.C) {
 	testServer.Response(200, nil, GetSessionTokenResponse)
 	resp, err := s.sts.GetSessionToken(3600, "YourMFADeviceSerialNumber", "123456")
