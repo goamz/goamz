@@ -395,25 +395,27 @@ type InstanceMonitoring struct {
 	Enabled bool `xml:"Enabled"`
 }
 
-// CreateLaunchConfiguration encapsulates options for the respective request.
+// LaunchConfiguration encapsulates the LaunchConfiguration Data Type
 //
-// See http://goo.gl/Uw916w for more details.
-type CreateLaunchConfigurationParams struct {
-	AssociatePublicIpAddress bool
-	BlockDeviceMappings      []BlockDeviceMapping
-	EbsOptimized             bool
-	IamInstanceProfile       string
-	ImageId                  string
-	InstanceId               string
-	InstanceMonitoring       InstanceMonitoring
-	InstanceType             string
-	KernelId                 string
-	KeyName                  string
-	LaunchConfigurationName  string
-	RamdiskId                string
-	SecurityGroups           []string
-	SpotPrice                string
-	UserData                 string
+// See http://goo.gl/TOJunp
+type LaunchConfiguration struct {
+	AssociatePublicIpAddress bool                 `xml:"AssociatePublicIpAddress"`
+	BlockDeviceMappings      []BlockDeviceMapping `xml:"BlockDeviceMappings>member"`
+	CreatedTime              time.Time            `xml:"CreatedTime"`
+	EbsOptimized             bool                 `xml:"EbsOptimized"`
+	IamInstanceProfile       string               `xml:"IamInstanceProfile"`
+	ImageId                  string               `xml:"ImageId"`
+	InstanceId               string               `xml:"InstanceId"`
+	InstanceMonitoring       InstanceMonitoring   `xml:"InstanceMonitoring"`
+	InstanceType             string               `xml:"InstanceType"`
+	KernelId                 string               `xml:"KernelId"`
+	KeyName                  string               `xml:"KeyName"`
+	LaunchConfigurationARN   string               `xml:"LaunchConfigurationARN"`
+	LaunchConfigurationName  string               `xml:"LaunchConfigurationName"`
+	RamdiskId                string               `xml:"RamdiskId"`
+	SecurityGroups           []string             `xml:"SecurityGroups>member"`
+	SpotPrice                string               `xml:"SpotPrice"`
+	UserData                 string               `xml:"UserData"`
 }
 
 // CreateLaunchConfiguration creates a launch configuration
@@ -421,53 +423,53 @@ type CreateLaunchConfigurationParams struct {
 // Required params: AutoScalingGroupName, MinSize, MaxSize
 //
 // See http://goo.gl/8e0BSF for more details.
-func (as *AutoScaling) CreateLaunchConfiguration(options *CreateLaunchConfigurationParams) (
+func (as *AutoScaling) CreateLaunchConfiguration(lc *LaunchConfiguration) (
 	resp *SimpleResp, err error) {
 
 	var b64 = base64.StdEncoding
 
 	params := makeParams("CreateLaunchConfiguration")
-	params["LaunchConfigurationName"] = options.LaunchConfigurationName
+	params["LaunchConfigurationName"] = lc.LaunchConfigurationName
 
-	if options.AssociatePublicIpAddress {
-		params["AssociatePublicIpAddress"] = strconv.FormatBool(options.AssociatePublicIpAddress)
+	if lc.AssociatePublicIpAddress {
+		params["AssociatePublicIpAddress"] = strconv.FormatBool(lc.AssociatePublicIpAddress)
 	}
-	if options.EbsOptimized {
-		params["EbsOptimized"] = strconv.FormatBool(options.EbsOptimized)
+	if lc.EbsOptimized {
+		params["EbsOptimized"] = strconv.FormatBool(lc.EbsOptimized)
 	}
-	if options.IamInstanceProfile != "" {
-		params["IamInstanceProfile"] = options.IamInstanceProfile
+	if lc.IamInstanceProfile != "" {
+		params["IamInstanceProfile"] = lc.IamInstanceProfile
 	}
-	if options.ImageId != "" {
-		params["ImageId"] = options.ImageId
+	if lc.ImageId != "" {
+		params["ImageId"] = lc.ImageId
 	}
-	if options.InstanceId != "" {
-		params["InstanceId"] = options.InstanceId
+	if lc.InstanceId != "" {
+		params["InstanceId"] = lc.InstanceId
 	}
-	if options.InstanceMonitoring != (InstanceMonitoring{}) {
-		params["InstanceMonitoring.Enabled"] = strconv.FormatBool(options.InstanceMonitoring.Enabled)
+	if lc.InstanceMonitoring != (InstanceMonitoring{}) {
+		params["InstanceMonitoring.Enabled"] = strconv.FormatBool(lc.InstanceMonitoring.Enabled)
 	}
-	if options.InstanceType != "" {
-		params["InstanceType"] = options.InstanceType
+	if lc.InstanceType != "" {
+		params["InstanceType"] = lc.InstanceType
 	}
-	if options.KernelId != "" {
-		params["KernelId"] = options.KernelId
+	if lc.KernelId != "" {
+		params["KernelId"] = lc.KernelId
 	}
-	if options.KeyName != "" {
-		params["KeyName"] = options.KeyName
+	if lc.KeyName != "" {
+		params["KeyName"] = lc.KeyName
 	}
-	if options.RamdiskId != "" {
-		params["RamdiskId"] = options.RamdiskId
+	if lc.RamdiskId != "" {
+		params["RamdiskId"] = lc.RamdiskId
 	}
-	if options.SpotPrice != "" {
-		params["SpotPrice"] = options.SpotPrice
+	if lc.SpotPrice != "" {
+		params["SpotPrice"] = lc.SpotPrice
 	}
-	if options.UserData != "" {
-		params["UserData"] = b64.EncodeToString([]byte(options.UserData))
+	if lc.UserData != "" {
+		params["UserData"] = b64.EncodeToString([]byte(lc.UserData))
 	}
 
 	// Add our block device mappings
-	for i, bdm := range options.BlockDeviceMappings {
+	for i, bdm := range lc.BlockDeviceMappings {
 		key := "BlockDeviceMappings.member.%d.%s"
 		index := i + 1
 		params[fmt.Sprintf(key, index, "DeviceName")] = bdm.DeviceName
@@ -498,8 +500,8 @@ func (as *AutoScaling) CreateLaunchConfiguration(options *CreateLaunchConfigurat
 		}
 	}
 
-	if len(options.SecurityGroups) > 0 {
-		addParamsList(params, "SecurityGroups.member", options.SecurityGroups)
+	if len(lc.SecurityGroups) > 0 {
+		addParamsList(params, "SecurityGroups.member", lc.SecurityGroups)
 	}
 
 	resp = new(SimpleResp)
@@ -829,29 +831,6 @@ func (as *AutoScaling) DescribeAutoScalingNotificationTypes() (resp *DescribeAut
 		return nil, err
 	}
 	return resp, nil
-}
-
-// LaunchConfiguration encapsulates the LaunchConfiguration Data Type
-//
-// See http://goo.gl/TOJunp
-type LaunchConfiguration struct {
-	AssociatePublicIpAddress bool                 `xml:"AssociatePublicIpAddress"`
-	BlockDeviceMappings      []BlockDeviceMapping `xml:"BlockDeviceMappings>member"`
-	CreatedTime              time.Time            `xml:"CreatedTime"`
-	EbsOptimized             bool                 `xml:"EbsOptimized"`
-	IamInstanceProfile       string               `xml:"IamInstanceProfile"`
-	ImageId                  string               `xml:"ImageId"`
-	InstanceId               string               `xml:"InstanceId"`
-	InstanceMonitoring       InstanceMonitoring   `xml:"InstanceMonitoring"`
-	InstanceType             string               `xml:"InstanceType"`
-	KernelId                 string               `xml:"KernelId"`
-	KeyName                  string               `xml:"KeyName"`
-	LaunchConfigurationARN   string               `xml:"LaunchConfigurationARN"`
-	LaunchConfigurationName  string               `xml:"LaunchConfigurationName"`
-	RamdiskId                string               `xml:"RamdiskId"`
-	SecurityGroups           []string             `xml:"SecurityGroups>member"`
-	SpotPrice                string               `xml:"SpotPrice"`
-	UserData                 string               `xml:"UserData"`
 }
 
 // DescribeLaunchConfigurationResp defines the basic response structure for launch configuration
@@ -1740,25 +1719,6 @@ func (as *AutoScaling) TerminateInstanceInAutoScalingGroup(id string, decrCap bo
 	return resp, nil
 }
 
-// UpdateAutoScalingGroupParams type encapsulates options for the respective request.
-//
-// See http://goo.gl/rqrmxy for more details.
-type UpdateAutoScalingGroupParams struct {
-	AutoScalingGroupName    string
-	AvailabilityZones       []string
-	DefaultCooldown         int
-	DesiredCapacity         int
-	HealthCheckGracePeriod  int
-	HealthCheckType         string
-	InstanceId              string
-	LaunchConfigurationName string
-	MaxSize                 int
-	MinSize                 int
-	PlacementGroup          string
-	TerminationPolicies     []string
-	VPCZoneIdentifier       string
-}
-
 // UpdateAutoScalingGroup updates the scaling group.
 //
 // To update an auto scaling group with a launch configuration that has the InstanceMonitoring
@@ -1766,41 +1726,38 @@ type UpdateAutoScalingGroupParams struct {
 // Otherwise calls to UpdateAutoScalingGroup will fail.
 //
 // See http://goo.gl/rqrmxy for more details.
-func (as *AutoScaling) UpdateAutoScalingGroup(options *UpdateAutoScalingGroupParams) (resp *SimpleResp, err error) {
+func (as *AutoScaling) UpdateAutoScalingGroup(asg *AutoScalingGroup) (resp *SimpleResp, err error) {
 	params := makeParams("UpdateAutoScalingGroup")
 
-	params["AutoScalingGroupName"] = options.AutoScalingGroupName
-	params["MaxSize"] = strconv.Itoa(options.MaxSize)
-	params["MinSize"] = strconv.Itoa(options.MinSize)
-	params["DesiredCapacity"] = strconv.Itoa(options.DesiredCapacity)
+	params["AutoScalingGroupName"] = asg.AutoScalingGroupName
+	params["MaxSize"] = strconv.Itoa(asg.MaxSize)
+	params["MinSize"] = strconv.Itoa(asg.MinSize)
+	params["DesiredCapacity"] = strconv.Itoa(asg.DesiredCapacity)
 
-	if options.DefaultCooldown > 0 {
-		params["DefaultCooldown"] = strconv.Itoa(options.DefaultCooldown)
+	if asg.DefaultCooldown > 0 {
+		params["DefaultCooldown"] = strconv.Itoa(asg.DefaultCooldown)
 	}
-	if options.HealthCheckGracePeriod > 0 {
-		params["HealthCheckGracePeriod"] = strconv.Itoa(options.HealthCheckGracePeriod)
+	if asg.HealthCheckGracePeriod > 0 {
+		params["HealthCheckGracePeriod"] = strconv.Itoa(asg.HealthCheckGracePeriod)
 	}
-	if options.HealthCheckType != "" {
-		params["HealthCheckType"] = options.HealthCheckType
+	if asg.HealthCheckType != "" {
+		params["HealthCheckType"] = asg.HealthCheckType
 	}
-	if options.InstanceId != "" {
-		params["InstanceId"] = options.InstanceId
+	if asg.LaunchConfigurationName != "" {
+		params["LaunchConfigurationName"] = asg.LaunchConfigurationName
 	}
-	if options.LaunchConfigurationName != "" {
-		params["LaunchConfigurationName"] = options.LaunchConfigurationName
+	if asg.PlacementGroup != "" {
+		params["PlacementGroup"] = asg.PlacementGroup
 	}
-	if options.PlacementGroup != "" {
-		params["PlacementGroup"] = options.PlacementGroup
-	}
-	if options.VPCZoneIdentifier != "" {
-		params["VPCZoneIdentifier"] = options.VPCZoneIdentifier
+	if asg.VPCZoneIdentifier != "" {
+		params["VPCZoneIdentifier"] = asg.VPCZoneIdentifier
 	}
 
-	if len(options.AvailabilityZones) > 0 {
-		addParamsList(params, "AvailabilityZones.member", options.AvailabilityZones)
+	if len(asg.AvailabilityZones) > 0 {
+		addParamsList(params, "AvailabilityZones.member", asg.AvailabilityZones)
 	}
-	if len(options.TerminationPolicies) > 0 {
-		addParamsList(params, "TerminationPolicies.member", options.TerminationPolicies)
+	if len(asg.TerminationPolicies) > 0 {
+		addParamsList(params, "TerminationPolicies.member", asg.TerminationPolicies)
 	}
 
 	resp = new(SimpleResp)

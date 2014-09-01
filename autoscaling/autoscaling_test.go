@@ -67,17 +67,17 @@ func TestBasicGroupRequest(t *testing.T) {
 func TestAutoScalingGroup(t *testing.T) {
 	var as *AutoScaling
 	// Launch configuration test config
-	lcReq := new(CreateLaunchConfigurationParams)
-	lcReq.LaunchConfigurationName = "LConf1"
-	lcReq.ImageId = "ami-03e47533" // Octave debian ami
-	lcReq.KernelId = "aki-98e26fa8"
-	lcReq.KeyName = "testAWS" // Replace with valid key for your account
-	lcReq.InstanceType = "m1.small"
+	lc := new(LaunchConfiguration)
+	lc.LaunchConfigurationName = "LConf1"
+	lc.ImageId = "ami-03e47533" // Octave debian ami
+	lc.KernelId = "aki-98e26fa8"
+	lc.KeyName = "testAWS" // Replace with valid key for your account
+	lc.InstanceType = "m1.small"
 
 	// CreateAutoScalingGroup params test config
 	asgReq := new(CreateAutoScalingGroupParams)
 	asgReq.AutoScalingGroupName = "ASGTest1"
-	asgReq.LaunchConfigurationName = lcReq.LaunchConfigurationName
+	asgReq.LaunchConfigurationName = lc.LaunchConfigurationName
 	asgReq.DefaultCooldown = 300
 	asgReq.HealthCheckGracePeriod = 300
 	asgReq.DesiredCapacity = 1
@@ -87,19 +87,13 @@ func TestAutoScalingGroup(t *testing.T) {
 
 	asg := new(AutoScalingGroup)
 	asg.AutoScalingGroupName = "ASGTest1"
-	asg.LaunchConfigurationName = lcReq.LaunchConfigurationName
+	asg.LaunchConfigurationName = lc.LaunchConfigurationName
 	asg.DefaultCooldown = 300
 	asg.HealthCheckGracePeriod = 300
 	asg.DesiredCapacity = 1
 	asg.MinSize = 1
 	asg.MaxSize = 5
 	asg.AvailabilityZones = []string{"us-west-2a"}
-
-	asgUpdate := new(UpdateAutoScalingGroupParams)
-	asgUpdate.AutoScalingGroupName = "ASGTest1"
-	asgUpdate.DesiredCapacity = 1
-	asgUpdate.MinSize = 1
-	asgUpdate.MaxSize = 6
 
 	awsAuth, err := aws.EnvAuth()
 	if err != nil {
@@ -115,7 +109,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, CreateLaunchConfigurationResponse)
 	}
-	_, err = as.CreateLaunchConfiguration(lcReq)
+	_, err = as.CreateLaunchConfiguration(lc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +118,7 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, DescribeLaunchConfigurationsResponse)
 	}
-	_, err = as.DescribeLaunchConfigurations([]string{lcReq.LaunchConfigurationName}, 10, "")
+	_, err = as.DescribeLaunchConfigurations([]string{lc.LaunchConfigurationName}, 10, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +182,10 @@ func TestAutoScalingGroup(t *testing.T) {
 	if mockTest {
 		testServer.Response(200, nil, UpdateAutoScalingGroupResponse)
 	}
-	_, err = as.UpdateAutoScalingGroup(asgUpdate)
+	asg.MinSize = 1
+	asg.MaxSize = 6
+	asg.DesiredCapacity = 1
+	_, err = as.UpdateAutoScalingGroup(asg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +295,7 @@ func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
 	testServer.Response(200, nil, CreateLaunchConfigurationResponse)
 	testServer.Response(200, nil, DeleteLaunchConfigurationResponse)
 
-	launchConfig := &CreateLaunchConfigurationParams{
+	launchConfig := &LaunchConfiguration{
 		LaunchConfigurationName:  "my-test-lc",
 		AssociatePublicIpAddress: true,
 		EbsOptimized:             true,
@@ -1155,7 +1152,7 @@ func (s *S) TestTerminateInstanceInAutoScalingGroup(c *gocheck.C) {
 func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
 	testServer.Response(200, nil, UpdateAutoScalingGroupResponse)
 
-	asg := &UpdateAutoScalingGroupParams{
+	asg := &AutoScalingGroup{
 		AutoScalingGroupName:    "my-test-asg",
 		AvailabilityZones:       []string{"us-east-1a", "us-east-1b"},
 		MinSize:                 3,
