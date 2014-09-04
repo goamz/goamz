@@ -376,7 +376,7 @@ type ChangeMessageVisibilityBatchResponse struct {
 	ResponseMetadata ResponseMetadata
 }
 
-/* ChangeMessageVisibilityBatch */
+/* ChangeMessageVisibilityBatch - see http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibilityBatch.html */
 func (q *Queue) ChangeMessageVisibilityBatch(msgList []Message, duration int) (resp *ChangeMessageVisibilityBatchResponse, err error) {
 	resp = &ChangeMessageVisibilityBatchResponse{}
 	params := makeParams("ChangeMessageVisibilityBatch")
@@ -388,6 +388,9 @@ func (q *Queue) ChangeMessageVisibilityBatch(msgList []Message, duration int) (r
 	}
 
 	err = q.SQS.query(q.Url, params, resp)
+	if err != nil {
+		return
+	}
 
 	var messagesWithErrors int
 

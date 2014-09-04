@@ -274,11 +274,14 @@ func (s *S) TestChangeMessageVisibilityBatch(c *gocheck.C) {
 	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
 
 	resp1, err := q.ReceiveMessage(1)
+	c.Assert(err, gocheck.IsNil)
+
 	req := testServer.WaitRequest()
 
 	testServer.PrepareResponse(200, nil, TestChangeMessageVisibilityBatchXmlOK)
 
 	resp, err := q.ChangeMessageVisibilityBatch(resp1.Messages, 50)
+	c.Assert(err, gocheck.IsNil)
 	req = testServer.WaitRequest()
 
 	c.Assert(req.Method, gocheck.Equals, "GET")
