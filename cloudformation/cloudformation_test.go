@@ -2,7 +2,7 @@ package cloudformation_test
 
 import (
 	"testing"
-	//"time"
+	"time"
 
 	"github.com/motain/gocheck"
 
@@ -142,6 +142,7 @@ func (s *S) TestCreateStackWithInvalidParams(c *gocheck.C) {
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(resp, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
+
 	// Post request test
 	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
 	c.Assert(values.Get("Action"), gocheck.Equals, "CreateStack")
@@ -170,10 +171,10 @@ func (s *S) TestCreateStackWithInvalidParams(c *gocheck.C) {
 
 }
 
-func (s *S) DeleteStack(c *gocheck.C) {
+func (s *S) TestDeleteStack(c *gocheck.C) {
 	testServer.Response(200, nil, DeleteStackResponse)
 
-	resp, err := s.cf.CancelUpdateStack("foo")
+	resp, err := s.cf.DeleteStack("foo")
 	c.Assert(err, gocheck.IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
@@ -183,4 +184,62 @@ func (s *S) DeleteStack(c *gocheck.C) {
 
 	// Response test
 	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+}
+
+func (s *S) TestDescribeStackEvents(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeStackEventsResponse)
+
+	resp, err := s.cf.DescribeStackEvents("MyStack", "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+
+	// Post request test
+	t1, _ := time.Parse(time.RFC3339, "2010-07-27T22:26:28Z")
+	t2, _ := time.Parse(time.RFC3339, "2010-07-27T22:27:28Z")
+	t3, _ := time.Parse(time.RFC3339, "2010-07-27T22:28:28Z")
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStackEvents")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("NextToken"), gocheck.Equals, "")
+
+	// Response test
+	expected := &cf.DescribeStackEventsResponse{
+		StackEvents: []cf.StackEvent{
+			{
+				EventId:              "Event-1-Id",
+				StackId:              "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+				StackName:            "MyStack",
+				LogicalResourceId:    "MyStack",
+				PhysicalResourceId:   "MyStack_One",
+				ResourceType:         "AWS::CloudFormation::Stack",
+				Timestamp:            t1,
+				ResourceStatus:       "CREATE_IN_PROGRESS",
+				ResourceStatusReason: "User initiated",
+			},
+			{
+				EventId:            "Event-2-Id",
+				StackId:            "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+				StackName:          "MyStack",
+				LogicalResourceId:  "MyDBInstance",
+				PhysicalResourceId: "MyStack_DB1",
+				ResourceType:       "AWS::SecurityGroup",
+				Timestamp:          t2,
+				ResourceStatus:     "CREATE_IN_PROGRESS",
+				ResourceProperties: "{\"GroupDescription\":...}",
+			},
+			{
+				EventId:            "Event-3-Id",
+				StackId:            "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+				StackName:          "MyStack",
+				LogicalResourceId:  "MySG1",
+				PhysicalResourceId: "MyStack_SG1",
+				ResourceType:       "AWS::SecurityGroup",
+				Timestamp:          t3,
+				ResourceStatus:     "CREATE_COMPLETE",
+			},
+		},
+		NextToken: "",
+		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
 }

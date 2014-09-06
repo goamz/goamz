@@ -15,7 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	//"time"
+	"time"
 
 	"github.com/goamz/goamz/aws"
 )
@@ -276,7 +276,7 @@ func (c *CloudFormation) CreateStack(options *CreateStackParams) (
 	return resp, nil
 }
 
-// DeleteStack dletes a specified stack.
+// DeleteStack deletes a specified stack.
 // Once the call completes successfully, stack deletion starts.
 //
 // See http://goo.gl/CVMpxC for more details
@@ -286,6 +286,52 @@ func (c *CloudFormation) DeleteStack(stackName string) (resp *SimpleResp, err er
 	params["StackName"] = stackName
 
 	resp = new(SimpleResp)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StackEvent encapsulates the StackEvent data type
+//
+// See http://goo.gl/EHwiMf for more details
+type StackEvent struct {
+	EventId              string
+	LogicalResourceId    string
+	PhysicalResourceId   string
+	ResourceProperties   string
+	ResourceStatus       string
+	ResourceStatusReason string
+	ResourceType         string
+	StackId              string
+	StackName            string
+	Timestamp            time.Time
+}
+
+// DescribeStackEventsResponse wraps a response returned by DescribeStackEvents request
+//
+// See http://goo.gl/zqj4Bz for more details
+type DescribeStackEventsResponse struct {
+	NextToken   string
+	StackEvents []StackEvent `xml:"DescribeStackEventsResult>StackEvents>member"`
+	RequestId   string       `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeStackEvents returns all stack related events for a specified stack.
+//
+// See http://goo.gl/zqj4Bz for more details
+func (c *CloudFormation) DescribeStackEvents(stackName string, nextToken string) (
+	resp *DescribeStackEventsResponse, err error) {
+	params := makeParams("DescribeStackEvents")
+
+	if stackName != "" {
+		params["StackName"] = stackName
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	resp = new(DescribeStackEventsResponse)
 	if err := c.query(params, resp); err != nil {
 		return nil, err
 	}
