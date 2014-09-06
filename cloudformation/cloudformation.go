@@ -572,6 +572,11 @@ type GetTemplateResponse struct {
 // GetTemplate returns the template body for a specified stack.
 // You can get the template for running or deleted stacks
 //
+// Required Params: StackName - The name or the unique identifier associated with the stack,
+// which are not always interchangeable:
+// Running stacks: You can specify either the stack's name or its unique stack ID.
+// Deleted stacks: You must specify the unique stack ID.
+//
 // See http://goo.gl/GU59CB for more information
 func (c *CloudFormation) GetTemplate(stackName string) (
 	resp *GetTemplateResponse, err error) {
@@ -580,6 +585,54 @@ func (c *CloudFormation) GetTemplate(stackName string) (
 	params["StackName"] = stackName
 
 	resp = new(GetTemplateResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StackResourceSummary encapsulates the StackResourceSummary data type
+//
+// See http://goo.gl/Af0vcm for more details
+type StackResourceSummary struct {
+	LastUpdatedTimestamp time.Time `xml:"LastUpdatedTimestamp"`
+	LogicalResourceId    string    `xml:"LogicalResourceId"`
+	PhysicalResourceId   string    `xml:"PhysicalResourceId"`
+	ResourceStatus       string    `xml:"ResourceStatus"`
+	ResourceStatusReason string    `xml:"ResourceStatusReason"`
+	ResourceType         string    `xml:"ResourceType"`
+}
+
+// ListStackResourcesResponse wraps a response returned by ListStackResources request
+//
+// See http://goo.gl/JUCgLf for more details
+type ListStackResourcesResponse struct {
+	NextToken              string                 `xml:"ListStackResourcesResult>NextToken"`
+	StackResourceSummaries []StackResourceSummary `xml:"ListStackResourcesResult>StackResourceSummaries>member"`
+	RequestId              string                 `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListStackResources returns descriptions of all resources of the specified stack.
+// For deleted stacks, ListStackResources returns resource information for up to 90 days
+// after the stack has been deleted.
+//
+// Required Params: StackName - The name or the unique identifier associated with the stack,
+// which are not always interchangeable:
+// Running stacks: You can specify either the stack's name or its unique stack ID.
+// Deleted stacks: You must specify the unique stack ID.
+//
+// See http://goo.gl/JUCgLf for more details
+func (c *CloudFormation) ListStackResources(stackName, nextToken string) (
+	resp *ListStackResourcesResponse, err error) {
+	params := makeParams("ListStackResources")
+
+	params["StackName"] = stackName
+
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	resp = new(ListStackResourcesResponse)
 	if err := c.query(params, resp); err != nil {
 		return nil, err
 	}

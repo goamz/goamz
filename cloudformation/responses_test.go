@@ -236,3 +236,57 @@ var GetTemplateResponse = `
   </ResponseMetadata>
 </GetTemplateResponse>
 `
+
+var ListStackResourcesResponse = `
+<ListStackResourcesResponse>
+  <ListStackResourcesResult>
+    <StackResourceSummaries>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>DBSecurityGroup</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:15:58Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>gmarcteststack-dbsecuritygroup-1s5m0ez5lkk6w</PhysicalResourceId>
+        <ResourceType>AWS::RDS::DBSecurityGroup</ResourceType>
+      </member>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>SampleDB</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:25:57Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>MyStack-sampledb-ycwhk1v830lx</PhysicalResourceId>
+        <ResourceType>AWS::RDS::DBInstance</ResourceType>
+      </member>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>SampleApplication</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:26:12Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>MyStack-SampleApplication-1MKNASYR3RBQL</PhysicalResourceId>
+        <ResourceType>AWS::ElasticBeanstalk::Application</ResourceType>
+      </member>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>SampleEnvironment</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:28:48Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>myst-Samp-1AGU6ERZX6M3Q</PhysicalResourceId>
+        <ResourceType>AWS::ElasticBeanstalk::Environment</ResourceType>
+      </member>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>AlarmTopic</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:29:06Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>arn:aws:sns:us-east-1:803981987763:MyStack-AlarmTopic-SW4IQELG7RPJ</PhysicalResourceId>
+        <ResourceType>AWS::SNS::Topic</ResourceType>
+      </member>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>CPUAlarmHigh</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:29:23Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>MyStack-CPUAlarmHigh-POBWQPDJA81F</PhysicalResourceId>
+        <ResourceType>AWS::CloudWatch::Alarm</ResourceType>
+      </member>
+    </StackResourceSummaries>
+  </ListStackResourcesResult>
+  <ResponseMetadata>
+    <RequestId>2d06e36c-ac1d-11e0-a958-f9382b6eb86b</RequestId>
+  </ResponseMetadata>
+</ListStackResourcesResponse>
+`

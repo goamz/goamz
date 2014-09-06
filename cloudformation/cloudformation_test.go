@@ -441,3 +441,75 @@ func (s *S) TestGetTemplate(c *gocheck.C) {
 	c.Assert(resp.TemplateBody, gocheck.Equals, templateBody)
 	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
+
+func (s *S) TestListStackResources(c *gocheck.C) {
+	testServer.Response(200, nil, ListStackResourcesResponse)
+
+	resp, err := s.cf.ListStackResources("MyStack", "4dad1-32131da-d-31")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListStackResources")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("NextToken"), gocheck.Equals, "4dad1-32131da-d-31")
+
+	// Response test
+	t1, _ := time.Parse(time.RFC3339, "2011-06-21T20:15:58Z")
+	t2, _ := time.Parse(time.RFC3339, "2011-06-21T20:25:57Z")
+	t3, _ := time.Parse(time.RFC3339, "2011-06-21T20:26:12Z")
+	t4, _ := time.Parse(time.RFC3339, "2011-06-21T20:28:48Z")
+	t5, _ := time.Parse(time.RFC3339, "2011-06-21T20:29:06Z")
+	t6, _ := time.Parse(time.RFC3339, "2011-06-21T20:29:23Z")
+
+	expected := &cf.ListStackResourcesResponse{
+		StackResourceSummaries: []cf.StackResourceSummary{
+			{
+				LogicalResourceId:    "DBSecurityGroup",
+				PhysicalResourceId:   "gmarcteststack-dbsecuritygroup-1s5m0ez5lkk6w",
+				ResourceType:         "AWS::RDS::DBSecurityGroup",
+				LastUpdatedTimestamp: t1,
+				ResourceStatus:       "CREATE_COMPLETE",
+			},
+			{
+				LogicalResourceId:    "SampleDB",
+				PhysicalResourceId:   "MyStack-sampledb-ycwhk1v830lx",
+				ResourceType:         "AWS::RDS::DBInstance",
+				LastUpdatedTimestamp: t2,
+				ResourceStatus:       "CREATE_COMPLETE",
+			},
+			{
+				LogicalResourceId:    "SampleApplication",
+				PhysicalResourceId:   "MyStack-SampleApplication-1MKNASYR3RBQL",
+				ResourceType:         "AWS::ElasticBeanstalk::Application",
+				LastUpdatedTimestamp: t3,
+				ResourceStatus:       "CREATE_COMPLETE",
+			},
+			{
+				LogicalResourceId:    "SampleEnvironment",
+				PhysicalResourceId:   "myst-Samp-1AGU6ERZX6M3Q",
+				ResourceType:         "AWS::ElasticBeanstalk::Environment",
+				LastUpdatedTimestamp: t4,
+				ResourceStatus:       "CREATE_COMPLETE",
+			},
+			{
+				LogicalResourceId:    "AlarmTopic",
+				PhysicalResourceId:   "arn:aws:sns:us-east-1:803981987763:MyStack-AlarmTopic-SW4IQELG7RPJ",
+				ResourceType:         "AWS::SNS::Topic",
+				LastUpdatedTimestamp: t5,
+				ResourceStatus:       "CREATE_COMPLETE",
+			},
+			{
+				LogicalResourceId:    "CPUAlarmHigh",
+				PhysicalResourceId:   "MyStack-CPUAlarmHigh-POBWQPDJA81F",
+				ResourceType:         "AWS::CloudWatch::Alarm",
+				LastUpdatedTimestamp: t6,
+				ResourceStatus:       "CREATE_COMPLETE",
+			},
+		},
+		NextToken: "",
+		RequestId: "2d06e36c-ac1d-11e0-a958-f9382b6eb86b",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
