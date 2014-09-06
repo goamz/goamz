@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	//"strconv"
+	"strconv"
 	"strings"
 	//"time"
 
@@ -44,10 +44,12 @@ const debug = false
 type Error struct {
 	// HTTP status code (200, 403, ...)
 	StatusCode int
+	// Error type
+	Type string `xml:"Type"`
 	// CloudFormation error code
-	Code string
+	Code string `xml:"Code"`
 	// The human-oriented error message
-	Message   string
+	Message   string `xml:"Message"`
 	RequestId string `xml:"RequestID"`
 }
 
@@ -147,19 +149,13 @@ func addParamsList(params map[string]string, label string, ids []string) {
 	}
 }
 
-// addComplexParamsList adds params in the form of param.member.key.value
-func addComplexParamsList(params map[string]string, label, key string, ids []string) {
-	for i, id := range ids {
-		params[label+"."+strconv.Itoa(i+1)] = id
-	}
-}
-
 // -----------------------------------------------------------------------
 // API Supported Types and Methods
 
-type CancelUpdateStackResponse struct {
-	CancelUpdateStackResult string `xml:"CancelUpdateStackResult"`
-	RequestId               string `xml:"ResponseMetadata>RequestId"`
+// SimpleResp is the basic response from most actions.
+type SimpleResp struct {
+	XMLName   xml.Name
+	RequestId string `xml:"ResponseMetadata>RequestId"`
 }
 
 // CancelUpdateStack cancels an update on the specified stack.
@@ -167,12 +163,129 @@ type CancelUpdateStackResponse struct {
 // to the previous stack configuration.
 //
 // See http://goo.gl/ZE6fOa for more details
-func (c *CloudFormation) CancelUpdateStack(stackName string) (resp *CancelUpdateStackResponse, err error) {
+func (c *CloudFormation) CancelUpdateStack(stackName string) (resp *SimpleResp, err error) {
 	params := makeParams("CancelUpdateStack")
 
 	params["StackName"] = stackName
 
-	resp = new(CancelUpdateStackResponse)
+	resp = new(SimpleResp)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Parameter encapsulates the cloudstack paramter data type
+//
+// See http://goo.gl/2rg9eG for more details
+type Parameter struct {
+	ParameterKey     string `xml:"ParameterKey"`
+	ParameterValue   string `xml:"ParameterValue"`
+	UsePreviousValue bool   `xml:"UsePreviousValue"`
+}
+
+type Tag struct {
+	Key   string `xml:"Key"`
+	Value string `xml:"Value"`
+}
+
+// CreateStackParams wraps CreateStack request options
+//
+// See http://goo.gl/yDZYuV for more information
+type CreateStackParams struct {
+	Capabilities     []string
+	DisableRollback  bool
+	NotificationARNs []string
+	OnFailure        string
+	Parameters       []Parameter
+	StackName        string
+	StackPolicyBody  string
+	StackPolicyURL   string
+	Tags             []Tag
+	TemplateBody     string
+	TemplateURL      string
+	TimeoutInMinutes int
+}
+
+// CreateStackResponse wraps a CreateStack call response
+//
+// See http://goo.gl/yDZYuV for more details
+type CreateStackResponse struct {
+	StackId   string `xml:"CreateStackResult>StackId"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// CreateStack creates a stack as specified in the template. After the call completes successfully, the stack creation starts.
+//
+// Required params: StackName
+//
+// See http://goo.gl/yDZYuV for more details
+func (c *CloudFormation) CreateStack(options *CreateStackParams) (
+	resp *CreateStackResponse, err error) {
+	params := makeParams("CreateStack")
+
+	params["StackName"] = options.StackName
+
+	if options.DisableRollback {
+		params["DisableRollback"] = strconv.FormatBool(options.DisableRollback)
+	}
+	if options.OnFailure != "" {
+		params["OnFailure"] = options.OnFailure
+	}
+	if options.StackPolicyBody != "" {
+		params["StackPolicyBody"] = options.StackPolicyBody
+	}
+	if options.StackPolicyURL != "" {
+		params["StackPolicyURL"] = options.StackPolicyURL
+	}
+	if options.TemplateBody != "" {
+		params["TemplateBody"] = options.TemplateBody
+	}
+	if options.TemplateURL != "" {
+		params["TemplateURL"] = options.TemplateURL
+	}
+	if options.TimeoutInMinutes != 0 {
+		params["TimeoutInMinutes"] = strconv.Itoa(options.TimeoutInMinutes)
+	}
+	if len(options.Capabilities) > 0 {
+		addParamsList(params, "Capabilities.member", options.Capabilities)
+	}
+	if len(options.NotificationARNs) > 0 {
+		addParamsList(params, "NotificationARNs.member", options.NotificationARNs)
+	}
+	// Add any parameters
+	for i, t := range options.Parameters {
+		key := "Parameters.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "ParameterKey")] = t.ParameterKey
+		params[fmt.Sprintf(key, index, "ParameterValue")] = t.ParameterValue
+		params[fmt.Sprintf(key, index, "UsePreviousValue")] = strconv.FormatBool(t.UsePreviousValue)
+	}
+	// Add any tags
+	for i, t := range options.Tags {
+		key := "Tags.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "Key")] = t.Key
+		params[fmt.Sprintf(key, index, "Value")] = t.Value
+	}
+
+	resp = new(CreateStackResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DeleteStack dletes a specified stack.
+// Once the call completes successfully, stack deletion starts.
+//
+// See http://goo.gl/CVMpxC for more details
+func (c *CloudFormation) DeleteStack(stackName string) (resp *SimpleResp, err error) {
+	params := makeParams("DeleteStack")
+
+	params["StackName"] = stackName
+
+	resp = new(SimpleResp)
 	if err := c.query(params, resp); err != nil {
 		return nil, err
 	}

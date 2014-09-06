@@ -44,12 +44,143 @@ func (s *S) TestCancelUpdateStack(c *gocheck.C) {
 	// Post request test
 	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
 	c.Assert(values.Get("Action"), gocheck.Equals, "CancelUpdateStack")
-	// Response test
+	c.Assert(values.Get("StackName"), gocheck.Equals, "foo")
 
-	c.Assert(resp.CancelUpdateStackResult, gocheck.Equals, "")
+	// Response test
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
+func (s *S) TestCreateStack(c *gocheck.C) {
+	testServer.Response(200, nil, CreateStackResponse)
 
+	stackParams := &cf.CreateStackParams{
+		NotificationARNs: []string{"arn:aws:sns:us-east-1:1234567890:my-topic"},
+		Parameters: []cf.Parameter{
+			{
+				ParameterKey:   "AvailabilityZone",
+				ParameterValue: "us-east-1a",
+			},
+		},
+		StackName:    "MyStack",
+		TemplateBody: "[Template Document]",
+	}
+	resp, err := s.cf.CreateStack(stackParams)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateStack")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("NotificationARNs.member.1"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
+	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "[Template Document]")
+	c.Assert(values.Get("Parameters.member.1.ParameterKey"), gocheck.Equals, "AvailabilityZone")
+	c.Assert(values.Get("Parameters.member.1.ParameterValue"), gocheck.Equals, "us-east-1a")
+	// Response test
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.StackId, gocheck.Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
+}
 
+func (s *S) TestCreateStackWithInvalidParams(c *gocheck.C) {
+	testServer.Response(400, nil, CreateStackWithInvalidParamsResponse)
+	//testServer.Response(200, nil, DeleteAutoScalingGroupResponse)
 
-type CreateStackParams
+	cfTemplate := `
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Sample template",
+  "Parameters" : {
+    "KeyName" : {
+      "Description" : "key pair",
+      "Type" : "String"
+    }
+  },
+  "Resources" : {
+    "Ec2Instance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "KeyName" : { "Ref" : "KeyName" },
+        "ImageId" : "ami-7f418316",
+        "UserData" : { "Fn::Base64" : "80" }
+      }
+    }
+  },
+  "Outputs" : {
+    "InstanceId" : {
+      "Description" : "InstanceId of the newly created EC2 instance",
+      "Value" : { "Ref" : "Ec2Instance" }
+    }
+}`
+
+	stackParams := &cf.CreateStackParams{
+		Capabilities:    []string{"CAPABILITY_IAM"},
+		DisableRollback: true,
+		NotificationARNs: []string{
+			"arn:aws:sns:us-east-1:1234567890:my-topic",
+			"arn:aws:sns:us-east-1:1234567890:my-topic2",
+		},
+		OnFailure: "ROLLBACK",
+		Parameters: []cf.Parameter{
+			{
+				ParameterKey:   "AvailabilityZone",
+				ParameterValue: "us-east-1a",
+			},
+		},
+		StackName:       "MyStack",
+		StackPolicyBody: "{PolicyBody}",
+		StackPolicyURL:  "http://stack-policy-url",
+		Tags: []cf.Tag{
+			{
+				Key:   "TagKey",
+				Value: "TagValue",
+			},
+		},
+		TemplateBody:     cfTemplate,
+		TemplateURL:      "http://url",
+		TimeoutInMinutes: 20,
+	}
+	resp, err := s.cf.CreateStack(stackParams)
+	c.Assert(err, gocheck.NotNil)
+	c.Assert(resp, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "CreateStack")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("NotificationARNs.member.1"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
+	c.Assert(values.Get("NotificationARNs.member.2"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic2")
+	c.Assert(values.Get("Capabilities.member.1"), gocheck.Equals, "CAPABILITY_IAM")
+	c.Assert(values.Get("TemplateBody"), gocheck.Equals, cfTemplate)
+	c.Assert(values.Get("TemplateURL"), gocheck.Equals, "http://url")
+	c.Assert(values.Get("StackPolicyBody"), gocheck.Equals, "{PolicyBody}")
+	c.Assert(values.Get("StackPolicyURL"), gocheck.Equals, "http://stack-policy-url")
+	c.Assert(values.Get("OnFailure"), gocheck.Equals, "ROLLBACK")
+	c.Assert(values.Get("DisableRollback"), gocheck.Equals, "true")
+	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "TagKey")
+	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "TagValue")
+	c.Assert(values.Get("Parameters.member.1.ParameterKey"), gocheck.Equals, "AvailabilityZone")
+	c.Assert(values.Get("Parameters.member.1.ParameterValue"), gocheck.Equals, "us-east-1a")
+	c.Assert(values.Get("TimeoutInMinutes"), gocheck.Equals, "20")
+
+	// Response test
+	c.Assert(err.(*cf.Error).RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
+	c.Assert(err.(*cf.Error).Message, gocheck.Equals, "Either Template URL or Template Body must be specified.")
+	c.Assert(err.(*cf.Error).Type, gocheck.Equals, "Sender")
+	c.Assert(err.(*cf.Error).Code, gocheck.Equals, "ValidationError")
+	c.Assert(err.(*cf.Error).StatusCode, gocheck.Equals, 400)
+
+}
+
+func (s *S) DeleteStack(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteStackResponse)
+
+	resp, err := s.cf.CancelUpdateStack("foo")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteStack")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "foo")
+
+	// Response test
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+}

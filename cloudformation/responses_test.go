@@ -1,58 +1,41 @@
 package cloudformation_test
 
 var CancelUpdateStackResponse = `
-<CancelUpdateStackResult/>
+<CancelUpdateStackResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <CancelUpdateStackResult/>
+  <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</CancelUpdateStackResponse>
 `
 
-var GetFederationTokenResponse = `
-<GetFederationTokenResponse xmlns="https://sts.amazonaws.com/doc/
-2011-06-15/">
-  <GetFederationTokenResult>
-    <Credentials>
-      <SessionToken>
-       AQoDYXdzEPT//////////wEXAMPLEtc764bNrC9SAPBSM22wDOk4x4HIZ8j4FZTwdQW
-       LWsKWHGBuFqwAeMicRXmxfpSPfIeoIYRqTflfKD8YUuwthAx7mSEI/qkPpKPi/kMcGd
-       QrmGdeehM4IC1NtBmUpp2wUE8phUZampKsburEDy0KPkyQDYwT7WZ0wq5VSXDvp75YU
-       9HFvlRd8Tx6q6fE8YQcHNVXAkiY9q6d+xo0rKwT38xVqr7ZD0u0iPPkUL64lIZbqBAz
-       +scqKmlzm8FDrypNC9Yjc8fPOLn9FX9KSYvKTr4rvx3iSIlTJabIQwj2ICCR/oLxBA==
-      </SessionToken>
-      <SecretAccessKey>
-       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
-      </SecretAccessKey>
-      <Expiration>2011-07-15T23:28:33.359Z</Expiration>
-      <AccessKeyId>AKIAIOSFODNN7EXAMPLE</AccessKeyId>
-    </Credentials>
-    <FederatedUser>
-      <Arn>arn:aws:sts::123456789012:federated-user/Bob</Arn>
-      <FederatedUserId>123456789012:Bob</FederatedUserId>
-    </FederatedUser>
-    <PackedPolicySize>6</PackedPolicySize>
-  </GetFederationTokenResult>
-  <ResponseMetadata>
-    <RequestId>c6104cbe-af31-11e0-8154-cbc7ccf896c7</RequestId>
+var CreateStackResponse = `
+<CreateStackResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+<CreateStackResult>
+  <StackId>arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83</StackId>
+</CreateStackResult>
+ <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
   </ResponseMetadata>
-</GetFederationTokenResponse>
+</CreateStackResponse>
 `
 
-var GetSessionTokenResponse = `
-<GetSessionTokenResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
-  <GetSessionTokenResult>
-    <Credentials>
-      <SessionToken>
-       AQoEXAMPLEH4aoAH0gNCAPyJxz4BlCFFxWNE1OPTgk5TthT+FvwqnKwRcOIfrRh3c/L
-       To6UDdyJwOOvEVPvLXCrrrUtdnniCEXAMPLE/IvU1dYUg2RVAJBanLiHb4IgRmpRV3z
-       rkuWJOgQs8IZZaIv2BXIa2R4OlgkBN9bkUDNCJiBeb/AXlzBBko7b15fjrBs2+cTQtp
-       Z3CYWFXG8C5zqx37wnOE49mRl/+OtkIKGO7fAE
-      </SessionToken>
-      <SecretAccessKey>
-       wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY
-      </SecretAccessKey>
-      <Expiration>2011-07-11T19:55:29.611Z</Expiration>
-      <AccessKeyId>AKIAIOSFODNN7EXAMPLE</AccessKeyId>
-    </Credentials>
-  </GetSessionTokenResult>
+var CreateStackWithInvalidParamsResponse = `
+<ErrorResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <Error>
+    <Type>Sender</Type>
+    <Code>ValidationError</Code>
+    <Message>Either Template URL or Template Body must be specified.</Message>
+  </Error>
+  <RequestId>70a76d42-9665-11e2-9fdf-211deEXAMPLE</RequestId>
+</ErrorResponse>
+`
+
+var DeleteStackResponse = `
+<DeleteStackResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <DeleteStackResult/>
   <ResponseMetadata>
-    <RequestId>58c5dbae-abef-11e0-8cfe-09039844ac7d</RequestId>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
   </ResponseMetadata>
-</GetSessionTokenResponse>
+</DeleteStackResponse>
 `
