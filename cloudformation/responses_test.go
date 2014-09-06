@@ -215,3 +215,24 @@ var GetStackPolicyResponse = `
   </ResponseMetadata>
 </GetStackPolicyResponse>
 `
+
+var GetTemplateResponse = `
+<GetTemplateResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+    <GetTemplateResult>
+      <TemplateBody>{
+      "AWSTemplateFormatVersion" : "2010-09-09",
+      "Description" : "Simple example",
+      "Resources" : {
+        "MySQS" : {
+           "Type" : "AWS::SQS::Queue",
+           "Properties" : {
+            }
+         }
+        }
+      }</TemplateBody>
+    </GetTemplateResult>
+  <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</GetTemplateResponse>
+`

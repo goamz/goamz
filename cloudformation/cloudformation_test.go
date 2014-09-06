@@ -414,3 +414,30 @@ func (s *S) TestGetStackPolicy(c *gocheck.C) {
 	c.Assert(resp.StackPolicyBody, gocheck.Equals, policy)
 	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
+
+func (s *S) TestGetTemplate(c *gocheck.C) {
+	testServer.Response(200, nil, GetTemplateResponse)
+
+	resp, err := s.cf.GetTemplate("MyStack")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "GetTemplate")
+
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	// Response test
+	templateBody := `{
+      "AWSTemplateFormatVersion" : "2010-09-09",
+      "Description" : "Simple example",
+      "Resources" : {
+        "MySQS" : {
+           "Type" : "AWS::SQS::Queue",
+           "Properties" : {
+            }
+         }
+        }
+      }`
+	c.Assert(resp.TemplateBody, gocheck.Equals, templateBody)
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+}

@@ -560,3 +560,28 @@ func (c *CloudFormation) GetStackPolicy(stackName string) (
 	}
 	return resp, nil
 }
+
+// GetTemplateResponse wraps a response returned by GetTemplate request
+//
+// See http://goo.gl/GU59CB for more information
+type GetTemplateResponse struct {
+	TemplateBody string `xml:"GetTemplateResult>TemplateBody"`
+	RequestId    string `xml:"ResponseMetadata>RequestId"`
+}
+
+// GetTemplate returns the template body for a specified stack.
+// You can get the template for running or deleted stacks
+//
+// See http://goo.gl/GU59CB for more information
+func (c *CloudFormation) GetTemplate(stackName string) (
+	resp *GetTemplateResponse, err error) {
+	params := makeParams("GetTemplate")
+
+	params["StackName"] = stackName
+
+	resp = new(GetTemplateResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
