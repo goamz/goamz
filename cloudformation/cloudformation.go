@@ -83,7 +83,7 @@ func (c *CloudFormation) query(params map[string]string, resp interface{}) error
 		hreq.Header.Set("X-Amz-Security-Token", token)
 	}
 
-	signer := aws.NewV4Signer(c.Auth, "c", c.Region)
+	signer := aws.NewV4Signer(c.Auth, "cloudformation", c.Region)
 	signer.Sign(hreq)
 
 	if debug {
