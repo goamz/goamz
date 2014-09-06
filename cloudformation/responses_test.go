@@ -83,3 +83,22 @@ var DescribeStackEventsResponse = `
   </ResponseMetadata>
 </DescribeStackEventsResponse>
 `
+
+var DescribeStackResourceResponse = `
+<DescribeStackResourceResponse>
+ <DescribeStackResourceResult>
+  <StackResourceDetail>
+      <StackId>arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83</StackId>
+      <StackName>MyStack</StackName>
+      <LogicalResourceId>MyDBInstance</LogicalResourceId>
+      <PhysicalResourceId>MyStack_DB1</PhysicalResourceId>
+      <ResourceType>AWS::RDS::DBInstance</ResourceType>
+      <LastUpdatedTimestamp>2011-07-07T22:27:28Z</LastUpdatedTimestamp>
+      <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+  </StackResourceDetail>
+ </DescribeStackResourceResult>
+ <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+ </ResponseMetadata>
+</DescribeStackResourceResponse>
+`

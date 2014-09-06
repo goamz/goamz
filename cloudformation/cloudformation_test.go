@@ -181,7 +181,6 @@ func (s *S) TestDeleteStack(c *gocheck.C) {
 	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
 	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteStack")
 	c.Assert(values.Get("StackName"), gocheck.Equals, "foo")
-
 	// Response test
 	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
@@ -239,6 +238,34 @@ func (s *S) TestDescribeStackEvents(c *gocheck.C) {
 			},
 		},
 		NextToken: "",
+		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestDescribeStackResource(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeStackResourceResponse)
+
+	resp, err := s.cf.DescribeStackResource("MyStack", "MyDBInstance")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStackResource")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("LogicalResourceId"), gocheck.Equals, "MyDBInstance")
+	t, _ := time.Parse(time.RFC3339, "2011-07-07T22:27:28Z")
+	// Response test
+	expected := &cf.DescribeStackResourceResponse{
+		StackResourceDetail: cf.StackResourceDetail{
+			StackId:              "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+			StackName:            "MyStack",
+			LogicalResourceId:    "MyDBInstance",
+			PhysicalResourceId:   "MyStack_DB1",
+			ResourceType:         "AWS::RDS::DBInstance",
+			LastUpdatedTimestamp: t,
+			ResourceStatus:       "CREATE_COMPLETE",
+		},
 		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
