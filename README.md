@@ -23,6 +23,7 @@ github.com/goamz/goamz/rds
 github.com/goamz/goamz/route53
 github.com/goamz/goamz/s3
 github.com/goamz/goamz/sqs
+github.com/goamz/goamz/sts
 
 github.com/goamz/goamz/exp/mturk
 github.com/goamz/goamz/exp/sdb
