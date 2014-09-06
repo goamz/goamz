@@ -793,3 +793,45 @@ func (c *CloudFormation) UpdateStack(options *UpdateStackParams) (
 	}
 	return resp, nil
 }
+
+// TemplateParameter encapsulates the AWS TemplateParameter data type
+//
+// See http://goo.gl/OBhNzk for more information
+type TemplateParameter struct {
+	DefaultValue string `xml:"DefaultValue"`
+	Description  string `xml:Description"`
+	NoEcho       bool   `xml:NoEcho"`
+	ParameterKey string `xml:ParameterKey"`
+}
+
+// ValidateTemplateResponse wraps the ValidateTemplate call response
+//
+// See http://goo.gl/OBhNzk for more information
+type ValidateTemplateResponse struct {
+	Capabilities       []string            `xml:"ValidateTemplateResult>Capabilities>member"`
+	CapabilitiesReason string              `xml:"ValidateTemplateResult>CapabilitiesReason"`
+	Description        string              `xml:"ValidateTemplateResult>Description"`
+	Parameters         []TemplateParameter `xml:"ValidateTemplateResult>Parameters>member"`
+	RequestId          string              `xml:"ResponseMetadata>RequestId"`
+}
+
+// ValidateTemplate validates a specified template.
+//
+// See http://goo.gl/OBhNzk for more information
+func (c *CloudFormation) ValidateTemplate(templateBody, templateUrl string) (
+	resp *ValidateTemplateResponse, err error) {
+	params := makeParams("ValidateTemplate")
+
+	if templateBody != "" {
+		params["TemplateBody"] = templateBody
+	}
+	if templateUrl != "" {
+		params["TemplateURL"] = templateUrl
+	}
+
+	resp = new(ValidateTemplateResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

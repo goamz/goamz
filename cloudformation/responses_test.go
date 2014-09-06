@@ -317,6 +317,7 @@ var ListStacksResponse = `
   </ResponseMetadata>
 </ListStacksResponse>
 `
+
 var SetStackPolicyResponse = `
 <SetStackPolicyResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
   <SetStackPolicyResponse/>
@@ -325,6 +326,7 @@ var SetStackPolicyResponse = `
   </ResponseMetadata>
 </SetStackPolicyResponse>
 `
+
 var UpdateStackResponse = `
 <UpdateStackResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
   <UpdateStackResult>
@@ -334,4 +336,36 @@ var UpdateStackResponse = `
     <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
   </ResponseMetadata>
 </UpdateStackResponse>
+`
+var ValidateTemplateResponse = `
+<ValidateTemplateResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <ValidateTemplateResult>
+    <Description>Test</Description>
+    <Capabilities>
+      <member>CAPABILITY_IAM</member>
+    </Capabilities>
+    <Parameters>
+      <member>
+        <NoEcho>false</NoEcho>
+        <ParameterKey>InstanceType</ParameterKey>
+        <Description>Type of instance to launch</Description>
+        <DefaultValue>m1.small</DefaultValue>
+      </member>
+      <member>
+        <NoEcho>false</NoEcho>
+        <ParameterKey>WebServerPort</ParameterKey>
+        <Description>The TCP port for the Web Server</Description>
+        <DefaultValue>8888</DefaultValue>
+      </member>
+      <member>
+        <NoEcho>false</NoEcho>
+        <ParameterKey>KeyName</ParameterKey>
+        <Description>Name of an existing EC2 KeyPair to enable SSH access into the server</Description>
+      </member>
+    </Parameters>
+  </ValidateTemplateResult>
+  <ResponseMetadata>
+    <RequestId>0be7b6e8-e4a0-11e0-a5bd-9f8d5a7dbc91</RequestId>
+  </ResponseMetadata>
+</ValidateTemplateResponse>
 `

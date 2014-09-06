@@ -610,3 +610,44 @@ func (s *S) TestUpdateStack(c *gocheck.C) {
 	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 	c.Assert(resp.StackId, gocheck.Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
 }
+
+func (s *S) TestValidateTemplate(c *gocheck.C) {
+	testServer.Response(200, nil, ValidateTemplateResponse)
+
+	resp, err := s.cf.ValidateTemplate("", "http://myTemplateRepository/TemplateOne.template")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ValidateTemplate")
+	c.Assert(values.Get("TemplateURL"), gocheck.Equals, "http://myTemplateRepository/TemplateOne.template")
+	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "")
+
+	// Response test
+	expected := &cf.ValidateTemplateResponse{
+		Description:  "Test",
+		Capabilities: []string{"CAPABILITY_IAM"},
+		Parameters: []cf.TemplateParameter{
+			{
+				NoEcho:       false,
+				ParameterKey: "InstanceType",
+				Description:  "Type of instance to launch",
+				DefaultValue: "m1.small",
+			},
+			{
+				NoEcho:       false,
+				ParameterKey: "WebServerPort",
+				Description:  "The TCP port for the Web Server",
+				DefaultValue: "8888",
+			},
+			{
+				NoEcho:       false,
+				ParameterKey: "KeyName",
+				Description:  "Name of an existing EC2 KeyPair to enable SSH access into the server",
+			},
+		},
+		RequestId: "0be7b6e8-e4a0-11e0-a5bd-9f8d5a7dbc91",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
