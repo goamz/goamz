@@ -513,3 +513,46 @@ func (s *S) TestListStackResources(c *gocheck.C) {
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
+
+func (s *S) TestListStacks(c *gocheck.C) {
+	testServer.Response(200, nil, ListStacksResponse)
+
+	resp, err := s.cf.ListStacks([]string{"CREATE_IN_PROGRESS", "DELETE_COMPLETE"}, "4dad1-32131da-d-31")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListStacks")
+	c.Assert(values.Get("StackStatusFilter.member.1"), gocheck.Equals, "CREATE_IN_PROGRESS")
+	c.Assert(values.Get("StackStatusFilter.member.2"), gocheck.Equals, "DELETE_COMPLETE")
+	c.Assert(values.Get("NextToken"), gocheck.Equals, "4dad1-32131da-d-31")
+
+	// Response test
+	c1, _ := time.Parse(time.RFC3339, "2011-05-23T15:47:44Z")
+	c2, _ := time.Parse(time.RFC3339, "2011-03-05T19:57:58Z")
+	d2, _ := time.Parse(time.RFC3339, "2011-03-10T16:20:51Z")
+
+	expected := &cf.ListStacksResponse{
+		StackSummaries: []cf.StackSummary{
+			{
+				StackId:             "arn:aws:cloudformation:us-east-1:1234567:stack/TestCreate1/aaaaa",
+				StackName:           "vpc1",
+				StackStatus:         "CREATE_IN_PROGRESS",
+				CreationTime:        c1,
+				TemplateDescription: "Creates one EC2 instance and a load balancer.",
+			},
+			{
+				StackId:             "arn:aws:cloudformation:us-east-1:1234567:stack/TestDelete2/bbbbb",
+				StackName:           "WP1",
+				StackStatus:         "DELETE_COMPLETE",
+				CreationTime:        c2,
+				DeletionTime:        d2,
+				TemplateDescription: "A simple basic Cloudformation Template.",
+			},
+		},
+		NextToken: "",
+		RequestId: "2d06e36c-ac1d-11e0-a958-f9382b6eb86b",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}

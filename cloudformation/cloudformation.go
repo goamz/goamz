@@ -616,7 +616,7 @@ type ListStackResourcesResponse struct {
 // For deleted stacks, ListStackResources returns resource information for up to 90 days
 // after the stack has been deleted.
 //
-// Required Params: StackName - The name or the unique identifier associated with the stack,
+// Required Params: stackName - the name or the unique identifier associated with the stack,
 // which are not always interchangeable:
 // Running stacks: You can specify either the stack's name or its unique stack ID.
 // Deleted stacks: You must specify the unique stack ID.
@@ -633,6 +633,54 @@ func (c *CloudFormation) ListStackResources(stackName, nextToken string) (
 	}
 
 	resp = new(ListStackResourcesResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StackSummary encapsulates the StackSummary data type
+//
+// See http://goo.gl/35j3wf for more details
+type StackSummary struct {
+	CreationTime        time.Time `xml:"CreationTime"`
+	DeletionTime        time.Time `xml:"DeletionTime"`
+	LastUpdatedTime     time.Time `xml:"LastUpdatedTime"`
+	StackId             string    `xml:"StackId"`
+	StackName           string    `xml:"StackName"`
+	StackStatus         string    `xml:"StackStatus"`
+	StackStatusReason   string    `xml:"StackStatusReason"`
+	TemplateDescription string    `xml:"TemplateDescription"`
+}
+
+// ListStacksResponse wraps a response returned by ListStacks request
+//
+// See http://goo.gl/UWi6nm for more details
+type ListStacksResponse struct {
+	NextToken      string         `xml:"ListStacksResult>NextToken"`
+	StackSummaries []StackSummary `xml:"ListStacksResult>StackSummaries>member"`
+	RequestId      string         `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListStacks Returns the summary information for stacks whose status matches the specified StackStatusFilter.
+// Summary information for stacks that have been deleted is kept for 90 days after the stack is deleted.
+// If no StackStatusFilter is specified, summary information for all stacks is returned
+// (including existing stacks and stacks that have been deleted).
+//
+// See http://goo.gl/UWi6nm for more details
+func (c *CloudFormation) ListStacks(stackStatusFilters []string, nextToken string) (
+	resp *ListStacksResponse, err error) {
+	params := makeParams("ListStacks")
+
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	if len(stackStatusFilters) > 0 {
+		addParamsList(params, "StackStatusFilter.member", stackStatusFilters)
+	}
+
+	resp = new(ListStacksResponse)
 	if err := c.query(params, resp); err != nil {
 		return nil, err
 	}
