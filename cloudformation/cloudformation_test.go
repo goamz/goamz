@@ -366,3 +366,51 @@ func (s *S) TestDescribeStacks(c *gocheck.C) {
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
+
+func (s *S) TestEstimateTemplateCost(c *gocheck.C) {
+	testServer.Response(200, nil, EstimateTemplateCostResponse)
+
+	resp, err := s.cf.EstimateTemplateCost(nil, "", "https://s3.amazonaws.com/cloudformation-samples-us-east-1/Drupal_Simple.template")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "EstimateTemplateCost")
+	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "")
+	c.Assert(values.Get("TemplateURL"), gocheck.Equals, "https://s3.amazonaws.com/cloudformation-samples-us-east-1/Drupal_Simple.template")
+	// Response test
+	c.Assert(resp.Url, gocheck.Equals, "http://calculator.s3.amazonaws.com/calc5.html?key=cf-2e351785-e821-450c-9d58-625e1e1ebfb6")
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+}
+
+func (s *S) TestGetStackPolicy(c *gocheck.C) {
+	testServer.Response(200, nil, GetStackPolicyResponse)
+
+	resp, err := s.cf.GetStackPolicy("MyStack")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "GetStackPolicy")
+
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	// Response test
+	policy := `{
+      "Statement" : [
+        {
+          "Effect" : "Deny",
+          "Action" : "Update:*",
+          "Principal" : "*",
+          "Resource" : "LogicalResourceId/ProductionDatabase"
+        },
+        {
+          "Effect" : "Allow",
+          "Action" : "Update:*",
+          "Principal" : "*",
+          "Resource" : "*"
+        }
+      ]
+    }`
+	c.Assert(resp.StackPolicyBody, gocheck.Equals, policy)
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+}

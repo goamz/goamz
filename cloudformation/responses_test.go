@@ -173,8 +173,45 @@ var DescribeStacksResponse = `
     </Stacks>
     <NextToken/>
   </DescribeStacksResult>
-    <ResponseMetadata>
+  <ResponseMetadata>
     <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
   </ResponseMetadata>
 </DescribeStacksResponse>
+`
+
+var EstimateTemplateCostResponse = `
+<EstimateTemplateCostResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <EstimateTemplateCostResult>
+    <Url>http://calculator.s3.amazonaws.com/calc5.html?key=cf-2e351785-e821-450c-9d58-625e1e1ebfb6</Url>
+  </EstimateTemplateCostResult>
+  <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</EstimateTemplateCostResponse>
+`
+
+var GetStackPolicyResponse = `
+<GetStackPolicyResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+    <GetStackPolicyResult>
+      <StackPolicyBody>{
+      "Statement" : [
+        {
+          "Effect" : "Deny",
+          "Action" : "Update:*",
+          "Principal" : "*",
+          "Resource" : "LogicalResourceId/ProductionDatabase"
+        },
+        {
+          "Effect" : "Allow",
+          "Action" : "Update:*",
+          "Principal" : "*",
+          "Resource" : "*"
+        }
+      ]
+    }</StackPolicyBody>
+  </GetStackPolicyResult>
+  <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</GetStackPolicyResponse>
 `

@@ -496,3 +496,67 @@ func (c *CloudFormation) DescribeStacks(stackName string, nextToken string) (
 	}
 	return resp, nil
 }
+
+// EstimateTemplateCostResponse wraps a response returned by EstimateTemplateCost request
+//
+// See http://goo.gl/PD9hle for more information
+type EstimateTemplateCostResponse struct {
+	Url       string `xml:"EstimateTemplateCostResult>Url"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// EstimateTemplateCost returns the estimated monthly cost of a template.
+// The return value is an AWS Simple Monthly Calculator URL with a query string that describes
+// the resources required to run the template.
+//
+// See http://goo.gl/PD9hle for more information
+func (c *CloudFormation) EstimateTemplateCost(parameters []Parameter, templateBody, templateUrl string) (
+	resp *EstimateTemplateCostResponse, err error) {
+	params := makeParams("EstimateTemplateCost")
+
+	if templateBody != "" {
+		params["TemplateBody"] = templateBody
+	}
+	if templateUrl != "" {
+		params["TemplateURL"] = templateUrl
+	}
+	// Add any parameters
+	for i, t := range parameters {
+		key := "Parameters.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "ParameterKey")] = t.ParameterKey
+		params[fmt.Sprintf(key, index, "ParameterValue")] = t.ParameterValue
+		params[fmt.Sprintf(key, index, "UsePreviousValue")] = strconv.FormatBool(t.UsePreviousValue)
+	}
+
+	resp = new(EstimateTemplateCostResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// GetStackPolicyResponse wraps a response returned by GetStackPolicy request
+//
+// See http://goo.gl/iZFSgy for more information
+type GetStackPolicyResponse struct {
+	StackPolicyBody string `xml:"GetStackPolicyResult>StackPolicyBody"`
+	RequestId       string `xml:"ResponseMetadata>RequestId"`
+}
+
+// GetStackPolicy returns the stack policy for a specified stack. If a stack doesn't have a policy,
+// a null value is returned.
+//
+// See http://goo.gl/iZFSgy for more information
+func (c *CloudFormation) GetStackPolicy(stackName string) (
+	resp *GetStackPolicyResponse, err error) {
+	params := makeParams("GetStackPolicy")
+
+	params["StackName"] = stackName
+
+	resp = new(GetStackPolicyResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
