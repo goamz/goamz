@@ -270,3 +270,99 @@ func (s *S) TestDescribeStackResource(c *gocheck.C) {
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
 }
+
+func (s *S) TestDescribeStackResources(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeStackResourcesResponse)
+
+	resp, err := s.cf.DescribeStackResources("MyStack", "", "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+
+	// Post request test
+	t1, _ := time.Parse(time.RFC3339, "2010-07-27T22:27:28Z")
+	t2, _ := time.Parse(time.RFC3339, "2010-07-27T22:28:28Z")
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStackResources")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("PhysicalResourceId"), gocheck.Equals, "")
+	c.Assert(values.Get("LogicalResourceId"), gocheck.Equals, "")
+
+	// Response test
+	expected := &cf.DescribeStackResourcesResponse{
+		StackResources: []cf.StackResource{
+			{
+				StackId:            "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+				StackName:          "MyStack",
+				LogicalResourceId:  "MyDBInstance",
+				PhysicalResourceId: "MyStack_DB1",
+				ResourceType:       "AWS::DBInstance",
+				Timestamp:          t1,
+				ResourceStatus:     "CREATE_COMPLETE",
+			},
+			{
+				StackId:            "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+				StackName:          "MyStack",
+				LogicalResourceId:  "MyAutoScalingGroup",
+				PhysicalResourceId: "MyStack_ASG1",
+				ResourceType:       "AWS::AutoScalingGroup",
+				Timestamp:          t2,
+				ResourceStatus:     "CREATE_IN_PROGRESS",
+			},
+		},
+		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestDescribeStacks(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeStacksResponse)
+
+	resp, err := s.cf.DescribeStacks("MyStack", "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+
+	// Post request test
+	t, _ := time.Parse(time.RFC3339, "2010-07-27T22:28:28Z")
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStacks")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("NextToken"), gocheck.Equals, "")
+
+	// Response test
+	expected := &cf.DescribeStacksResponse{
+		Stacks: []cf.Stack{
+			{
+				StackId:          "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83",
+				StackName:        "MyStack",
+				Description:      "My Description",
+				Capabilities:     []string{"CAPABILITY_IAM"},
+				NotificationARNs: []string{"arn:aws:sns:region-name:account-name:topic-name"},
+				Parameters: []cf.Parameter{
+					{
+						ParameterKey:   "MyKey",
+						ParameterValue: "MyValue",
+					},
+				},
+				Tags: []cf.Tag{
+					{
+						Key:   "MyTagKey",
+						Value: "MyTagValue",
+					},
+				},
+				CreationTime:    t,
+				StackStatus:     "CREATE_COMPLETE",
+				DisableRollback: false,
+				Outputs: []cf.Output{
+					{
+						Description: "ServerUrl",
+						OutputKey:   "StartPage",
+						OutputValue: "http://my-load-balancer.amazonaws.com:80/index.html",
+					},
+				},
+			},
+		},
+		NextToken: "",
+		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
+	}
+	c.Assert(resp, gocheck.DeepEquals, expected)
+}

@@ -215,7 +215,8 @@ type CreateStackResponse struct {
 	RequestId string `xml:"ResponseMetadata>RequestId"`
 }
 
-// CreateStack creates a stack as specified in the template. After the call completes successfully, the stack creation starts.
+// CreateStack creates a stack as specified in the template. After the call completes successfully,
+// the stack creation starts.
 //
 // Required params: StackName
 //
@@ -312,7 +313,7 @@ type StackEvent struct {
 //
 // See http://goo.gl/zqj4Bz for more details
 type DescribeStackEventsResponse struct {
-	NextToken   string
+	NextToken   string       `xml:"DescribeStackEventsResult>NextToken"`
 	StackEvents []StackEvent `xml:"DescribeStackEventsResult>StackEvents>member"`
 	RequestId   string       `xml:"ResponseMetadata>RequestId"`
 }
@@ -363,7 +364,8 @@ type DescribeStackResourceResponse struct {
 }
 
 // DescribeStackResource returns a description of the specified resource in the specified stack.
-// For deleted stacks, DescribeStackResource returns resource information for up to 90 days after the stack has been deleted.
+// For deleted stacks, DescribeStackResource returns resource information
+// for up to 90 days after the stack has been deleted.
 //
 // Required params: stackName, logicalResourceId
 //
@@ -376,6 +378,119 @@ func (c *CloudFormation) DescribeStackResource(stackName string, logicalResource
 	params["LogicalResourceId"] = logicalResourceId
 
 	resp = new(DescribeStackResourceResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StackResource encapsulates the StackResource data type
+//
+// See http://goo.gl/j4eli5 for more details
+type StackResource struct {
+	Description          string    `xml:"Description"`
+	LogicalResourceId    string    `xml:"LogicalResourceId"`
+	PhysicalResourceId   string    `xml:"PhysicalResourceId"`
+	ResourceStatus       string    `xml:"ResourceStatus"`
+	ResourceStatusReason string    `xml:"ResourceStatusReason"`
+	ResourceType         string    `xml:"ResourceType"`
+	StackId              string    `xml:"StackId"`
+	StackName            string    `xml:"StackName"`
+	Timestamp            time.Time `xml:"Timestamp"`
+}
+
+// DescribeStackResourcesResponse wraps a response returned by DescribeStackResources request
+//
+// See http://goo.gl/YnY5rs for more details
+type DescribeStackResourcesResponse struct {
+	StackResources []StackResource `xml:"DescribeStackResourcesResult>StackResources>member"`
+	RequestId      string          `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeStackResources returns AWS resource descriptions for running and deleted stacks.
+// If stackName is specified, all the associated resources that are part of the stack are returned.
+// If physicalResourceId is specified, the associated resources of the stack that the resource
+// belongs to are returned.
+//
+// Only the first 100 resources will be returned. If your stack has more resources than this,
+// you should use ListStackResources instead.
+//
+// See http://goo.gl/YnY5rs for more details
+func (c *CloudFormation) DescribeStackResources(stackName, physicalResourceId, logicalResourceId string) (
+	resp *DescribeStackResourcesResponse, err error) {
+	params := makeParams("DescribeStackResources")
+
+	if stackName != "" {
+		params["StackName"] = stackName
+	}
+	if physicalResourceId != "" {
+		params["PhysicalResourceId"] = physicalResourceId
+	}
+	if logicalResourceId != "" {
+		params["LogicalResourceId"] = logicalResourceId
+	}
+
+	resp = new(DescribeStackResourcesResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Output encapsulates the Output AWS data type
+//
+// See http://goo.gl/UOn7q6 for more information
+type Output struct {
+	Description string `xml:"Description"`
+	OutputKey   string `xml:"OutputKey"`
+	OutputValue string `xml:"OutputValue"`
+}
+
+// Stack encapsulates the Stack AWS data type
+//
+// See http://goo.gl/yDZYuV for more information
+type Stack struct {
+	Capabilities      []string    `xml:"Capabilities>member"`
+	CreationTime      time.Time   `xml:"CreationTime"`
+	Description       string      `xml:"Description"`
+	DisableRollback   bool        `xml:"DisableRollback"`
+	LastUpdatedTime   time.Time   `xml:"LastUpdatedTime"`
+	NotificationARNs  []string    `xml:"NotificationARNs>member"`
+	Outputs           []Output    `xml:"Outputs>member"`
+	Parameters        []Parameter `xml:"Parameters>member"`
+	StackId           string      `xml:"StackId"`
+	StackName         string      `xml:"StackName"`
+	StackStatus       string      `xml:"StackStatus"`
+	StackStatusReason string      `xml:"StackStatusReason"`
+	Tags              []Tag       `xml:"Tags>member"`
+	TimeoutInMinutes  int         `xml:"TimeoutInMinutes"`
+}
+
+// DescribeStacksResponse wraps a response returned by DescribeStacks request
+//
+// See http://goo.gl/UOLsXD for more information
+type DescribeStacksResponse struct {
+	NextToken string  `xml:"DescribeStacksResult>NextToken"`
+	Stacks    []Stack `xml:"DescribeStacksResult>Stacks>member"`
+	RequestId string  `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeStacks returns the description for the specified stack;
+// If no stack name was specified, then it returns the description for all the stacks created.
+//
+// See http://goo.gl/UOLsXD for more information
+func (c *CloudFormation) DescribeStacks(stackName string, nextToken string) (
+	resp *DescribeStacksResponse, err error) {
+	params := makeParams("DescribeStacks")
+
+	if stackName != "" {
+		params["StackName"] = stackName
+	}
+	if nextToken != "" {
+		params["NextToken"] = nextToken
+	}
+
+	resp = new(DescribeStacksResponse)
 	if err := c.query(params, resp); err != nil {
 		return nil, err
 	}
