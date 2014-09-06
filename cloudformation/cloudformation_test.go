@@ -45,7 +45,6 @@ func (s *S) TestCancelUpdateStack(c *gocheck.C) {
 	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
 	c.Assert(values.Get("Action"), gocheck.Equals, "CancelUpdateStack")
 	c.Assert(values.Get("StackName"), gocheck.Equals, "foo")
-
 	// Response test
 	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
@@ -555,4 +554,59 @@ func (s *S) TestListStacks(c *gocheck.C) {
 		RequestId: "2d06e36c-ac1d-11e0-a958-f9382b6eb86b",
 	}
 	c.Assert(resp, gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestSetStackPolicy(c *gocheck.C) {
+	testServer.Response(200, nil, SetStackPolicyResponse)
+
+	resp, err := s.cf.SetStackPolicy("MyStack", "[Stack Policy Document]", "")
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "SetStackPolicy")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("StackPolicyBody"), gocheck.Equals, "[Stack Policy Document]")
+	c.Assert(values.Get("StackPolicyUrl"), gocheck.Equals, "")
+	// Response test
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+}
+
+func (s *S) TestUpdateStack(c *gocheck.C) {
+	testServer.Response(200, nil, UpdateStackResponse)
+
+	stackParams := &cf.UpdateStackParams{
+		Capabilities:                []string{"CAPABILITY_IAM"},
+		NotificationARNs:            []string{"arn:aws:sns:us-east-1:1234567890:my-topic"},
+		StackPolicyBody:             "{PolicyBody}",
+		StackPolicyDuringUpdateBody: "{PolicyDuringUpdateBody}",
+		Parameters: []cf.Parameter{
+			{
+				ParameterKey:   "AvailabilityZone",
+				ParameterValue: "us-east-1a",
+			},
+		},
+		UsePreviousTemplate: true,
+		StackName:           "MyStack",
+		TemplateBody:        "[Template Document]",
+	}
+	resp, err := s.cf.UpdateStack(stackParams)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	// Post request test
+	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), gocheck.Equals, "UpdateStack")
+	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("NotificationARNs.member.1"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
+	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "[Template Document]")
+	c.Assert(values.Get("Parameters.member.1.ParameterKey"), gocheck.Equals, "AvailabilityZone")
+	c.Assert(values.Get("Parameters.member.1.ParameterValue"), gocheck.Equals, "us-east-1a")
+	c.Assert(values.Get("Capabilities.member.1"), gocheck.Equals, "CAPABILITY_IAM")
+	c.Assert(values.Get("StackPolicyBody"), gocheck.Equals, "{PolicyBody}")
+	c.Assert(values.Get("StackPolicyDuringUpdateBody"), gocheck.Equals, "{PolicyDuringUpdateBody}")
+	c.Assert(values.Get("UsePreviousTemplate"), gocheck.Equals, "true")
+
+	// Response test
+	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.StackId, gocheck.Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
 }

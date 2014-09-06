@@ -686,3 +686,110 @@ func (c *CloudFormation) ListStacks(stackStatusFilters []string, nextToken strin
 	}
 	return resp, nil
 }
+
+// SetStackPolicy sets a stack policy for a specified stack.
+//
+// Required Params: stackName
+//
+// See http://goo.gl/iY9ohu for more information
+func (c *CloudFormation) SetStackPolicy(stackName, stackPolicyBody, stackPolicyUrl string) (
+	resp *SimpleResp, err error) {
+	params := makeParams("SetStackPolicy")
+
+	params["StackName"] = stackName
+
+	if stackPolicyBody != "" {
+		params["StackPolicyBody"] = stackPolicyBody
+	}
+	if stackPolicyUrl != "" {
+		params["StackPolicyURL"] = stackPolicyUrl
+	}
+
+	resp = new(SimpleResp)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// UpdateStackParams wraps UpdateStack request options
+//
+// See http://goo.gl/LvkhZq for more information
+type UpdateStackParams struct {
+	Capabilities                []string
+	NotificationARNs            []string
+	Parameters                  []Parameter
+	StackName                   string
+	StackPolicyBody             string
+	StackPolicyDuringUpdateBody string
+	StackPolicyDuringUpdateURL  string
+	StackPolicyURL              string
+	TemplateBody                string
+	TemplateURL                 string
+	UsePreviousTemplate         bool
+}
+
+// UpdateStackResponse wraps the UpdateStack call response
+//
+// See http://goo.gl/LvkhZq for more information
+type UpdateStackResponse struct {
+	StackId   string `xml:"UpdateStackResult>StackId"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// UpdateStack updates a stack as specified in the template.
+// After the call completes successfully, the stack update starts.
+// You can check the status of the stack via the DescribeStacks action.
+//
+// Required Params: options.StackName
+//
+// See http://goo.gl/LvkhZq for more information
+func (c *CloudFormation) UpdateStack(options *UpdateStackParams) (
+	resp *UpdateStackResponse, err error) {
+	params := makeParams("UpdateStack")
+
+	params["StackName"] = options.StackName
+
+	if options.StackPolicyBody != "" {
+		params["StackPolicyBody"] = options.StackPolicyBody
+	}
+	if options.StackPolicyDuringUpdateBody != "" {
+		params["StackPolicyDuringUpdateBody"] = options.StackPolicyDuringUpdateBody
+	}
+	if options.StackPolicyDuringUpdateURL != "" {
+		params["StackPolicyDuringUpdateURL"] = options.StackPolicyDuringUpdateURL
+	}
+	if options.StackPolicyURL != "" {
+		params["StackPolicyURL"] = options.StackPolicyURL
+	}
+	if options.TemplateBody != "" {
+		params["TemplateBody"] = options.TemplateBody
+	}
+	if options.TemplateURL != "" {
+		params["TemplateURL"] = options.TemplateURL
+	}
+	if options.UsePreviousTemplate {
+		params["UsePreviousTemplate"] = strconv.FormatBool(options.UsePreviousTemplate)
+	}
+
+	if len(options.Capabilities) > 0 {
+		addParamsList(params, "Capabilities.member", options.Capabilities)
+	}
+	if len(options.NotificationARNs) > 0 {
+		addParamsList(params, "NotificationARNs.member", options.NotificationARNs)
+	}
+	// Add any parameters
+	for i, t := range options.Parameters {
+		key := "Parameters.member.%d.%s"
+		index := i + 1
+		params[fmt.Sprintf(key, index, "ParameterKey")] = t.ParameterKey
+		params[fmt.Sprintf(key, index, "ParameterValue")] = t.ParameterValue
+		params[fmt.Sprintf(key, index, "UsePreviousValue")] = strconv.FormatBool(t.UsePreviousValue)
+	}
+
+	resp = new(UpdateStackResponse)
+	if err := c.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

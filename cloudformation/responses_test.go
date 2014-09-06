@@ -317,3 +317,21 @@ var ListStacksResponse = `
   </ResponseMetadata>
 </ListStacksResponse>
 `
+var SetStackPolicyResponse = `
+<SetStackPolicyResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <SetStackPolicyResponse/>
+  <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</SetStackPolicyResponse>
+`
+var UpdateStackResponse = `
+<UpdateStackResponse xmlns="http://cloudformation.amazonaws.com/doc/2010-05-15/">
+  <UpdateStackResult>
+    <StackId>arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83</StackId>
+  </UpdateStackResult>
+  <ResponseMetadata>
+    <RequestId>4af14eec-350e-11e4-b260-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</UpdateStackResponse>
+`
