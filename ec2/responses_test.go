@@ -862,3 +862,99 @@ var ReplaceRouteTableAssociationExample = `
    <newAssociationId>rtbassoc-faad2958</newAssociationId>
 </ReplaceRouteTableAssociationResponse>
 `
+
+// http://goo.gl/nkwjv
+var CreateVpcExample = `
+<CreateVpcResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+   <vpc>
+      <vpcId>vpc-1a2b3c4d</vpcId>
+      <state>pending</state>
+      <cidrBlock>10.0.0.0/16</cidrBlock>
+      <dhcpOptionsId>dopt-1a2b3c4d2</dhcpOptionsId>
+      <instanceTenancy>default</instanceTenancy>
+      <tagSet/>
+   </vpc>
+</CreateVpcResponse>
+`
+
+// http://goo.gl/bcxtbf
+var DeleteVpcExample = `
+<DeleteVpcResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+   <return>true</return>
+</DeleteVpcResponse>
+`
+
+// http://goo.gl/Y5kHqG
+var DescribeVpcsExample = `
+<DescribeVpcsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+  <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+  <vpcSet>
+    <item>
+      <vpcId>vpc-1a2b3c4d</vpcId>
+      <state>available</state>
+      <cidrBlock>10.0.0.0/23</cidrBlock>
+      <dhcpOptionsId>dopt-7a8b9c2d</dhcpOptionsId>
+      <instanceTenancy>default</instanceTenancy>
+      <isDefault>false</isDefault>
+      <tagSet/>
+    </item>
+  </vpcSet>
+</DescribeVpcsResponse>
+`
+
+// http://goo.gl/wLPhf
+var CreateSubnetExample = `
+<CreateSubnetResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+  <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+  <subnet>
+    <subnetId>subnet-9d4a7b6c</subnetId>
+    <state>pending</state>
+    <vpcId>vpc-1a2b3c4d</vpcId>
+    <cidrBlock>10.0.1.0/24</cidrBlock>
+    <availableIpAddressCount>251</availableIpAddressCount>
+    <availabilityZone>us-east-1a</availabilityZone>
+    <tagSet/>
+  </subnet>
+</CreateSubnetResponse>
+`
+
+// http://goo.gl/KmhcBM
+var DeleteSubnetExample = `
+<DeleteSubnetResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+   <return>true</return>
+</DeleteSubnetResponse>
+`
+
+// http://goo.gl/NTKQVI
+var DescribeSubnetsExample = `
+<DescribeSubnetsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+  <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+  <subnetSet>
+    <item>
+      <subnetId>subnet-9d4a7b6c</subnetId>
+      <state>available</state>
+      <vpcId>vpc-1a2b3c4d</vpcId>
+      <cidrBlock>10.0.1.0/24</cidrBlock>
+      <availableIpAddressCount>251</availableIpAddressCount>
+      <availabilityZone>us-east-1a</availabilityZone>
+      <defaultForAz>false</defaultForAz>
+      <mapPublicIpOnLaunch>false</mapPublicIpOnLaunch>
+      <tagSet/>
+    </item>
+    <item>
+      <subnetId>subnet-6e7f829e</subnetId>
+      <state>available</state>
+      <vpcId>vpc-1a2b3c4d</vpcId>
+      <cidrBlock>10.0.0.0/24</cidrBlock>
+      <availableIpAddressCount>251</availableIpAddressCount>
+      <availabilityZone>us-east-1a</availabilityZone>
+      <defaultForAz>false</defaultForAz>
+      <mapPublicIpOnLaunch>false</mapPublicIpOnLaunch>
+      <tagSet/>
+    </item>
+  </subnetSet>
+</DescribeSubnetsResponse>
+`

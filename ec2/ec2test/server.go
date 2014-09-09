@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"github.com/czos/goamz/ec2"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/czos/goamz/ec2"
 )
 
 var b64 = base64.StdEncoding
@@ -50,11 +51,16 @@ type Server struct {
 	instances            map[string]*Instance      // id -> instance
 	reservations         map[string]*reservation   // id -> reservation
 	groups               map[string]*securityGroup // id -> group
+	vpcs                 map[string]*vpc           // id -> vpc
+	subnets              map[string]*subnet        // id -> subnet
 	maxId                counter
 	reqId                counter
 	reservationId        counter
 	groupId              counter
 	initialInstanceState ec2.InstanceState
+	vpcId                counter
+	dhcpOptsId           counter
+	subnetId             counter
 }
 
 // reservation holds a simulated ec2 reservation.
@@ -74,6 +80,8 @@ type Instance struct {
 	reservation *reservation
 	instType    string
 	state       ec2.InstanceState
+	subnetId    string
+	vpcId       string
 }
 
 // permKey represents permission for a given security
@@ -97,6 +105,7 @@ type securityGroup struct {
 	id          string
 	name        string
 	description string
+	vpcId       string
 
 	perms map[permKey]bool
 }
@@ -138,6 +147,8 @@ func (g *securityGroup) matchAttr(attr, value string) (ok bool, err error) {
 		return g.hasPerm(func(k permKey) bool { return k.protocol == value }), nil
 	case "owner-id":
 		return value == ownerId, nil
+	case "vpc-id":
+		return g.vpcId == value, nil
 	}
 	return false, fmt.Errorf("unknown attribute %q", attr)
 }
@@ -190,6 +201,52 @@ func (g *securityGroup) ec2Perms() (perms []ec2.IPPerm) {
 	return
 }
 
+type vpc struct {
+	ec2.VPC
+}
+
+func (v *vpc) matchAttr(attr, value string) (ok bool, err error) {
+	switch attr {
+	case "cidr":
+		return v.CIDRBlock == value, nil
+	case "state":
+		return v.State == value, nil
+	case "vpc-id":
+		return v.Id == value, nil
+	case "tag", "tag-key", "tag-value", "dhcp-options-id", "isDefault":
+		return false, fmt.Errorf("%q filter is not implemented", attr)
+	}
+	return false, fmt.Errorf("unknown attribute %q", attr)
+}
+
+type subnet struct {
+	ec2.Subnet
+}
+
+func (s *subnet) matchAttr(attr, value string) (ok bool, err error) {
+	switch attr {
+	case "cidr":
+		return s.CIDRBlock == value, nil
+	case "availability-zone":
+		return s.AvailZone == value, nil
+	case "state":
+		return s.State == value, nil
+	case "subnet-id":
+		return s.Id == value, nil
+	case "vpc-id":
+		return s.VPCId == value, nil
+	case "defaultForAz", "default-for-az":
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return false, fmt.Errorf("bad flag %q: %s", attr, value)
+		}
+		return s.DefaultForAZ == val, nil
+	case "tag", "tag-key", "tag-value", "available-ip-address-count":
+		return false, fmt.Errorf("%q filter not implemented", attr)
+	}
+	return false, fmt.Errorf("unknown attribute %q", attr)
+}
+
 var actions = map[string]func(*Server, http.ResponseWriter, *http.Request, string) interface{}{
 	"RunInstances":                  (*Server).runInstances,
 	"TerminateInstances":            (*Server).terminateInstances,
@@ -199,6 +256,12 @@ var actions = map[string]func(*Server, http.ResponseWriter, *http.Request, strin
 	"DeleteSecurityGroup":           (*Server).deleteSecurityGroup,
 	"AuthorizeSecurityGroupIngress": (*Server).authorizeSecurityGroupIngress,
 	"RevokeSecurityGroupIngress":    (*Server).revokeSecurityGroupIngress,
+	"CreateVpc":                     (*Server).createVpc,
+	"DeleteVpc":                     (*Server).deleteVpc,
+	"DescribeVpcs":                  (*Server).describeVpcs,
+	"CreateSubnet":                  (*Server).createSubnet,
+	"DeleteSubnet":                  (*Server).deleteSubnet,
+	"DescribeSubnets":               (*Server).describeSubnets,
 }
 
 const ownerId = "9876"
@@ -220,6 +283,8 @@ func NewServer() (*Server, error) {
 		instances:            make(map[string]*Instance),
 		groups:               make(map[string]*securityGroup),
 		reservations:         make(map[string]*reservation),
+		vpcs:                 make(map[string]*vpc),
+		subnets:              make(map[string]*subnet),
 		initialInstanceState: Pending,
 	}
 
@@ -964,6 +1029,185 @@ func (r *reservation) hasRunningMachine() bool {
 		}
 	}
 	return false
+}
+
+func parseCidr(val string) string {
+	if val == "" {
+		fatalf(400, "MissingParameter", "missing cidrBlock")
+	}
+	if _, _, err := net.ParseCIDR(val); err != nil {
+		fatalf(400, "InvalidParameterValue", "bad CIDR %q: %v", val, err)
+	}
+	return val
+}
+
+func (srv *Server) vpc(id string) *vpc {
+	if id == "" {
+		fatalf(400, "MissingParameter", "missing vpcId")
+	}
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+	v, found := srv.vpcs[id]
+	if !found {
+		fatalf(400, "InvalidVpcID.NotFound", "VPC %s not found", id)
+	}
+	return v
+}
+
+func (srv *Server) subnet(id string) *subnet {
+	if id == "" {
+		fatalf(400, "MissingParameter", "missing subnetId")
+	}
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+	s, found := srv.subnets[id]
+	if !found {
+		fatalf(400, "InvalidSubnetID.NotFound", "subnet %s not found", id)
+	}
+	return s
+}
+
+// parseIDs takes all form fields with the given prefix and returns a
+// map with their values as keys.
+func parseIDs(form url.Values, prefix string) map[string]bool {
+	idMap := make(map[string]bool)
+	for field, allValues := range form {
+		value := allValues[0]
+		if strings.HasPrefix(field, prefix) && !idMap[value] {
+			idMap[value] = true
+		}
+	}
+	return idMap
+}
+
+func (srv *Server) createVpc(w http.ResponseWriter, req *http.Request, reqId string) interface{} {
+	cidrBlock := parseCidr(req.Form.Get("CidrBlock"))
+	tenancy := req.Form.Get("InstanceTenancy")
+	if tenancy == "" {
+		tenancy = "default"
+	}
+
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+	v := &vpc{ec2.VPC{
+		Id:              fmt.Sprintf("vpc-%d", srv.vpcId.next()),
+		State:           "available",
+		CIDRBlock:       cidrBlock,
+		DHCPOptionsId:   fmt.Sprintf("dopt-%d", srv.dhcpOptsId.next()),
+		InstanceTenancy: tenancy,
+	}}
+	srv.vpcs[v.Id] = v
+	r := &ec2.CreateVPCResp{
+		RequestId: reqId,
+		VPC:       v.VPC,
+	}
+	return r
+}
+
+func (srv *Server) deleteVpc(w http.ResponseWriter, req *http.Request, reqId string) interface{} {
+	v := srv.vpc(req.Form.Get("VpcId"))
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+
+	delete(srv.vpcs, v.Id)
+	return &ec2.SimpleResp{
+		XMLName:   xml.Name{"", "DeleteVpcResponse"},
+		RequestId: reqId,
+	}
+}
+
+func (srv *Server) describeVpcs(w http.ResponseWriter, req *http.Request, reqId string) interface{} {
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+
+	idMap := parseIDs(req.Form, "VpcId.")
+	f := newFilter(req.Form)
+	var resp ec2.VPCsResp
+	resp.RequestId = reqId
+	for _, v := range srv.vpcs {
+		ok, err := f.ok(v)
+		_, known := idMap[v.Id]
+		if ok && (len(idMap) == 0 || known) {
+			resp.VPCs = append(resp.VPCs, v.VPC)
+		} else if err != nil {
+			fatalf(400, "InvalidParameterValue", "describe VPCs: %v", err)
+		}
+	}
+	return &resp
+}
+
+func (srv *Server) calcSubnetAvailIPs(cidrBlock string) (int, error) {
+	_, ipnet, err := net.ParseCIDR(cidrBlock)
+	if err != nil {
+		return 0, err
+	}
+	// calculate the available IP addresses, removing the first 4 and
+	// the last, which are reserved by AWS.
+	maskOnes, maskBits := ipnet.Mask.Size()
+	return 1<<uint(maskBits-maskOnes) - 5, nil
+}
+
+func (srv *Server) createSubnet(w http.ResponseWriter, req *http.Request, reqId string) interface{} {
+	v := srv.vpc(req.Form.Get("VpcId"))
+	cidrBlock := parseCidr(req.Form.Get("CidrBlock"))
+	availZone := req.Form.Get("AvailabilityZone")
+	if availZone == "" {
+		// Assign one automatically as AWS does.
+		availZone = "us-east-1b"
+	}
+	availIPs, err := srv.calcSubnetAvailIPs(cidrBlock)
+	if err != nil {
+		fatalf(400, "InvalidParameterValue", "calcSubnetAvailIPs(%q) failed: %v", cidrBlock, err)
+	}
+
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+	s := &subnet{ec2.Subnet{
+		Id:               fmt.Sprintf("subnet-%d", srv.subnetId.next()),
+		VPCId:            v.Id,
+		State:            "available",
+		CIDRBlock:        cidrBlock,
+		AvailZone:        availZone,
+		AvailableIPCount: availIPs,
+	}}
+	srv.subnets[s.Id] = s
+	r := &ec2.CreateSubnetResp{
+		RequestId: reqId,
+		Subnet:    s.Subnet,
+	}
+	return r
+}
+
+func (srv *Server) deleteSubnet(w http.ResponseWriter, req *http.Request, reqId string) interface{} {
+	s := srv.subnet(req.Form.Get("SubnetId"))
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+
+	delete(srv.subnets, s.Id)
+	return &ec2.SimpleResp{
+		XMLName:   xml.Name{"", "DeleteSubnetResponse"},
+		RequestId: reqId,
+	}
+}
+
+func (srv *Server) describeSubnets(w http.ResponseWriter, req *http.Request, reqId string) interface{} {
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+
+	idMap := parseIDs(req.Form, "SubnetId.")
+	f := newFilter(req.Form)
+	var resp ec2.SubnetsResp
+	resp.RequestId = reqId
+	for _, s := range srv.subnets {
+		ok, err := f.ok(s)
+		_, known := idMap[s.Id]
+		if ok && (len(idMap) == 0 || known) {
+			resp.Subnets = append(resp.Subnets, s.Subnet)
+		} else if err != nil {
+			fatalf(400, "InvalidParameterValue", "describe subnets: %v", err)
+		}
+	}
+	return &resp
 }
 
 type counter int
