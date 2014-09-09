@@ -51,7 +51,7 @@ type CreateSubnetResp struct {
 //
 // See http://goo.gl/wLPhfI for more details.
 func (ec2 *EC2) CreateSubnet(vpcId, cidrBlock, availZone string) (resp *CreateSubnetResp, err error) {
-	params := makeParamsVPC("CreateSubnet")
+	params := makeParams("CreateSubnet")
 	params["VpcId"] = vpcId
 	params["CidrBlock"] = cidrBlock
 	if availZone != "" {
@@ -70,7 +70,7 @@ func (ec2 *EC2) CreateSubnet(vpcId, cidrBlock, availZone string) (resp *CreateSu
 //
 // See http://goo.gl/KmhcBM for more details.
 func (ec2 *EC2) DeleteSubnet(id string) (resp *SimpleResp, err error) {
-	params := makeParamsVPC("DeleteSubnet")
+	params := makeParams("DeleteSubnet")
 	params["SubnetId"] = id
 	resp = &SimpleResp{}
 	err = ec2.query(params, resp)
@@ -94,7 +94,7 @@ type SubnetsResp struct {
 //
 // See http://goo.gl/NTKQVI for more details.
 func (ec2 *EC2) Subnets(ids []string, filter *Filter) (resp *SubnetsResp, err error) {
-	params := makeParamsVPC("DescribeSubnets")
+	params := makeParams("DescribeSubnets")
 	for i, id := range ids {
 		params["SubnetId."+strconv.Itoa(i+1)] = id
 	}
