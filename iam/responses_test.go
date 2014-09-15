@@ -191,3 +191,21 @@ var DeleteAccountAliasExample = `
   </ResponseMetadata>
 </DeleteAccountAliasResponse>
 `
+
+var UploadServerCertificateExample = `
+<UploadServerCertificateResponse>
+<UploadServerCertificateResult>
+  <ServerCertificateMetadata>
+    <ServerCertificateName>ProdServerCert</ServerCertificateName>
+    <Path>/company/servercerts/</Path>
+    <Arn>arn:aws:iam::123456789012:server-certificate/company/servercerts/ProdServerCert</Arn>
+    <UploadDate>2010-05-08T01:02:03.004Z</UploadDate>
+    <ServerCertificateId>ASCACKCEVSQ6C2EXAMPLE</ServerCertificateId>
+    <Expiration>2012-05-08T01:02:03.004Z</Expiration>
+  </ServerCertificateMetadata>
+</UploadServerCertificateResult>
+<ResponseMetadata>
+  <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+</ResponseMetadata>
+</UploadServerCertificateResponse>
+`

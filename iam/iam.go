@@ -503,6 +503,53 @@ type xmlErrors struct {
 	Errors []Error `xml:"Error"`
 }
 
+// ServerCertificateMetadata represents a ServerCertificateMetadata object
+//
+// See http://goo.gl/Rfu7LD for more details.
+type ServerCertificateMetadata struct {
+	Arn                   string    `xml:"Arn"`
+	Expiration            time.Time `xml:"Expiration"`
+	Path                  string    `xml:"Path"`
+	ServerCertificateId   string    `xml:"ServerCertificateId"`
+	ServerCertificateName string    `xml:"ServerCertificateName"`
+	UploadDate            time.Time `xml:"UploadDate"`
+}
+
+// UploadServerCertificateResponse wraps up for UploadServerCertificate request.
+//
+// See http://goo.gl/bomzce for more details.
+type UploadServerCertificateResponse struct {
+	ServerCertificateMetadata ServerCertificateMetadata `xml:"UploadServerCertificateResult>ServerCertificateMetadata"`
+	RequestId                 string                    `xml:"ResponseMetadata>RequestId"`
+}
+
+// UploadServerCertificate uploads a server certificate entity for the AWS account.
+//
+// Required Params: serverCertificateName, privateKey, certificateBody
+//
+// See http://goo.gl/bomzce for more details.
+func (iam *IAM) UploadServerCertificate(serverCertificateName, privateKey, certificateBody, certificateChain, path string) (
+	*UploadServerCertificateResponse, error) {
+	params := map[string]string{
+		"Action":                "UploadServerCertificate",
+		"ServerCertificateName": serverCertificateName,
+		"PrivateKey":            privateKey,
+		"CertificateBody":       certificateBody,
+	}
+	if certificateChain != "" {
+		params["CertificateChain"] = certificateChain
+	}
+	if path != "" {
+		params["Path"] = path
+	}
+
+	resp := new(UploadServerCertificateResponse)
+	if err := iam.postQuery(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // Error encapsulates an IAM error.
 type Error struct {
 	// HTTP status code of the error.
