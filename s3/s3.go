@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+        "sort"
 	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
@@ -36,7 +37,7 @@ const debug = false
 // The S3 type encapsulates operations with an S3 region.
 type S3 struct {
 	aws.Auth
-	aws.Region
+        aws.Region
 
 	// ConnectTimeout is the maximum time a request attempt will
 	// wait for a successful connection to be made.
@@ -80,6 +81,7 @@ type S3 struct {
 type Bucket struct {
 	*S3
 	Name string
+	aws.Region
 }
 
 // The Owner type represents the owner of the object in an S3 bucket.
@@ -127,12 +129,73 @@ func New(auth aws.Auth, region aws.Region) *S3 {
 	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy}
 }
 
+// GetReaderWithHeaders retrieves an object from an S3 bucket
+// Accepts custom headers to be sent as the second parameter
+// returning the body of the HTTP response.
+// It is the caller's responsibility to call Close on rc when
+// finished reading
+func (s3 *S3) getRegionForBucket(name string) (region aws.Region, err error) {
+	req := &request{
+            path: "/",
+            method: "GET",
+            baseurl:  fmt.Sprintf("http://%s.s3.amazonaws.com", name),
+            params:  url.Values{"location": {""}},
+	}
+
+	err = s3.prepare(req)
+	if err != nil {
+            return aws.Region{}, err
+	}
+
+	sign(s3.Auth, req.method, fmt.Sprintf("/%s/", name), req.params, req.headers)
+
+	for attempt := s3.AttemptStrategy.Start(); attempt.Next(); {
+		resp, err := s3.run(req, nil)
+
+		if shouldRetry(err) && attempt.HasNext() {
+			continue
+		}
+
+		if err != nil {
+                    return aws.Region{}, err
+		}
+
+                data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+                    return aws.Region{}, err
+		}
+
+                locationConstraint := LocationConstraint{}
+
+                err = xml.Unmarshal(data, &locationConstraint)
+                if err != nil {
+                    return aws.Region{}, err
+                }
+
+                region := aws.Regions[locationConstraint.Region]
+		return region, nil
+	}
+	panic("unreachable")
+}
+
+
 // Bucket returns a Bucket with the given name.
 func (s3 *S3) Bucket(name string) *Bucket {
-	if s3.Region.S3BucketEndpoint != "" || s3.Region.S3LowercaseBucket {
+        var region aws.Region = s3.Region
+
+        if region.Name == "" {
+            // no region loaded, check amazon for correct region
+            var err error
+            region, err = s3.getRegionForBucket(name)
+            if (err != nil ) {
+                return nil
+            }
+        }
+
+	if region.S3BucketEndpoint != "" || region.S3LowercaseBucket {
 		name = strings.ToLower(name)
 	}
-	return &Bucket{s3, name}
+        return &Bucket{s3, name, region}
 }
 
 var createBucketConfiguration = `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -171,7 +234,7 @@ func (b *Bucket) PutBucket(perm ACL) error {
 	}
 	req := &request{
 		method:  "PUT",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    "/",
 		headers: headers,
 		payload: b.locationConstraint(),
@@ -186,7 +249,7 @@ func (b *Bucket) PutBucket(perm ACL) error {
 func (b *Bucket) DelBucket() (err error) {
 	req := &request{
 		method: "DELETE",
-		bucket: b.Name,
+		bucket: b,
 		path:   "/",
 	}
 	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
@@ -242,7 +305,7 @@ func (b *Bucket) GetResponse(path string) (resp *http.Response, err error) {
 // finished reading
 func (b *Bucket) GetResponseWithHeaders(path string, headers map[string][]string) (resp *http.Response, err error) {
 	req := &request{
-		bucket:  b.Name,
+		bucket:  b,
 		path:    path,
 		headers: headers,
 	}
@@ -267,7 +330,7 @@ func (b *Bucket) GetResponseWithHeaders(path string, headers map[string][]string
 func (b *Bucket) Exists(path string) (exists bool, err error) {
 	req := &request{
 		method: "HEAD",
-		bucket: b.Name,
+		bucket: b,
 		path:   path,
 	}
 	err = b.S3.prepare(req)
@@ -302,7 +365,7 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 func (b *Bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
 	req := &request{
 		method:  "HEAD",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    path,
 		headers: headers,
 	}
@@ -341,7 +404,7 @@ func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source stri
 	options.addHeaders(headers)
 	req := &request{
 		method:  "PUT",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    path,
 		headers: headers,
 	}
@@ -373,7 +436,7 @@ func (b *Bucket) PutReader(path string, r io.Reader, length int64, contType stri
 	options.addHeaders(headers)
 	req := &request{
 		method:  "PUT",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    path,
 		headers: headers,
 		payload: r,
@@ -400,7 +463,7 @@ func (b *Bucket) PutReaderHeader(path string, r io.Reader, length int64, customH
 
 	req := &request{
 		method:  "PUT",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    path,
 		headers: headers,
 		payload: r,
@@ -480,7 +543,7 @@ func (b *Bucket) PutBucketSubresource(subresource string, r io.Reader, length in
 	req := &request{
 		path:    "/",
 		method:  "PUT",
-		bucket:  b.Name,
+		bucket:  b,
 		headers: headers,
 		payload: r,
 		params:  url.Values{subresource: {""}},
@@ -495,10 +558,14 @@ func (b *Bucket) PutBucketSubresource(subresource string, r io.Reader, length in
 func (b *Bucket) Del(path string) error {
 	req := &request{
 		method: "DELETE",
-		bucket: b.Name,
+		bucket: b,
 		path:   path,
 	}
 	return b.S3.query(req, nil)
+}
+
+type LocationConstraint struct {
+    Region string     `xml:",chardata"`
 }
 
 type Delete struct {
@@ -536,7 +603,7 @@ func (b *Bucket) DelMulti(objects Delete) error {
 		path:    "/",
 		method:  "POST",
 		params:  url.Values{"delete": {""}},
-		bucket:  b.Name,
+		bucket:  b,
 		headers: headers,
 		payload: buf,
 	}
@@ -640,7 +707,7 @@ func (b *Bucket) List(prefix, delim, marker string, max int) (result *ListResp, 
 		params["max-keys"] = []string{strconv.FormatInt(int64(max), 10)}
 	}
 	req := &request{
-		bucket: b.Name,
+		bucket: b,
 		params: params,
 	}
 	result = &ListResp{}
@@ -701,7 +768,7 @@ func (b *Bucket) Versions(prefix, delim, keyMarker string, versionIdMarker strin
 		params["max-keys"] = []string{strconv.FormatInt(int64(max), 10)}
 	}
 	req := &request{
-		bucket: b.Name,
+		bucket: b,
 		params: params,
 	}
 	result = &VersionsResp{}
@@ -746,7 +813,7 @@ func (b *Bucket) GetBucketContents() (*map[string]Key, error) {
 // readable (see SignedURL).
 func (b *Bucket) URL(path string) string {
 	req := &request{
-		bucket: b.Name,
+		bucket: b,
 		path:   path,
 	}
 	err := b.S3.prepare(req)
@@ -765,7 +832,7 @@ func (b *Bucket) URL(path string) string {
 // to retrieve the object at path. The signature is valid until expires.
 func (b *Bucket) SignedURL(path string, expires time.Time) string {
 	req := &request{
-		bucket: b.Name,
+		bucket: b,
 		path:   path,
 		params: url.Values{"Expires": {strconv.FormatInt(expires.Unix(), 10)}},
 	}
@@ -848,13 +915,13 @@ func (b *Bucket) PostFormArgs(path string, expires time.Time, redirect string) (
 	signer.Write([]byte(policy64))
 	fields["signature"] = base64.StdEncoding.EncodeToString(signer.Sum(nil))
 
-	action = fmt.Sprintf("%s/%s/", b.S3.Region.S3Endpoint, b.Name)
+	action = fmt.Sprintf("%s/%s/", b.Region.S3Endpoint, b.Name)
 	return
 }
 
 type request struct {
 	method   string
-	bucket   string
+	bucket   *Bucket
 	path     string
 	signpath string
 	params   url.Values
@@ -869,7 +936,25 @@ func (req *request) url() (*url.URL, error) {
 	if err != nil {
 		return nil, fmt.Errorf("bad S3 endpoint URL %q: %v", req.baseurl, err)
 	}
-	u.RawQuery = req.params.Encode()
+
+	var sarray []string
+
+        for k, v := range req.params {
+            for _, vi := range v {
+                if vi == "" {
+                        sarray = append(sarray, k)
+                } else {
+                        // "When signing you do not encode these values."
+                        sarray = append(sarray, k+"="+vi)
+                }
+            }
+        }
+        
+	if len(sarray) > 0 {
+		sort.StringSlice(sarray).Sort()
+                u.RawQuery = strings.Join(sarray, "&")
+	}
+
 	u.Path = req.path
 	return u, nil
 }
@@ -913,20 +998,22 @@ func (s3 *S3) prepare(req *request) error {
 			req.path = "/" + req.path
 		}
 		signpath = req.path
-		if req.bucket != "" {
-			req.baseurl = s3.Region.S3BucketEndpoint
+
+		if req.bucket != nil {
+			req.baseurl = req.bucket.Region.S3BucketEndpoint
+
 			if req.baseurl == "" {
 				// Use the path method to address the bucket.
-				req.baseurl = s3.Region.S3Endpoint
-				req.path = "/" + req.bucket + req.path
+				req.baseurl = req.bucket.Region.S3Endpoint
+				req.path = "/" + req.bucket.Name + req.path
 			} else {
 				// Just in case, prevent injection.
-				if strings.IndexAny(req.bucket, "/:@") >= 0 {
-					return fmt.Errorf("bad S3 bucket: %q", req.bucket)
+				if strings.IndexAny(req.bucket.Name, "/:@") >= 0 {
+					return fmt.Errorf("bad S3 bucket: %q", req.bucket.Name)
 				}
-				req.baseurl = strings.Replace(req.baseurl, "${bucket}", req.bucket, -1)
+				req.baseurl = strings.Replace(req.baseurl, "${bucket}", req.bucket.Name, -1)
 			}
-			signpath = "/" + req.bucket + signpath
+			signpath = "/" + req.bucket.Name + signpath
 		}
 	}
 
@@ -936,7 +1023,9 @@ func (s3 *S3) prepare(req *request) error {
 	if err != nil {
 		return fmt.Errorf("bad S3 endpoint URL %q: %v", req.baseurl, err)
 	}
+
 	reqSignpathSpaceFix := (&url.URL{Path: signpath}).String()
+
 	req.headers["Host"] = []string{u.Host}
 	req.headers["Date"] = []string{time.Now().In(time.UTC).Format(time.RFC1123)}
 	if s3.Auth.Token() != "" {
@@ -1007,7 +1096,7 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 
 	hresp, err := s3.client.Do(&hreq)
 	if err != nil {
-		return nil, err
+		return hresp, err
 	}
 	if debug {
 		dump, _ := httputil.DumpResponse(hresp, true)
@@ -1015,7 +1104,7 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 	}
 	if hresp.StatusCode != 200 && hresp.StatusCode != 204 {
 		defer hresp.Body.Close()
-		return nil, buildError(hresp)
+		return hresp, buildError(hresp)
 	}
 	if resp != nil {
 		err = xml.NewDecoder(hresp.Body).Decode(resp)
