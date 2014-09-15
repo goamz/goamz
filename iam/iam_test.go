@@ -322,6 +322,7 @@ func (s *S) TestDeleteAccountAlias(c *gocheck.C) {
 
 func (s *S) TestUploadServerCertificate(c *gocheck.C) {
 	testServer.Response(200, nil, UploadServerCertificateExample)
+
 	certificateBody := `
 -----BEGIN CERTIFICATE-----
 MIICdzCCAeCgAwIBAgIGANc+Ha2wMA0GCSqGSIb3DQEBBQUAMFMxCzAJBgNVBAYT
@@ -354,7 +355,14 @@ jobTJQ2VHjb5IVxiO6HRSd27di3njyrzUuJCyHSDTqwLJmTThpd6OTIUTL3Tc4m2
 62TITdw53KWJEXAMPLE=
 -----END DSA PRIVATE KEY-----
 `
-	resp, err := s.iam.UploadServerCertificate("ProdServerCert", privateKey, certificateBody, "", "/company/servercerts/")
+	params := &iam.UploadServerCertificateParams{
+		ServerCertificateName: "ProdServerCert",
+		Path:            "/company/servercerts/",
+		PrivateKey:      privateKey,
+		CertificateBody: certificateBody,
+	}
+
+	resp, err := s.iam.UploadServerCertificate(params)
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, gocheck.Equals, "POST")
 	c.Assert(req.FormValue("Action"), gocheck.Equals, "UploadServerCertificate")

@@ -523,24 +523,35 @@ type UploadServerCertificateResponse struct {
 	RequestId                 string                    `xml:"ResponseMetadata>RequestId"`
 }
 
-// UploadServerCertificate uploads a server certificate entity for the AWS account.
-//
-// Required Params: serverCertificateName, privateKey, certificateBody
+// UploadServerCertificateParams wraps up the params to be passed for the UploadServerCertificate request
 //
 // See http://goo.gl/bomzce for more details.
-func (iam *IAM) UploadServerCertificate(serverCertificateName, privateKey, certificateBody, certificateChain, path string) (
+type UploadServerCertificateParams struct {
+	ServerCertificateName string
+	PrivateKey            string
+	CertificateBody       string
+	CertificateChain      string
+	Path                  string
+}
+
+// UploadServerCertificate uploads a server certificate entity for the AWS account.
+//
+// Required Params: ServerCertificateName, PrivateKey, CertificateBody
+//
+// See http://goo.gl/bomzce for more details.
+func (iam *IAM) UploadServerCertificate(options *UploadServerCertificateParams) (
 	*UploadServerCertificateResponse, error) {
 	params := map[string]string{
 		"Action":                "UploadServerCertificate",
-		"ServerCertificateName": serverCertificateName,
-		"PrivateKey":            privateKey,
-		"CertificateBody":       certificateBody,
+		"ServerCertificateName": options.ServerCertificateName,
+		"PrivateKey":            options.PrivateKey,
+		"CertificateBody":       options.CertificateBody,
 	}
-	if certificateChain != "" {
-		params["CertificateChain"] = certificateChain
+	if options.CertificateChain != "" {
+		params["CertificateChain"] = options.CertificateChain
 	}
-	if path != "" {
-		params["Path"] = path
+	if options.Path != "" {
+		params["Path"] = options.Path
 	}
 
 	resp := new(UploadServerCertificateResponse)
