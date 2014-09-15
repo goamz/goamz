@@ -550,6 +550,22 @@ func (iam *IAM) UploadServerCertificate(serverCertificateName, privateKey, certi
 	return resp, nil
 }
 
+// DeleteServerCertificate deletes the specified server certificate.
+//
+// See http://goo.gl/W4nmxQ for more details.
+func (iam *IAM) DeleteServerCertificate(serverCertificateName string) (*SimpleResp, error) {
+	params := map[string]string{
+		"Action":                "DeleteServerCertificate",
+		"ServerCertificateName": serverCertificateName,
+	}
+
+	resp := new(SimpleResp)
+	if err := iam.postQuery(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // Error encapsulates an IAM error.
 type Error struct {
 	// HTTP status code of the error.

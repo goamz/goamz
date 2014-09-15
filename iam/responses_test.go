@@ -209,3 +209,11 @@ var UploadServerCertificateExample = `
 </ResponseMetadata>
 </UploadServerCertificateResponse>
 `
+
+var DeleteServerCertificateExample = `
+<DeleteServerCertificateResponse>
+<ResponseMetadata>
+  <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+</ResponseMetadata>
+</DeleteServerCertificateResponse>
+`

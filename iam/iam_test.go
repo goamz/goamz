@@ -380,3 +380,13 @@ jobTJQ2VHjb5IVxiO6HRSd27di3njyrzUuJCyHSDTqwLJmTThpd6OTIUTL3Tc4m2
 	c.Assert(resp.RequestId, gocheck.Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
 
 }
+
+func (s *S) TestDeleteServerCertificate(c *gocheck.C) {
+	testServer.Response(200, nil, DeleteServerCertificateExample)
+	resp, err := s.iam.DeleteServerCertificate("ProdServerCert")
+	req := testServer.WaitRequest()
+	c.Assert(req.FormValue("Action"), gocheck.Equals, "DeleteServerCertificate")
+	c.Assert(req.FormValue("ServerCertificateName"), gocheck.Equals, "ProdServerCert")
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+}
