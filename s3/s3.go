@@ -129,11 +129,11 @@ func New(auth aws.Auth, region aws.Region) *S3 {
 	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy}
 }
 
-// GetReaderWithHeaders retrieves an object from an S3 bucket
-// Accepts custom headers to be sent as the second parameter
-// returning the body of the HTTP response.
-// It is the caller's responsibility to call Close on rc when
-// finished reading
+// getRegionForBucket retrieves the region for a bucket
+// to keep the code compatible, you first need to
+// create a new connection with a empty region
+// conn := s3.New(auth, aws.Region{})
+// next it will be retrieved if you get the conn.Bucket()
 func (s3 *S3) getRegionForBucket(name string) (region aws.Region, err error) {
 	req := &request{
             path: "/",
