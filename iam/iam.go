@@ -503,6 +503,80 @@ type xmlErrors struct {
 	Errors []Error `xml:"Error"`
 }
 
+// ServerCertificateMetadata represents a ServerCertificateMetadata object
+//
+// See http://goo.gl/Rfu7LD for more details.
+type ServerCertificateMetadata struct {
+	Arn                   string    `xml:"Arn"`
+	Expiration            time.Time `xml:"Expiration"`
+	Path                  string    `xml:"Path"`
+	ServerCertificateId   string    `xml:"ServerCertificateId"`
+	ServerCertificateName string    `xml:"ServerCertificateName"`
+	UploadDate            time.Time `xml:"UploadDate"`
+}
+
+// UploadServerCertificateResponse wraps up for UploadServerCertificate request.
+//
+// See http://goo.gl/bomzce for more details.
+type UploadServerCertificateResponse struct {
+	ServerCertificateMetadata ServerCertificateMetadata `xml:"UploadServerCertificateResult>ServerCertificateMetadata"`
+	RequestId                 string                    `xml:"ResponseMetadata>RequestId"`
+}
+
+// UploadServerCertificateParams wraps up the params to be passed for the UploadServerCertificate request
+//
+// See http://goo.gl/bomzce for more details.
+type UploadServerCertificateParams struct {
+	ServerCertificateName string
+	PrivateKey            string
+	CertificateBody       string
+	CertificateChain      string
+	Path                  string
+}
+
+// UploadServerCertificate uploads a server certificate entity for the AWS account.
+//
+// Required Params: ServerCertificateName, PrivateKey, CertificateBody
+//
+// See http://goo.gl/bomzce for more details.
+func (iam *IAM) UploadServerCertificate(options *UploadServerCertificateParams) (
+	*UploadServerCertificateResponse, error) {
+	params := map[string]string{
+		"Action":                "UploadServerCertificate",
+		"ServerCertificateName": options.ServerCertificateName,
+		"PrivateKey":            options.PrivateKey,
+		"CertificateBody":       options.CertificateBody,
+	}
+	if options.CertificateChain != "" {
+		params["CertificateChain"] = options.CertificateChain
+	}
+	if options.Path != "" {
+		params["Path"] = options.Path
+	}
+
+	resp := new(UploadServerCertificateResponse)
+	if err := iam.postQuery(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DeleteServerCertificate deletes the specified server certificate.
+//
+// See http://goo.gl/W4nmxQ for more details.
+func (iam *IAM) DeleteServerCertificate(serverCertificateName string) (*SimpleResp, error) {
+	params := map[string]string{
+		"Action":                "DeleteServerCertificate",
+		"ServerCertificateName": serverCertificateName,
+	}
+
+	resp := new(SimpleResp)
+	if err := iam.postQuery(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // Error encapsulates an IAM error.
 type Error struct {
 	// HTTP status code of the error.
