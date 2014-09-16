@@ -42,12 +42,22 @@ func NewFrom(accessKey, secretKey, region string) (*SQS, error) {
 	aws_region := aws.USEast
 
 	switch region {
-	case "us.east":
+	case "us.east", "us.east.1":
 		aws_region = aws.USEast
-	case "us.west":
+	case "us.west", "us.west.1":
 		aws_region = aws.USWest
+	case "us.west.2":
+		aws_region = aws.USWest2
 	case "eu.west":
 		aws_region = aws.EUWest
+	case "ap.southeast", "ap.southeast.1":
+		aws_region = aws.APSoutheast
+	case "ap.southeast.2":
+		aws_region = aws.APSoutheast2
+	case "ap.northeast", "ap.northeast.1":
+		aws_region = aws.APNortheast
+	case "sa.east", "sa.east.1":
+		aws_region = aws.SAEast
 	default:
 		return nil, errors.New(fmt.Sprintf("Unknow/Unsupported region %s", region))
 	}
