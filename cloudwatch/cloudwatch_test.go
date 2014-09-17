@@ -70,12 +70,23 @@ func (s *S) TestPutAlarmWithAction(c *gocheck.C) {
 
 	alarm := getTestAlarm()
 
-	var actions []cloudwatch.AlarmAction
-	action := new(cloudwatch.AlarmAction)
-	action.ARN = "123"
-	actions = append(actions, *action)
+	alarm.AlarmActions = []cloudwatch.AlarmAction{
+		cloudwatch.AlarmAction{
+			ARN: "123",
+		},
+	}
 
-	alarm.AlarmActions = actions
+	alarm.OkActions = []cloudwatch.AlarmAction{
+		cloudwatch.AlarmAction{
+			ARN: "456",
+		},
+	}
+
+	alarm.InsufficientDataActions = []cloudwatch.AlarmAction{
+		cloudwatch.AlarmAction{
+			ARN: "789",
+		},
+	}
 
 	_, err := s.cw.PutMetricAlarm(alarm)
 	c.Assert(err, gocheck.IsNil)
@@ -85,6 +96,8 @@ func (s *S) TestPutAlarmWithAction(c *gocheck.C) {
 	c.Assert(req.URL.Path, gocheck.Equals, "/")
 	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"PutMetricAlarm"})
 	c.Assert(req.Form["AlarmActions.member.1"], gocheck.DeepEquals, []string{"123"})
+	c.Assert(req.Form["OKActions.member.1"], gocheck.DeepEquals, []string{"456"})
+	c.Assert(req.Form["InsufficientDataActions.member.1"], gocheck.DeepEquals, []string{"789"})
 	c.Assert(req.Form["AlarmName"], gocheck.DeepEquals, []string{"TestAlarm"})
 	c.Assert(req.Form["ComparisonOperator"], gocheck.DeepEquals, []string{"LessThanThreshold"})
 	c.Assert(req.Form["EvaluationPeriods"], gocheck.DeepEquals, []string{"5"})

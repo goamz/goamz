@@ -18,6 +18,10 @@ Please refer to the project's main page at [https://github.com/goamz/goamz](http
   <td>PutMetricData</td>
   <td>Publishes metric data points to Amazon CloudWatch.</td>
  </tr>
+ <tr>
+  <td>PutMetricAlarm</td>
+  <td>Creates or updates an alarm and associates it with the specified Amazon CloudWatch metric.</td>
+ </tr>
  </table>
 
 [Please refer to AWS Cloudwatch's documentation for more info](http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_Operations.html)
@@ -38,7 +42,7 @@ func test_get_metric_statistics() {
     region := aws.Regions["a_region"]
     namespace:= "AWS/ELB"
     dimension  := &cloudwatch.Dimension{
-                                         Name: "LoadBalancerName", 
+                                         Name: "LoadBalancerName",
                                          Value: "your_value",
                                        }
     metricName := "RequestCount"

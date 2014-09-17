@@ -9,6 +9,7 @@
 #
 # Contributor(s):
 #   Ben Bangert (bbangert@mozilla.com)
+#   Logan Owen (lsowen@s1network.com)
 #
 # ***** END LICENSE BLOCK *****/
 
@@ -109,18 +110,20 @@ type AlarmAction struct {
 }
 
 type MetricAlarm struct {
-	AlarmActions       []AlarmAction
-	AlarmDescription   string
-	AlarmName          string
-	ComparisonOperator string
-	Dimensions         []Dimension
-	EvaluationPeriods  int
-	MetricName         string
-	Namespace          string
-	Period             int
-	Statistic          string
-	Threshold          float64
-	Unit               string
+	AlarmActions            []AlarmAction
+	AlarmDescription        string
+	AlarmName               string
+	ComparisonOperator      string
+	Dimensions              []Dimension
+	EvaluationPeriods       int
+	InsufficientDataActions []AlarmAction
+	MetricName              string
+	Namespace               string
+	OkActions               []AlarmAction
+	Period                  int
+	Statistic               string
+	Threshold               float64
+	Unit                    string
 }
 
 var attempts = aws.AttemptStrategy{
@@ -370,9 +373,14 @@ func (c *CloudWatch) PutMetricAlarm(alarm *MetricAlarm) (result *aws.BaseRespons
 	for i, action := range alarm.AlarmActions {
 		params["AlarmActions.member."+strconv.Itoa(i+1)] = action.ARN
 	}
+	for i, action := range alarm.InsufficientDataActions {
+		params["InsufficientDataActions.member."+strconv.Itoa(i+1)] = action.ARN
+	}
+	for i, action := range alarm.OkActions {
+		params["OKActions.member."+strconv.Itoa(i+1)] = action.ARN
+	}
 	if alarm.AlarmDescription != "" {
 		params["AlarmDescription"] = alarm.AlarmDescription
-		return
 	}
 	params["AlarmDescription"] = alarm.AlarmDescription
 	params["AlarmName"] = alarm.AlarmName
