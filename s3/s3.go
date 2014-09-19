@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-        "sort"
 	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
@@ -27,6 +26,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +37,7 @@ const debug = false
 // The S3 type encapsulates operations with an S3 region.
 type S3 struct {
 	aws.Auth
-        aws.Region
+	aws.Region
 
 	// ConnectTimeout is the maximum time a request attempt will
 	// wait for a successful connection to be made.
@@ -136,15 +136,15 @@ func New(auth aws.Auth, region aws.Region) *S3 {
 // next it will be retrieved if you get the conn.Bucket()
 func (s3 *S3) getRegionForBucket(name string) (region aws.Region, err error) {
 	req := &request{
-            path: "/",
-            method: "GET",
-            baseurl:  fmt.Sprintf("http://%s.s3.amazonaws.com", name),
-            params:  url.Values{"location": {""}},
+		path:    "/",
+		method:  "GET",
+		baseurl: fmt.Sprintf("http://%s.s3.amazonaws.com", name),
+		params:  url.Values{"location": {""}},
 	}
 
 	err = s3.prepare(req)
 	if err != nil {
-            return aws.Region{}, err
+		return aws.Region{}, err
 	}
 
 	sign(s3.Auth, req.method, fmt.Sprintf("/%s/", name), req.params, req.headers)
@@ -157,45 +157,44 @@ func (s3 *S3) getRegionForBucket(name string) (region aws.Region, err error) {
 		}
 
 		if err != nil {
-                    return aws.Region{}, err
+			return aws.Region{}, err
 		}
 
-                data, err := ioutil.ReadAll(resp.Body)
+		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-                    return aws.Region{}, err
+			return aws.Region{}, err
 		}
 
-                locationConstraint := LocationConstraint{}
+		locationConstraint := LocationConstraint{}
 
-                err = xml.Unmarshal(data, &locationConstraint)
-                if err != nil {
-                    return aws.Region{}, err
-                }
+		err = xml.Unmarshal(data, &locationConstraint)
+		if err != nil {
+			return aws.Region{}, err
+		}
 
-                region := aws.Regions[locationConstraint.Region]
+		region := aws.Regions[locationConstraint.Region]
 		return region, nil
 	}
 	panic("unreachable")
 }
 
-
 // Bucket returns a Bucket with the given name.
 func (s3 *S3) Bucket(name string) *Bucket {
-        var region aws.Region = s3.Region
+	var region aws.Region = s3.Region
 
-        if region.Name == "" {
-            // no region loaded, check amazon for correct region
-            var err error
-            region, err = s3.getRegionForBucket(name)
-            if (err != nil ) {
-                return nil
-            }
-        }
+	if region.Name == "" {
+		// no region loaded, check amazon for correct region
+		var err error
+		region, err = s3.getRegionForBucket(name)
+		if err != nil {
+			return nil
+		}
+	}
 
 	if region.S3BucketEndpoint != "" || region.S3LowercaseBucket {
 		name = strings.ToLower(name)
 	}
-        return &Bucket{s3, name, region}
+	return &Bucket{s3, name, region}
 }
 
 var createBucketConfiguration = `<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -565,7 +564,7 @@ func (b *Bucket) Del(path string) error {
 }
 
 type LocationConstraint struct {
-    Region string     `xml:",chardata"`
+	Region string `xml:",chardata"`
 }
 
 type Delete struct {
@@ -939,20 +938,20 @@ func (req *request) url() (*url.URL, error) {
 
 	var sarray []string
 
-        for k, v := range req.params {
-            for _, vi := range v {
-                if vi == "" {
-                        sarray = append(sarray, k)
-                } else {
-                        // "When signing you do not encode these values."
-                        sarray = append(sarray, k+"="+vi)
-                }
-            }
-        }
-        
+	for k, v := range req.params {
+		for _, vi := range v {
+			if vi == "" {
+				sarray = append(sarray, k)
+			} else {
+				// "When signing you do not encode these values."
+				sarray = append(sarray, k+"="+vi)
+			}
+		}
+	}
+
 	if len(sarray) > 0 {
 		sort.StringSlice(sarray).Sort()
-                u.RawQuery = strings.Join(sarray, "&")
+		u.RawQuery = strings.Join(sarray, "&")
 	}
 
 	u.Path = req.path
