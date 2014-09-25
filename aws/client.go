@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"bytes"
+	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
@@ -40,8 +42,8 @@ func NewClient(rt *ResilientTransport) *http.Client {
 			if err != nil {
 				return nil, err
 			}
-			c.SetDeadline(rt.Deadline())
-			return c, nil
+			err = c.SetDeadline(rt.Deadline())
+			return c, err
 		},
 		Proxy: http.ProxyFromEnvironment,
 	}
@@ -54,7 +56,7 @@ func NewClient(rt *ResilientTransport) *http.Client {
 
 var retryingTransport = &ResilientTransport{
 	Deadline: func() time.Time {
-		return time.Now().Add(5 * time.Second)
+		return time.Now().Add(10 * time.Second)
 	},
 	DialTimeout: 10 * time.Second,
 	MaxTries:    3,
@@ -74,7 +76,21 @@ func (t *ResilientTransport) RoundTrip(req *http.Request) (*http.Response, error
 // If a wait function is specified, wait that amount of time
 // In between requests.
 func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err error) {
+	// Save a copy of the body.
+	buf := new(bytes.Buffer)
+	resetBody := false
+	if req.Body != nil {
+		resetBody = true
+		buf.ReadFrom(req.Body)
+	}
+
 	for try := 0; try < t.MaxTries; try += 1 {
+		// Each retry should use a copy of the body.
+		// This fixes a bug where subsequent retries would be using a reader
+		// that was already read.
+		if resetBody {
+			req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+		}
 		res, err = t.transport.RoundTrip(req)
 
 		if !t.ShouldRetry(req, res, err) {
@@ -104,21 +120,31 @@ func LinearBackoff(try int) {
 // In general, the criteria for retrying a request is described here
 // http://docs.aws.amazon.com/general/latest/gr/api-retries.html
 func awsRetry(req *http.Request, res *http.Response, err error) bool {
-	retry := false
-
 	// Retry if there's a temporary network error.
 	if neterr, ok := err.(net.Error); ok {
 		if neterr.Temporary() {
-			retry = true
+			return true
 		}
 	}
 
 	// Retry if we get a 5xx series error.
 	if res != nil {
 		if res.StatusCode >= 500 && res.StatusCode < 600 {
-			retry = true
+			return true
 		}
 	}
 
-	return retry
+	// Check the body to see if it matches ContentLength
+	// XXX This is a temporary hack to work around an issue where
+	// it appears deadline is triggering a timeout without returning a
+	// timeout error.
+	if res.ContentLength > 0 && res.Body != nil {
+		body, _ := ioutil.ReadAll(res.Body)                // Read the body
+		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
+		if int64(len(body)) != res.ContentLength {
+			return true
+		}
+	}
+
+	return false
 }
