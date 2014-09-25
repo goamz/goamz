@@ -135,6 +135,9 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 	}
 
 	// Check the body to see if it matches ContentLength
+	// XXX This is a temporary hack to work around an issue where
+	// it appears deadline is triggering a timeout without returning a
+	// timeout error.
 	if res.ContentLength > 0 && res.Body != nil {
 		body, _ := ioutil.ReadAll(res.Body)                // Read the body
 		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
