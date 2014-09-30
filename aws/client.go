@@ -138,7 +138,7 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 	// XXX This is a temporary hack to work around an issue where
 	// it appears deadline is triggering a timeout without returning a
 	// timeout error.
-	if res.ContentLength > 0 && res.Body != nil {
+	if res != nil && res.ContentLength > 0 && res.Body != nil {
 		body, _ := ioutil.ReadAll(res.Body)                // Read the body
 		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
 		if int64(len(body)) != res.ContentLength {
