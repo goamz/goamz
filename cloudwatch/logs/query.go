@@ -25,6 +25,11 @@ func (q *Query) AddLogEvents(logEvents []InputLogEvent) *Query {
 	return q
 }
 
+func (q *Query) AddLogEventMessages(logEventMessages []string) *Query {
+	q.buffer["logEventMessages"] = logEventMessages
+	return q
+}
+
 func (q *Query) AddLogStreamName(logStreamName string) *Query {
 	if logStreamName != "" {
 		q.buffer["logStreamName"] = logStreamName
@@ -78,6 +83,32 @@ func (q *Query) AddLogGroupNamePrefix(prefix string) *Query {
 	if prefix != "" {
 		q.buffer["logGroupNamePrefix"] = prefix
 	}
+	return q
+}
+
+func (q *Query) AddFilterNamePrefix(prefix string) *Query {
+	if prefix != "" {
+		q.buffer["filterNamePrefix"] = prefix
+	}
+	return q
+}
+
+func (q *Query) AddFilterName(filterName string) *Query {
+	if filterName != "" {
+		q.buffer["filterName"] = filterName
+	}
+	return q
+}
+
+func (q *Query) AddFilterPattern(filterPattern string) *Query {
+	if filterPattern != "" {
+		q.buffer["filterPattern"] = filterPattern
+	}
+	return q
+}
+
+func (q *Query) AddMetricTransformations(metrics []MetricTransformation) *Query {
+	q.buffer["metricTransformations"] = metrics
 	return q
 }
 
