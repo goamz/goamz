@@ -74,7 +74,7 @@ type MetricFilterMatchRecord struct {
 // MetricTransformation - see http://goo.gl/dQhuCt
 type MetricTransformation struct {
 	MetricName      string `json:"metricName"`
-	MetricNameSpace string `json:"metricNameSpace"`
+	MetricNamespace string `json:"metricNamespace"`
 	MetricValue     string `json:"metricValue"`
 }
 
