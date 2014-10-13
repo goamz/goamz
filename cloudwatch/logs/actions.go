@@ -126,6 +126,61 @@ func (l *CloudWatchLogs) DeleteRetentionPolicy(name string) error {
 	return err
 }
 
+// PutMetricFilter - see http://goo.gl/s7qwRO
+func (l *CloudWatchLogs) PutMetricFilter(filterName, filterPattern,
+	groupName string, metrics []MetricTransformation) error {
+	// define query
+	query := NewEmptyQuery()
+	query.AddLogGroupName(groupName).AddMetricTransformations(metrics)
+	query.AddFilterName(filterName).AddFilterPattern(filterPattern)
+	// perform query
+	_, err := l.doQuery(target("PutMetricFilter"), query)
+	return err
+}
+
+// DescribeMetricFilters - see http://goo.gl/NQY6z7
+func (l *CloudWatchLogs) DescribeMetricFilters(
+	groupName, prefix string, limit int, token string) (
+	*DescribeMetricFiltersResult, error) {
+	// define query
+	query := NewEmptyQuery().AddLogGroupName(groupName)
+	query.AddLimit(limit).AddFilterNamePrefix(prefix).AddNextToken(token)
+	// perform query
+	body, err := l.doQuery(target("DescribeMetricFilters"), query)
+	if err != nil {
+		return nil, err
+	}
+	// parse and return results
+	result := &DescribeMetricFiltersResult{}
+	err = json.Unmarshal(body, result)
+	return result, err
+}
+
+// TestMetricFilter - see http://goo.gl/xPzBjW
+func (l *CloudWatchLogs) TestMetricFilter(
+	filterPattern string, messages []string) (
+	*TestMetricFilterResult, error) {
+	// define query
+	query := NewEmptyQuery()
+	query.AddFilterPattern(filterPattern).AddLogEventMessages(messages)
+	// perform query
+	body, err := l.doQuery(target("TestMetricFilter"), query)
+	if err != nil {
+		return nil, err
+	}
+	// parse and return results
+	result := &TestMetricFilterResult{}
+	err = json.Unmarshal(body, result)
+	return result, err
+}
+
+// DeleteMetricFilter - see http://goo.gl/STP84A
+func (l *CloudWatchLogs) DeleteMetricFilter(groupName, filterName string) error {
+	query := NewEmptyQuery().AddLogGroupName(groupName).AddFilterName(filterName)
+	_, err := l.doQuery(target("DeleteMetricFilter"), query)
+	return err
+}
+
 // the value set here is used in the "X-Amz-Target" header,
 // and must track the API version
 func target(name string) string {
