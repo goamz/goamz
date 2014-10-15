@@ -130,7 +130,7 @@ type Attribute struct {
 
 type MessageAttribute struct {
 	Name  string                `xml:"Name"`
-	Value MessageAttributeValue `xml:"MessageAttributeValue"`
+	Value MessageAttributeValue `xml:"Value"`
 }
 
 type MessageAttributeValue struct {
