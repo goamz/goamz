@@ -25,6 +25,8 @@ import (
 	"time"
 )
 
+const API_VERSION = "2012-11-05"
+
 const debug = false
 
 // The SQS type encapsulates operation with an SQS region.
@@ -435,7 +437,7 @@ func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchR
 }
 
 func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}) (err error) {
-	params["Version"] = "2011-10-01"
+	params["Version"] = API_VERSION
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	var url_ *url.URL
 	var path string
