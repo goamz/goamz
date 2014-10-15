@@ -25,6 +25,8 @@ import (
 	"time"
 )
 
+const API_VERSION = "2012-11-05"
+
 const debug = false
 
 // The SQS type encapsulates operation with an SQS region.
@@ -112,16 +114,33 @@ type ReceiveMessageResponse struct {
 }
 
 type Message struct {
-	MessageId     string      `xml:"MessageId"`
-	Body          string      `xml:"Body"`
-	MD5OfBody     string      `xml:"MD5OfBody"`
-	ReceiptHandle string      `xml:"ReceiptHandle"`
-	Attribute     []Attribute `xml:"Attribute"`
+	MessageId              string             `xml:"MessageId"`
+	Body                   string             `xml:"Body"`
+	MD5OfBody              string             `xml:"MD5OfBody"`
+	ReceiptHandle          string             `xml:"ReceiptHandle"`
+	Attribute              []Attribute        `xml:"Attribute"`
+	MessageAttribute       []MessageAttribute `xml:"MessageAttribute"`
+	MD5OfMessageAttributes string             `xml:"MD5OfMessageAttributes"`
 }
 
 type Attribute struct {
 	Name  string `xml:"Name"`
 	Value string `xml:"Value"`
+}
+
+type MessageAttribute struct {
+	Name  string                `xml:"Name"`
+	Value MessageAttributeValue `xml:"Value"`
+}
+
+type MessageAttributeValue struct {
+	DataType    string `xml:"DataType"`
+	BinaryValue []byte `xml:"BinaryValue"`
+	StringValue string `xml:"StringValue"`
+
+	// Not yet implemented (Reserved for future use)
+	BinaryListValues [][]byte `xml:"BinaryListValues"`
+	StringListValues []string `xml:"StringListValues"`
 }
 
 type ChangeMessageVisibilityResponse struct {
@@ -288,6 +307,7 @@ func (q *Queue) ReceiveMessageWithParameters(p map[string]string) (resp *Receive
 	resp = &ReceiveMessageResponse{}
 	params := makeParams("ReceiveMessage")
 	params["AttributeName"] = "All"
+	params["MessageAttributeNames"] = "All"
 
 	for k, v := range p {
 		params[k] = v
@@ -417,7 +437,7 @@ func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchR
 }
 
 func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}) (err error) {
-	params["Version"] = "2011-10-01"
+	params["Version"] = API_VERSION
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	var url_ *url.URL
 	var path string

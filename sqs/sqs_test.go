@@ -244,6 +244,59 @@ func (s *S) TestReceiveMessage(c *gocheck.C) {
 		c.Assert(resp.Messages[0].Attribute[i].Value, gocheck.Equals, expected.Value)
 	}
 
+	c.Assert(len(resp.Messages[0].MessageAttribute), gocheck.Not(gocheck.Equals), 0)
+
+	expectedMessageAttributeResults := []struct {
+		Name  string
+		Value struct {
+			DataType    string
+			BinaryValue []byte
+			StringValue string
+
+			// Not yet implemented (Reserved for future use)
+			BinaryListValues [][]byte
+			StringListValues []string
+		}
+	}{
+		{
+			Name: "CustomAttribute",
+			Value: struct {
+				DataType    string
+				BinaryValue []byte
+				StringValue string
+
+				// Not yet implemented (Reserved for future use)
+				BinaryListValues [][]byte
+				StringListValues []string
+			}{
+				DataType:    "String",
+				StringValue: "Testing, testing, 1, 2, 3",
+			},
+		},
+		{
+			Name: "BinaryCustomAttribute",
+			Value: struct {
+				DataType    string
+				BinaryValue []byte
+				StringValue string
+
+				// Not yet implemented (Reserved for future use)
+				BinaryListValues [][]byte
+				StringListValues []string
+			}{
+				DataType:    "Binary",
+				BinaryValue: []byte("iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAABA0lEQVQ4T72UrQ4CMRCEewhyiiBPopBgcfAUSIICB88CDhRB8hTgsCBRyJMEdUFwZJpMs/3LHQlhVdPufJ1ut03UjyKJcR5zVc4umbW87eeqvVFBjTdJwP54D+4xGXVUCGiBxoOsJOCd9IKgRnnV8wAezrnRmwGcpKtCJ8UgJBNWLFNzVAOimyqIhElXGkQ3LmQ6fKrdqaW1cixhdKVBcEOBLEwViBugVv8B1elVuLYcoTea624drcl5LW4KTRsFhQpLtVzzQKGCh2DuHI8FvdVH7vGQKEPerHRjgegKMESsXgAgWBtu5D1a9BQWCXSrzx9BvjPPkRQR6IJcQNTRV/cvkj93DqUTWzVDIQAAAABJRU5ErkJggg=="),
+			},
+		},
+	}
+
+	for i, expected := range expectedMessageAttributeResults {
+		c.Assert(resp.Messages[0].MessageAttribute[i].Name, gocheck.Equals, expected.Name)
+		c.Assert(resp.Messages[0].MessageAttribute[i].Value.DataType, gocheck.Equals, expected.Value.DataType)
+		c.Assert(string(resp.Messages[0].MessageAttribute[i].Value.BinaryValue), gocheck.Equals, string(expected.Value.BinaryValue))
+		c.Assert(resp.Messages[0].MessageAttribute[i].Value.StringValue, gocheck.Equals, expected.Value.StringValue)
+	}
+
 	c.Assert(err, gocheck.IsNil)
 }
 

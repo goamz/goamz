@@ -86,6 +86,20 @@ var TestReceiveMessageXmlOK = `
         <Name>ApproximateFirstReceiveTimestamp</Name>
         <Value>1250700979248</Value>
       </Attribute>
+      <MessageAttribute>
+        <Name>CustomAttribute</Name>
+        <Value>
+          <DataType>String</DataType>
+          <StringValue>Testing, testing, 1, 2, 3</StringValue>
+        </Value>
+      </MessageAttribute>
+      <MessageAttribute>
+        <Name>BinaryCustomAttribute</Name>
+        <Value>
+          <DataType>Binary</DataType>
+          <BinaryValue>iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAABA0lEQVQ4T72UrQ4CMRCEewhyiiBPopBgcfAUSIICB88CDhRB8hTgsCBRyJMEdUFwZJpMs/3LHQlhVdPufJ1ut03UjyKJcR5zVc4umbW87eeqvVFBjTdJwP54D+4xGXVUCGiBxoOsJOCd9IKgRnnV8wAezrnRmwGcpKtCJ8UgJBNWLFNzVAOimyqIhElXGkQ3LmQ6fKrdqaW1cixhdKVBcEOBLEwViBugVv8B1elVuLYcoTea624drcl5LW4KTRsFhQpLtVzzQKGCh2DuHI8FvdVH7vGQKEPerHRjgegKMESsXgAgWBtu5D1a9BQWCXSrzx9BvjPPkRQR6IJcQNTRV/cvkj93DqUTWzVDIQAAAABJRU5ErkJggg==</BinaryValue>
+        </Value>
+      </MessageAttribute>
     </Message>
   </ReceiveMessageResult>
 <ResponseMetadata>
