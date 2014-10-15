@@ -112,16 +112,33 @@ type ReceiveMessageResponse struct {
 }
 
 type Message struct {
-	MessageId     string      `xml:"MessageId"`
-	Body          string      `xml:"Body"`
-	MD5OfBody     string      `xml:"MD5OfBody"`
-	ReceiptHandle string      `xml:"ReceiptHandle"`
-	Attribute     []Attribute `xml:"Attribute"`
+	MessageId              string             `xml:"MessageId"`
+	Body                   string             `xml:"Body"`
+	MD5OfBody              string             `xml:"MD5OfBody"`
+	ReceiptHandle          string             `xml:"ReceiptHandle"`
+	Attribute              []Attribute        `xml:"Attribute"`
+	MessageAttribute       []MessageAttribute `xml:"MessageAttribute"`
+	MD5OfMessageAttributes string             `xml:"MD5OfMessageAttributes"`
 }
 
 type Attribute struct {
 	Name  string `xml:"Name"`
 	Value string `xml:"Value"`
+}
+
+type MessageAttribute struct {
+	Name  string                `xml:"Name"`
+	Value MessageAttributeValue `xml:"MessageAttributeValue"`
+}
+
+type MessageAttributeValue struct {
+	DataType    string `xml:"DataType"`
+	BinaryValue []byte `xml:"BinaryValue"`
+	StringValue string `xml:"StringValue"`
+
+	// Not yet implemented (Reserved for future use)
+	BinaryListValues [][]byte `xml:"BinaryListValues"`
+	StringListValues []string `xml:"StringListValues"`
 }
 
 type ChangeMessageVisibilityResponse struct {
