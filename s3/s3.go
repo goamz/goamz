@@ -462,12 +462,12 @@ func (b *Bucket) PutReaderWithResponse(path string, r io.Reader, length int64, c
 	err := b.S3.prepare(req)
 	if err == nil {
 		var httpResponse *http.Response
-                httpResponse, err = b.S3.run(req, nil)
+		httpResponse, err = b.S3.run(req, nil)
 		if httpResponse != nil {
 			httpResponse.Body.Close()
 		}
 
-                return httpResponse, err
+		return httpResponse, err
 	}
 
 	return nil, err
