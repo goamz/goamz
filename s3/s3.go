@@ -443,6 +443,36 @@ func (b *Bucket) PutReader(path string, r io.Reader, length int64, contType stri
 	return b.S3.query(req, nil)
 }
 
+// PutReaderWithResponse inserts an object into the S3 bucket by consuming data, and returns the response. The response can be used to check Etag or other headers.
+func (b *Bucket) PutReaderWithResponse(path string, r io.Reader, length int64, contType string, perm ACL, options Options) (*http.Response, error) {
+	headers := map[string][]string{
+		"Content-Length": {strconv.FormatInt(length, 10)},
+		"Content-Type":   {contType},
+		"x-amz-acl":      {string(perm)},
+	}
+	options.addHeaders(headers)
+	req := &request{
+		method:  "PUT",
+		bucket:  b.Name,
+		path:    path,
+		headers: headers,
+		payload: r,
+	}
+
+	err := b.S3.prepare(req)
+	if err == nil {
+		var httpResponse *http.Response
+                httpResponse, err = b.S3.run(req, nil)
+		if httpResponse != nil {
+			httpResponse.Body.Close()
+		}
+
+                return httpResponse, err
+	}
+
+	return nil, err
+}
+
 /*
 PutReaderHeader - like PutReader, inserts an object into S3 from a reader.
 Instead of Content-Type string, pass in custom headers to override defaults.
