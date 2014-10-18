@@ -453,7 +453,7 @@ func (b *Bucket) PutReaderWithResponse(path string, r io.Reader, length int64, c
 	options.addHeaders(headers)
 	req := &request{
 		method:  "PUT",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    path,
 		headers: headers,
 		payload: r,
