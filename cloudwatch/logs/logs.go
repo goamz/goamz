@@ -2,7 +2,7 @@
 // cloudwatch/logs: This package provides types and functions to interact with
 // the AWS CloudWatch Logs API
 //
-// Depends on https://github.com/benton/goamz
+// Depends on https://github.com/goamz/goamz/aws
 //
 
 package logs
@@ -10,7 +10,7 @@ package logs
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/benton/goamz/aws"
+	"github.com/goamz/goamz/aws"
 	"io/ioutil"
 	"log"
 	"net/http"

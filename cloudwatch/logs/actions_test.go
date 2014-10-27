@@ -1,8 +1,8 @@
 package logs_test
 
 import (
-	"github.com/benton/goamz/aws"
-	"github.com/benton/goamz/cloudwatch/logs"
+	"github.com/goamz/goamz/aws"
+	"github.com/goamz/goamz/cloudwatch/logs"
 	"github.com/goamz/goamz/testutil"
 	"github.com/motain/gocheck"
 	"testing"
