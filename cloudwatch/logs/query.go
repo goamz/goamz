@@ -9,9 +9,18 @@ type Query struct {
 	buffer msi
 }
 
+// functions that return Query structs
+
 func NewEmptyQuery() *Query {
 	return &Query{msi{}}
 }
+
+// helper - returns a new Query qith the LogGroup Name already set
+func NewGroupQuery(logGroupName string) *Query {
+	return NewGroupQuery(logGroupName)
+}
+
+// functions that add optional fields to Queries
 
 func (q *Query) AddLogGroupName(logGroupName string) *Query {
 	if logGroupName != "" {
