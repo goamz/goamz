@@ -442,40 +442,55 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 	params["Version"] = API_VERSION
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	var url_ *url.URL
+	var path string
 
 	switch {
 	// fully qualified queueUrl
 	case strings.HasPrefix(queueUrl, "http"):
 		url_, err = url.Parse(queueUrl)
+		path = queueUrl[len(s.Region.SQSEndpoint):]
+		// relative queueUrl
 	case strings.HasPrefix(queueUrl, "/"):
 		url_, err = url.Parse(s.Region.SQSEndpoint + queueUrl)
+		path = queueUrl
 		// zero-value for queueUrl
 	default:
 		url_, err = url.Parse(s.Region.SQSEndpoint)
+		path = "/"
 	}
 
 	if err != nil {
 		return err
 	}
 
-	var sarray []string
-	for k, v := range params {
-		sarray = append(sarray, aws.Encode(k)+"="+aws.Encode(v))
+	if s.Auth.Token() != "" {
+		params["SecurityToken"] = s.Auth.Token()
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", url_, strings.Join(sarray, "&")), nil)
-	if err != nil {
-		return err
+	var r *http.Response
+	if s.Region.Name == "cn-north-1" {
+		var sarray []string
+		for k, v := range params {
+			sarray = append(sarray, aws.Encode(k)+"="+aws.Encode(v))
+		}
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", url_, strings.Join(sarray, "&")), nil)
+		if err != nil {
+			return err
+		}
+		signer := aws.NewV4Signer(s.Auth, "sqs", s.Region)
+		signer.Sign(req)
+		client := http.Client{}
+		r, err = client.Do(req)
+	} else {
+		sign(s.Auth, "GET", path, params, url_.Host)
+		url_.RawQuery = multimap(params).Encode()
+		r, err = http.Get(url_.String())
 	}
-	signer := aws.NewV4Signer(s.Auth, "sqs", s.Region)
-	signer.Sign(req)
-	client := http.Client{}
 
 	if debug {
 		log.Printf("GET ", url_.String())
 	}
-
-	r, err := client.Do(req)
 
 	if err != nil {
 		return err
