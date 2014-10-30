@@ -438,63 +438,6 @@ func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchR
 	return
 }
 
-func (s *SQS) query2(queueUrl string, params map[string]string, resp interface{}) (err error) {
-	params["Version"] = API_VERSION
-	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
-	var url_ *url.URL
-	var path string
-
-	switch {
-	// fully qualified queueUrl
-	case strings.HasPrefix(queueUrl, "http"):
-		url_, err = url.Parse(queueUrl)
-		path = queueUrl[len(s.Region.SQSEndpoint):]
-		// relative queueUrl
-	case strings.HasPrefix(queueUrl, "/"):
-		url_, err = url.Parse(s.Region.SQSEndpoint + queueUrl)
-		path = queueUrl
-		// zero-value for queueUrl
-	default:
-		url_, err = url.Parse(s.Region.SQSEndpoint)
-		path = "/"
-	}
-
-	if err != nil {
-		return err
-	}
-
-	if s.Auth.Token() != "" {
-		params["SecurityToken"] = s.Auth.Token()
-	}
-	sign(s.Auth, "GET", path, params, url_.Host)
-
-	url_.RawQuery = multimap(params).Encode()
-
-	if debug {
-		log.Printf("GET ", url_.String())
-	}
-
-	r, err := http.Get(url_.String())
-	if err != nil {
-		return err
-	}
-
-	defer r.Body.Close()
-
-	if debug {
-		dump, _ := httputil.DumpResponse(r, true)
-		log.Printf("DUMP:\n", string(dump))
-	}
-
-	if r.StatusCode != 200 {
-		return buildError(r)
-	}
-	err = xml.NewDecoder(r.Body).Decode(resp)
-	io.Copy(ioutil.Discard, r.Body)
-
-	return err
-}
-
 func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}) (err error) {
 	params["Version"] = API_VERSION
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
