@@ -60,6 +60,8 @@ func NewFrom(accessKey, secretKey, region string) (*SQS, error) {
 		aws_region = aws.APNortheast
 	case "sa.east", "sa.east.1":
 		aws_region = aws.SAEast
+	case "cn.north", "cn.north.1":
+		aws_region = aws.CNNorth
 	default:
 		return nil, errors.New(fmt.Sprintf("Unknow/Unsupported region %s", region))
 	}
@@ -436,7 +438,7 @@ func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchR
 	return
 }
 
-func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}) (err error) {
+func (s *SQS) query2(queueUrl string, params map[string]string, resp interface{}) (err error) {
 	params["Version"] = API_VERSION
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	var url_ *url.URL
@@ -473,6 +475,65 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 	}
 
 	r, err := http.Get(url_.String())
+	if err != nil {
+		return err
+	}
+
+	defer r.Body.Close()
+
+	if debug {
+		dump, _ := httputil.DumpResponse(r, true)
+		log.Printf("DUMP:\n", string(dump))
+	}
+
+	if r.StatusCode != 200 {
+		return buildError(r)
+	}
+	err = xml.NewDecoder(r.Body).Decode(resp)
+	io.Copy(ioutil.Discard, r.Body)
+
+	return err
+}
+
+func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}) (err error) {
+	params["Version"] = API_VERSION
+	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
+	var url_ *url.URL
+
+	switch {
+	// fully qualified queueUrl
+	case strings.HasPrefix(queueUrl, "http"):
+		url_, err = url.Parse(queueUrl)
+	case strings.HasPrefix(queueUrl, "/"):
+		url_, err = url.Parse(s.Region.SQSEndpoint + queueUrl)
+		// zero-value for queueUrl
+	default:
+		url_, err = url.Parse(s.Region.SQSEndpoint)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	var sarray []string
+	for k, v := range params {
+		sarray = append(sarray, aws.Encode(k)+"="+aws.Encode(v))
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", url_, strings.Join(sarray, "&")), nil)
+	if err != nil {
+		return err
+	}
+	signer := aws.NewV4Signer(s.Auth, "sqs", s.Region)
+	signer.Sign(req)
+	client := http.Client{}
+
+	if debug {
+		log.Printf("GET ", url_.String())
+	}
+
+	r, err := client.Do(req)
+
 	if err != nil {
 		return err
 	}

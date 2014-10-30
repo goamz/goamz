@@ -179,3 +179,23 @@ var SAEast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.sa-east-1.amazonaws.com",
 }
+
+var CNNorth = Region{
+	"cn-north-1",
+	"https://ec2.cn-north-1.amazonaws.com.cn",
+	"https://s3.cn-north-1.amazonaws.com.cn",
+	"",
+	true,
+	true,
+	"",
+	"https://sns.cn-north-1.amazonaws.com.cn",
+	"https://sqs.cn-north-1.amazonaws.com.cn",
+	"https://iam.cn-north-1.amazonaws.com.cn",
+	"https://elasticloadbalancing.cn-north-1.amazonaws.com.cn",
+	"https://dynamodb.cn-north-1.amazonaws.com.cn",
+	ServiceInfo{"https://monitoring.cn-north-1.amazonaws.com.cn", V4Signature},
+	"https://autoscaling.cn-north-1.amazonaws.com.cn",
+	ServiceInfo{"https://rds.cn-north-1.amazonaws.com.cn", V4Signature},
+	"https://sts.cn-north-1.amazonaws.com.cn",
+	"https://cloudformation.cn-north-1.amazonaws.com.cn",
+}
