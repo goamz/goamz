@@ -15,9 +15,11 @@ func NewEmptyQuery() *Query {
 	return &Query{msi{}}
 }
 
-// helper - returns a new Query qith the LogGroup Name already set
+// helper - returns a new Query with the LogGroup Name already set
 func NewGroupQuery(logGroupName string) *Query {
-	return NewGroupQuery(logGroupName)
+	q := NewEmptyQuery()
+	q.AddLogGroupName(logGroupName)
+	return q
 }
 
 // functions that add optional fields to Queries
