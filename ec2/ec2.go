@@ -406,7 +406,7 @@ type IamInstanceProfile struct {
 // RunInstances starts new instances in EC2.
 // If options.MinCount and options.MaxCount are both zero, a single instance
 // will be started; otherwise if options.MaxCount is zero, options.MinCount
-// will be used insteead.
+// will be used instead.
 //
 // See http://goo.gl/Mcm3b for more details.
 func (ec2 *EC2) RunInstances(options *RunInstancesOptions) (resp *RunInstancesResp, err error) {
