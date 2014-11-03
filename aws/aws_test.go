@@ -91,3 +91,9 @@ func (s *S) TestRegionsAreNamed(c *gocheck.C) {
 		c.Assert(n, gocheck.Equals, r.Name)
 	}
 }
+
+func (s *S) TestProfileAuthNoProfile (c *gocheck.C) {
+	os.Clearenv()
+	_, err := aws.ProfileAuth()
+	c.Assert(err, gocheck.ErrorMatches, "AWS_PROFILE not found in the environment")
+}

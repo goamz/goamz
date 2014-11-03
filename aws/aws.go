@@ -19,6 +19,8 @@ import (
 	"net/url"
 	"os"
 	"time"
+	"strings"
+	"runtime"
 )
 
 // Defines the valid signers
@@ -313,6 +315,14 @@ func GetAuth(accessKey string, secretKey, token string, expiration time.Time) (a
 		auth.expiration = exptdate
 		return auth, err
 	}
+
+	// Next try to get auth from the AWS_PROFILE
+	auth, err = ProfileAuth()
+	if err == nil {
+		// Found auth, return
+		return
+	}
+
 	err = errors.New("No valid AWS authentication found")
 	return auth, err
 }
@@ -335,6 +345,64 @@ func EnvAuth() (auth Auth, err error) {
 	}
 	if auth.SecretKey == "" {
 		err = errors.New("AWS_SECRET_ACCESS_KEY or AWS_SECRET_KEY not found in environment")
+	}
+	return
+}
+
+// ProfileAuth creates an Auth based on AWS_PROFILE environment information.
+// The AWS_PROFILE environment variables are used, and will default to 'default'
+// if the variable is not set.
+// See http://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs
+func ProfileAuth() (auth Auth, err error) {
+	profile := os.Getenv("AWS_PROFILE")
+	if profile == "" {
+		err = errors.New("AWS_PROFILE not found in the environment")
+		return
+	}
+
+	var path string
+	if runtime.GOOS == "windows" {
+		path = fmt.Sprintf("%s/.aws/credentials", os.Getenv("USERPROFILE"))
+	} else {
+		path = fmt.Sprintf("%s/.aws/credentials", os.Getenv("HOME"))
+	}
+	byteArray, err := ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+
+	cfg := strings.Split(string(byteArray[:]), "\n")
+	found := false
+	for _, line := range cfg {
+		if found {
+			if string(line[0]) == "[" {
+				// Found the start of the next profile
+				break
+			}
+			splitLine := strings.Split(line, "=")
+			if splitLine[0] == "aws_access_key_id" {
+				auth.AccessKey = splitLine[1]
+			} else if splitLine[0] == "aws_secret_access_key" {
+				auth.SecretKey = splitLine[1]
+			} else if splitLine[0] == "aws_session_token" {
+				auth.token = splitLine[1]
+			}
+		} else if string(line[0]) == "[" {
+			// Split again here for \n and \r\n compatibility
+			if strings.Split(line[1:], "]")[0] == profile {
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		err = fmt.Errorf("Could not found [%s] in ~/.aws/credentials", profile)
+	}
+	if auth.AccessKey == "" {
+		err = errors.New("aws_secret_key_id not found")
+	}
+	if auth.SecretKey == "" {
+		err = errors.New("aws_secret_access_key not found")
 	}
 	return
 }
