@@ -18,9 +18,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
-	"strings"
 	"runtime"
+	"strings"
+	"time"
 )
 
 // Defines the valid signers
