@@ -374,6 +374,9 @@ func ProfileAuth() (auth Auth, err error) {
 	cfg := strings.Split(string(byteArray[:]), "\n")
 	found := false
 	for _, line := range cfg {
+		if line == "" {
+			continue
+		}
 		if found {
 			if string(line[0]) == "[" {
 				// Found the start of the next profile
