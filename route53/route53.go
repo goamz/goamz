@@ -67,18 +67,48 @@ type ResourceRecordValue struct {
 	Value string `xml:"Value"`
 }
 
+type AliasTarget struct {
+	HostedZoneId         string `xml:"HostedZoneId"`
+	DNSName              string `xml:"DNSName"`
+	EvaluateTargetHealth bool   `xml:"EvaluateTargetHealth"`
+}
+
+// Wrapper for all the different resource record sets
+type ResourceRecordSet interface{}
+
+// Basic Change
 type Change struct {
-	Action string                `xml:"Action"`
-	Name   string                `xml:"ResourceRecordSet>Name"`
-	Type   string                `xml:"ResourceRecordSet>Type"`
-	TTL    int                   `xml:"ResourceRecordSet>TTL,omitempty"`
-	Values []ResourceRecordValue `xml:"ResourceRecordSet>ResourceRecords>ResourceRecord"`
+	Action        string                `xml:"Action"`
+	Name          string                `xml:"ResourceRecordSet>Name"`
+	Type          string                `xml:"ResourceRecordSet>Type"`
+	TTL           int                   `xml:"ResourceRecordSet>TTL,omitempty"`
+	Values        []ResourceRecordValue `xml:"ResourceRecordSet>ResourceRecords>ResourceRecord"`
+	HealthCheckId string                `xml:"ResourceRecordSet>HealthCheckId,omitempty"`
+}
+
+// Basic Resource Recod Set
+type BasicResourceRecordSet struct {
+	Action        string                `xml:"Action"`
+	Name          string                `xml:"ResourceRecordSet>Name"`
+	Type          string                `xml:"ResourceRecordSet>Type"`
+	TTL           int                   `xml:"ResourceRecordSet>TTL,omitempty"`
+	Values        []ResourceRecordValue `xml:"ResourceRecordSet>ResourceRecords>ResourceRecord"`
+	HealthCheckId string                `xml:"ResourceRecordSet>HealthCheckId,omitempty"`
+}
+
+// Alias Resource Record Set
+type AliasResourceRecordSet struct {
+	Action        string      `xml:"Action"`
+	Name          string      `xml:"ResourceRecordSet>Name"`
+	Type          string      `xml:"ResourceRecordSet>Type"`
+	AliasTarget   AliasTarget `xml:"ResourceRecordSet>AliasTarget"`
+	HealthCheckId string      `xml:"ResourceRecordSet>HealthCheckId,omitempty"`
 }
 
 type ChangeResourceRecordSetsRequest struct {
-	XMLName xml.Name `xml:"ChangeResourceRecordSetsRequest"`
-	Xmlns   string   `xml:"xmlns,attr"`
-	Changes []Change `xml:"ChangeBatch>Changes>Change"`
+	XMLName xml.Name            `xml:"ChangeResourceRecordSetsRequest"`
+	Xmlns   string              `xml:"xmlns,attr"`
+	Changes []ResourceRecordSet `xml:"ChangeBatch>Changes>Change"`
 }
 
 type HostedZoneConfig struct {
