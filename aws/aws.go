@@ -46,6 +46,7 @@ type Region struct {
 	S3LocationConstraint   bool   // true if this region requires a LocationConstraint declaration.
 	S3LowercaseBucket      bool   // true if the region requires bucket names to be lower case.
 	SDBEndpoint            string
+	SESEndpoint            string
 	SNSEndpoint            string
 	SQSEndpoint            string
 	IAMEndpoint            string
