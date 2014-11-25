@@ -318,6 +318,48 @@ var DescribeInstancesExample2 = `
 </DescribeInstancesResponse>
 `
 
+// http://goo.gl/2FBTdS
+var DescribeInstanceStatusExample = `
+<DescribeInstanceStatusResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+  <instanceStatusSet>
+    <item>
+      <instanceId>i-c7cd56ad</instanceId>
+      <availabilityZone>us-east-1b</availabilityZone>
+      <eventsSet>
+        <item>
+	  <code>instance-reboot</code>
+	  <description>example description</description>
+	  <notBefore>2010-08-17T01:15:18.000Z</notBefore>
+	  <notAfter>2010-08-17T01:15:18.000Z</notAfter>
+	</item>
+      </eventsSet>
+      <instanceState>
+        <code>16</code>
+        <name>running</name>
+      </instanceState>
+      <systemStatus>
+        <status>ok</status>
+	<details>
+	  <name>reachability</name>
+	  <status>passed</status>
+	  <impairedSince>2010-08-17T01:15:18.000Z</impairedSince>
+	</details>
+      </systemStatus>
+      <instanceStatus>
+        <status>ok</status>
+	<details>
+	  <name>reachability</name>
+	  <status>passed</status>
+	  <impairedSince>2010-08-17T01:15:18.000Z</impairedSince>
+	</details>
+      </instanceStatus>
+    </item>
+  </instanceStatusSet>
+  <nextToken>exampleToken</nextToken>
+</DescribeInstanceStatusResponse>
+`
+
 // http://goo.gl/icuXh5
 var ModifyInstanceExample = `
 <ModifyImageAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">

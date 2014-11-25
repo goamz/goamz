@@ -626,6 +626,94 @@ func (ec2 *EC2) DescribeInstances(instIds []string, filter *Filter) (resp *Descr
 	return
 }
 
+// DescribeInstanceStatusOptions encapsulates the query parameters for the corresponding action.
+//
+// See http:////goo.gl/2FBTdS for more details.
+type DescribeInstanceStatusOptions struct {
+	InstanceIds         []string // If non-empty, limit the query to this subset of instances. Maximum length of 100.
+	IncludeAllInstances bool     // If true, describe all instances, instead of just running instances (the default).
+	MaxResults          int      // Maximum number of results to return. Minimum of 5. Maximum of 1000.
+	NextToken           string   // The token for the next set of items to return. (You received this token from a prior call.)
+}
+
+// Response to a DescribeInstanceStatus request.
+//
+// See http://goo.gl/2FBTdS for more details.
+type DescribeInstanceStatusResp struct {
+	RequestId         string               `xml:"requestId"`
+	InstanceStatusSet []InstanceStatusItem `xml:"instanceStatusSet>item"`
+	NextToken         string               `xml:"nextToken"`
+}
+
+// InstanceStatusItem describes the instance status, cause, details, and potential actions to take in response.
+//
+// See http://goo.gl/oImFZZ for more details.
+type InstanceStatusItem struct {
+	InstanceId       string                `xml:"instanceId"`
+	AvailabilityZone string                `xml:"availabilityZone"`
+	Events           []InstanceStatusEvent `xml:"eventsSet>item"` // Extra information regarding events associated with the instance.
+	InstanceState    InstanceState         `xml:"instanceState"`  // The intended state of the instance. Calls to DescribeInstanceStatus require that an instance be in the running state.
+	SystemStatus     InstanceStatus        `xml:"systemStatus"`
+	InstanceStatus   InstanceStatus        `xml:"instanceStatus"`
+}
+
+// InstanceStatusEvent describes an instance event.
+//
+// See http://goo.gl/PXsDTn for more details.
+type InstanceStatusEvent struct {
+	Code        string `xml:"code"`        // The associated code of the event.
+	Description string `xml:"description"` // A description of the event.
+	NotBefore   string `xml:"notBefore"`   // The earliest scheduled start time for the event.
+	NotAfter    string `xml:"notAfter"`    // The latest scheduled end time for the event.
+}
+
+// InstanceStatus describes the status of an instance with details.
+//
+// See http://goo.gl/eFch4S for more details.
+type InstanceStatus struct {
+	Status  string                `xml:"status"`  // The instance status.
+	Details InstanceStatusDetails `xml:"details"` // The system instance health or application instance health.
+}
+
+// InstanceStatusDetails describes the instance status with the cause and more detail.
+//
+// See http://goo.gl/3qoMC4 for more details.
+type InstanceStatusDetails struct {
+	Name          string `xml:"name"`          // The type of instance status.
+	Status        string `xml:"status"`        // The status.
+	ImpairedSince string `xml:"impairedSince"` // The time when a status check failed. For an instance that was launched and impaired, this is the time when the instance was launched.
+}
+
+// DescribeInstanceStatus returns instance status information about instances in EC2.
+// instIds and filter are optional, and if provided will limit the instances returned to those
+// matching the given instance ids or filtering rules.
+// all determines whether to report all matching instances or only those in the running state
+//
+// See http://goo.gl/2FBTdS for more details.
+func (ec2 *EC2) DescribeInstanceStatus(options *DescribeInstanceStatusOptions, filter *Filter) (resp *DescribeInstanceStatusResp, err error) {
+	params := makeParams("DescribeInstanceStatus")
+	if len(options.InstanceIds) > 0 {
+		addParamsList(params, "InstanceId", options.InstanceIds)
+	}
+	if options.IncludeAllInstances {
+		params["IncludeAllInstances"] = "true"
+	}
+	if options.MaxResults != 0 {
+		params["MaxResults"] = strconv.Itoa(options.MaxResults)
+	}
+	if options.NextToken != "" {
+		params["NextToken"] = options.NextToken
+	}
+	filter.addParams(params)
+	resp = &DescribeInstanceStatusResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return
+}
+
 // ----------------------------------------------------------------------------
 // KeyPair management functions and types.
 
