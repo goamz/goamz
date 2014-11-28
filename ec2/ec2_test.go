@@ -268,6 +268,42 @@ func (s *S) TestDescribeInstancesExample2(c *gocheck.C) {
 	c.Assert(r0t1.Value, gocheck.Equals, "Production")
 }
 
+func (s *S) TestDescribeInstanceStatusExample(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeInstanceStatusExample)
+
+	resp, err := s.ec2.DescribeInstanceStatus(&ec2.DescribeInstanceStatusOptions{}, nil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DescribeInstanceStatus"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.InstanceStatusSet, gocheck.HasLen, 1)
+	c.Assert(resp.NextToken, gocheck.Equals, "exampleToken")
+
+	i0 := resp.InstanceStatusSet[0]
+	c.Assert(i0.InstanceId, gocheck.Equals, "i-c7cd56ad")
+	c.Assert(i0.AvailabilityZone, gocheck.Equals, "us-east-1b")
+	c.Assert(i0.Events, gocheck.HasLen, 1)
+
+	e0 := i0.Events[0]
+	c.Assert(e0.Code, gocheck.Equals, "instance-reboot")
+	c.Assert(e0.Description, gocheck.Equals, "example description")
+	c.Assert(e0.NotBefore, gocheck.Equals, "2010-08-17T01:15:18.000Z")
+	c.Assert(e0.NotAfter, gocheck.Equals, "2010-08-17T01:15:18.000Z")
+
+	c.Assert(i0.InstanceState.Code, gocheck.Equals, 16)
+	c.Assert(i0.InstanceState.Name, gocheck.Equals, "running")
+	c.Assert(i0.SystemStatus.Status, gocheck.Equals, "ok")
+	c.Assert(i0.SystemStatus.Details.Name, gocheck.Equals, "reachability")
+	c.Assert(i0.SystemStatus.Details.Status, gocheck.Equals, "passed")
+	c.Assert(i0.SystemStatus.Details.ImpairedSince, gocheck.Equals, "2010-08-17T01:15:18.000Z")
+	c.Assert(i0.InstanceStatus.Status, gocheck.Equals, "ok")
+	c.Assert(i0.InstanceStatus.Details.Name, gocheck.Equals, "reachability")
+	c.Assert(i0.InstanceStatus.Details.Status, gocheck.Equals, "passed")
+	c.Assert(i0.InstanceStatus.Details.ImpairedSince, gocheck.Equals, "2010-08-17T01:15:18.000Z")
+}
+
 func (s *S) TestDescribeAddressesPublicIPExample(c *gocheck.C) {
 	testServer.Response(200, nil, DescribeAddressesExample)
 
