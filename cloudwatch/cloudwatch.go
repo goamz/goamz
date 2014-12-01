@@ -318,9 +318,7 @@ func (c *CloudWatch) PutMetricDataNamespace(metrics []MetricDatum, namespace str
 		if metric.Unit != "" {
 			params[prefix+".Unit"] = metric.Unit
 		}
-		if metric.Value != 0 {
-			params[prefix+".Value"] = strconv.FormatFloat(metric.Value, 'E', 10, 64)
-		}
+		params[prefix+".Value"] = strconv.FormatFloat(metric.Value, 'E', 10, 64)
 		if !metric.Timestamp.IsZero() {
 			params[prefix+".Timestamp"] = metric.Timestamp.UTC().Format(time.RFC3339)
 		}
