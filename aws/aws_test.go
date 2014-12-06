@@ -1,12 +1,13 @@
 package aws_test
 
 import (
-	"github.com/goamz/goamz/aws"
-	"github.com/motain/gocheck"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/goamz/goamz/aws"
+	"github.com/motain/gocheck"
 )
 
 func Test(t *testing.T) {
@@ -60,6 +61,18 @@ func (s *S) TestEnvAuthAlt(c *gocheck.C) {
 	auth, err := aws.EnvAuth()
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(auth, gocheck.Equals, aws.Auth{SecretKey: "secret", AccessKey: "access"})
+}
+
+func (s *S) TestEnvAuthToken(c *gocheck.C) {
+	os.Clearenv()
+	os.Setenv("AWS_SECRET_KEY", "secret")
+	os.Setenv("AWS_ACCESS_KEY", "access")
+	os.Setenv("AWS_SESSION_TOKEN", "token")
+	auth, err := aws.EnvAuth()
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(auth.SecretKey, gocheck.Equals, "secret")
+	c.Assert(auth.AccessKey, gocheck.Equals, "access")
+	c.Assert(auth.Token(), gocheck.Equals, "token")
 }
 
 func (s *S) TestGetAuthStatic(c *gocheck.C) {

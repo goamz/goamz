@@ -321,6 +321,7 @@ func GetAuth(accessKey string, secretKey, token string, expiration time.Time) (a
 // EnvAuth creates an Auth based on environment information.
 // The AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment
 // variables are used.
+// AWS_SESSION_TOKEN is used if present.
 func EnvAuth() (auth Auth, err error) {
 	auth.AccessKey = os.Getenv("AWS_ACCESS_KEY_ID")
 	if auth.AccessKey == "" {
@@ -337,6 +338,8 @@ func EnvAuth() (auth Auth, err error) {
 	if auth.SecretKey == "" {
 		err = errors.New("AWS_SECRET_ACCESS_KEY or AWS_SECRET_KEY not found in environment")
 	}
+
+	auth.token = os.Getenv("AWS_SESSION_TOKEN")
 	return
 }
 
