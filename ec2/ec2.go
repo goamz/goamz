@@ -708,7 +708,6 @@ func (ec2 *EC2) DescribeInstanceStatus(options *DescribeInstanceStatusOptions, f
 	resp = &DescribeInstanceStatusResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 	return
