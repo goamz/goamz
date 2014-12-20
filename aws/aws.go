@@ -57,6 +57,7 @@ type Region struct {
 	RDSEndpoint            ServiceInfo
 	STSEndpoint            string
 	CloudFormationEndpoint string
+	ECSEndpoint            string
 }
 
 var Regions = map[string]Region{
