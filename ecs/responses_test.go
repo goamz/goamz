@@ -6,11 +6,11 @@ var CreateClusterResponse = `
 		<RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
 	</ResponseMetadata>
    <CreateClusterResult>
-    <Cluster>
-      <ClusterArn>arn:aws:ecs:region:aws_account_id:cluster/default</ClusterArn>
-      <ClusterName>default</ClusterName>
-      <Status>ACTIVE</Status>
-    </Cluster>
+    <cluster>
+      <clusterArn>arn:aws:ecs:region:aws_account_id:cluster/default</clusterArn>
+      <clusterName>default</clusterName>
+      <status>ACTIVE</status>
+    </cluster>
   </CreateClusterResult>
 </CreateClusterResponse> 
 `
@@ -20,70 +20,107 @@ var DeregisterContainerInstanceResponse = `
     <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
   </ResponseMetadata>
    <DeregisterContainerInstanceResult>
-    <ContainerInstance>
-     <AgentConnected>False</AgentConnected>
-     <ContainerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID</ContainerInstanceArn>
-     <Ec2InstanceId>instance_id</Ec2InstanceId>
-     <Status>INACTIVE</Status>
-     <RegisteredResources>
-        <Resource>
-          <IntegerValue>2048</IntegerValue>
-          <LongValue>0</LongValue>
-          <Type>INTEGER</Type>
-          <Name>CPU</Name>
-          <DoubleValue>0.0</DoubleValue>
-        </Resource>
-        <Resource>
-          <IntegerValue>3955</IntegerValue>
-          <LongValue>0</LongValue>
-          <Type>INTEGER</Type>
-          <Name>MEMORY</Name>
-          <DoubleValue>0.0</DoubleValue>
-        </Resource>
-        <Resource>
-          <IntegerValue>0</IntegerValue>
-          <LongValue>0</LongValue>
-          <Type>STRINGSET</Type>
-          <StringSetValue>
+    <containerInstance>
+     <agentConnected>False</agentConnected>
+     <containerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID</containerInstanceArn>
+     <ec2InstanceId>instance_id</ec2InstanceId>
+     <status>INACTIVE</status>
+     <registeredResources>
+        <member>
+          <integerValue>2048</integerValue>
+          <longValue>0</longValue>
+          <type>INTEGER</type>
+          <name>CPU</name>
+          <doubleValue>0.0</doubleValue>
+        </member>
+        <member>
+          <integerValue>3955</integerValue>
+          <longValue>0</longValue>
+          <type>INTEGER</type>
+          <name>MEMORY</name>
+          <doubleValue>0.0</doubleValue>
+        </member>
+        <member>
+          <integerValue>0</integerValue>
+          <longValue>0</longValue>
+          <type>STRINGSET</type>
+          <stringSetValue>
             <member>2376</member>
             <member>22</member>
             <member>51678</member>
             <member>2375</member>
-          </StringSetValue>
-          <Name>PORTS</Name>
-          <DoubleValue>0.0</DoubleValue>
-        </Resource>
-     </RegisteredResources>
-     <RemainingResources>
-        <Resource>
-          <IntegerValue>2048</IntegerValue>
-          <LongValue>0</LongValue>
-          <Type>INTEGER</Type>
-          <Name>CPU</Name>
-          <DoubleValue>0.0</DoubleValue>
-        </Resource>
-        <Resource>
-          <IntegerValue>3955</IntegerValue>
-          <LongValue>0</LongValue>
-          <Type>INTEGER</Type>
-          <Name>MEMORY</Name>
-          <DoubleValue>0.0</DoubleValue>
-        </Resource>
-        <Resource>
-          <IntegerValue>0</IntegerValue>
-          <LongValue>0</LongValue>
-          <Type>STRINGSET</Type>
-          <StringSetValue>
+          </stringSetValue>
+          <name>PORTS</name>
+          <doubleValue>0.0</doubleValue>
+        </member>
+     </registeredResources>
+     <remainingResources>
+        <member>
+          <integerValue>2048</integerValue>
+          <longValue>0</longValue>
+          <type>INTEGER</type>
+          <name>CPU</name>
+          <doubleValue>0.0</doubleValue>
+        </member>
+        <member>
+          <integerValue>3955</integerValue>
+          <longValue>0</longValue>
+          <type>INTEGER</type>
+          <name>MEMORY</name>
+          <doubleValue>0.0</doubleValue>
+        </member>
+        <member>
+          <integerValue>0</integerValue>
+          <longValue>0</longValue>
+          <type>STRINGSET</type>
+          <stringSetValue>
             <member>2376</member>
             <member>22</member>
             <member>51678</member>
             <member>2375</member>
-          </StringSetValue>
-          <Name>PORTS</Name>
-          <DoubleValue>0.0</DoubleValue>
-        </Resource>
-     </RemainingResources>
-    </ContainerInstance>
+          </stringSetValue>
+          <name>PORTS</name>
+          <doubleValue>0.0</doubleValue>
+        </member>
+     </remainingResources>
+    </containerInstance>
   </DeregisterContainerInstanceResult>
 </DeregisterContainerInstanceResponse> 
+`
+var DeregisterTaskDefinitionResponse = `
+<DeregisterTaskDefinitionResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <DeregisterTaskDefinitionResult>
+    <taskDefinition>
+      <revision>2</revision>
+      <family>sleep360</family>
+      <containerDefinitions>
+        <member>
+          <portMappings/>
+          <essential>true</essential>
+          <environment>
+            <member>
+              <name>envVar</name>
+              <value>foo</value>
+            </member>
+          </environment>
+          <entryPoint>
+            <member>/bin/sh</member>
+          </entryPoint>
+          <name>sleep</name>
+          <command>
+            <member>sleep</member>
+            <member>360</member>
+          </command>
+          <cpu>10</cpu>
+          <image>busybox</image>
+          <memory>10</memory>
+        </member>
+      </containerDefinitions>
+      <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id::task-definition/sleep360:2</taskDefinitionArn>
+    </taskDefinition>
+  </DeregisterTaskDefinitionResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</DeregisterTaskDefinitionResponse>
 `

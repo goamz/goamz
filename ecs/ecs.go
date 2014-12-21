@@ -206,9 +206,9 @@ type SimpleResp struct {
 //
 // See
 type Cluster struct {
-	ClusterArn  string `xml:"ClusterArn"`
-	ClusterName string `xml:"ClusterName"`
-	Status      string `xml:"Status"`
+	ClusterArn  string `xml:"clusterArn"`
+	ClusterName string `xml:"clusterName"`
+	Status      string `xml:"status"`
 }
 
 // CreateClusterReq encapsulates the createcluster req params
@@ -218,13 +218,17 @@ type CreateClusterReq struct {
 
 // CreateClusterResp encapsulates the createcluster response
 type CreateClusterResp struct {
-	Cluster   Cluster `xml:"CreateClusterResult>Cluster"`
+	Cluster   Cluster `xml:"CreateClusterResult>cluster"`
 	RequestId string  `xml:"ResponseMetadata>RequestId"`
 }
 
 // CreateCluster creates a new Amazon ECS cluster. By default, your account
 // will receive a default cluster when you launch your first container instance
 func (e *ECS) CreateCluster(req *CreateClusterReq) (resp *CreateClusterResp, err error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
 	params := makeParams("CreateCluster")
 	params["clusterName"] = req.ClusterName
 
@@ -237,23 +241,23 @@ func (e *ECS) CreateCluster(req *CreateClusterReq) (resp *CreateClusterResp, err
 
 // Resource describes the resources available for a container instance.
 type Resource struct {
-	DoubleValue    float64  `xml:"DoubleValue"`
-	IntegerValue   int64    `xml:"IntegerValue"`
-	LongValue      int64    `xml:"LongValue"`
-	Name           string   `xml:"Name"`
-	StringSetValue []string `xml:"StringSetValue>member"`
-	Type           string   `xml:"Type"`
+	DoubleValue    float64  `xml:"doubleValue"`
+	IntegerValue   int64    `xml:"integerValue"`
+	LongValue      int64    `xml:"longValue"`
+	Name           string   `xml:"name"`
+	StringSetValue []string `xml:"stringSetValue>member"`
+	Type           string   `xml:"type"`
 }
 
 // ContainerInstance represents n Amazon EC2 instance that is running
 // the Amazon ECS agent and has been registered with a cluster
 type ContainerInstance struct {
-	AgentConnected       bool       `xml:"AgentConnected"`
-	ContainerInstanceArn string     `xml:"ContainerInstanceArn"`
-	Ec2InstanceId        string     `xml:"Ec2InstanceId"`
-	RegisteredResources  []Resource `xml:"RegisteredResources>Resource"`
-	RemainingResources   []Resource `xml:"RemainingResources>Resource"`
-	Status               string     `xml:"Status"`
+	AgentConnected       bool       `xml:"agentConnected"`
+	ContainerInstanceArn string     `xml:"containerInstanceArn"`
+	Ec2InstanceId        string     `xml:"ec2InstanceId"`
+	RegisteredResources  []Resource `xml:"registeredResources>member"`
+	RemainingResources   []Resource `xml:"remainingResources>member"`
+	Status               string     `xml:"status"`
 }
 
 // DeregisterContainerInstanceReq encapsulates DeregisterContainerInstance request params
@@ -266,13 +270,17 @@ type DeregisterContainerInstanceReq struct {
 
 // DeregisterContainerInstanceResp encapsulates DeregisterContainerInstance response
 type DeregisterContainerInstanceResp struct {
-	ContainerInstance ContainerInstance `xml:"DeregisterContainerInstanceResult>ContainerInstance"`
+	ContainerInstance ContainerInstance `xml:"DeregisterContainerInstanceResult>containerInstance"`
 	RequestId         string            `xml:"ResponseMetadata>RequestId"`
 }
 
 // DeregisterContainerInstance deregisters an Amazon ECS container instance from the specified cluster
 func (e *ECS) DeregisterContainerInstance(req *DeregisterContainerInstanceReq) (
 	resp *DeregisterContainerInstanceResp, err error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
 	params := makeParams("DeregisterContainerInstance")
 	params["containerInstance"] = req.ContainerInstance
 	params["force"] = strconv.FormatBool(req.Force)
@@ -282,6 +290,68 @@ func (e *ECS) DeregisterContainerInstance(req *DeregisterContainerInstanceReq) (
 	}
 
 	resp = new(DeregisterContainerInstanceResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// PortMapping encapsulates the PortMapping data type
+type PortMapping struct {
+	ContainerPort int64 `xml:containerPort`
+	HostPort      int64 `xml:hostPort`
+}
+
+// KeyValuePair encapsulates the KeyValuePair data type
+type KeyValuePair struct {
+	Name  string `xml:"name"`
+	Value string `xml:"value"`
+}
+
+// ContainerDefinition encapsulates the container definition type
+// Container definitions are used in task definitions to describe
+// the different containers that are launched as part of a task
+type ContainerDefinition struct {
+	Command      []string       `xml:"command>member"`
+	Cpu          int64          `xml:"cpu"`
+	EntryPoint   []string       `xml:"entryPoint>member"`
+	Environment  []KeyValuePair `xml:"environment>member"`
+	Essential    bool           `xml:"essential"`
+	Image        string         `xml:"image"`
+	Links        []string       `xml:"links>member"`
+	Memory       int64          `xml:"memory"`
+	Name         string         `xml:"name"`
+	PortMappings []PortMapping  `xml:"portMappings>member"`
+}
+
+// TaskDefinition encapsulates the task definition type
+type TaskDefinition struct {
+	ContainerDefinitions []ContainerDefinition `xml:"containerDefinitions>member"`
+	Family               string                `xml:"family"`
+	Revision             int64                 `xml:"revision"`
+	TaskDefinitionArn    string                `xml:"taskDefinitionArn"`
+}
+
+// DeregisterTaskDefinitionReq encapsulates DeregisterTaskDefinitionReq req params
+type DeregisterTaskDefinitionReq struct {
+	TaskDefinition string
+}
+
+type DeregisterTaskDefinitionResp struct {
+	TaskDefinition TaskDefinition `xml:"DeregisterTaskDefinitionResult>taskDefinition"`
+	RequestId      string         `xml:"ResponseMetadata>RequestId"`
+}
+
+func (e *ECS) DeregisterTaskDefinition(req *DeregisterTaskDefinitionReq) (
+	*DeregisterTaskDefinitionResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("DeregisterTaskDefinition")
+	params["taskDefinition"] = req.TaskDefinition
+
+	resp := new(DeregisterTaskDefinitionResp)
 	if err := e.query(params, resp); err != nil {
 		return nil, err
 	}

@@ -103,3 +103,42 @@ func (s *S) TestDeregisterContainerInstance(c *gocheck.C) {
 	c.Assert(resp.ContainerInstance.RemainingResources, gocheck.DeepEquals, expectedResource)
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
+
+func (s *S) TestDeregisterTaskDefinition(c *gocheck.C) {
+	testServer.Response(200, nil, DeregisterTaskDefinitionResponse)
+	req := &DeregisterTaskDefinitionReq{
+		TaskDefinition: "sleep360:2",
+	}
+	resp, err := s.ecs.DeregisterTaskDefinition(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DeregisterTaskDefinition")
+	c.Assert(values.Get("taskDefinition"), gocheck.Equals, "sleep360:2")
+
+	expected := TaskDefinition{
+		Family:            "sleep360",
+		Revision:          2,
+		TaskDefinitionArn: "arn:aws:ecs:us-east-1:aws_account_id::task-definition/sleep360:2",
+		ContainerDefinitions: []ContainerDefinition{
+			{
+				Command:    []string{"sleep", "360"},
+				Cpu:        10,
+				EntryPoint: []string{"/bin/sh"},
+				Environment: []KeyValuePair{
+					{
+						Name:  "envVar",
+						Value: "foo",
+					},
+				},
+				Essential: true,
+				Image:     "busybox",
+				Memory:    10,
+				Name:      "sleep",
+			},
+		},
+	}
+
+	c.Assert(resp.TaskDefinition, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
