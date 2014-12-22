@@ -116,11 +116,149 @@ var DeregisterTaskDefinitionResponse = `
           <memory>10</memory>
         </member>
       </containerDefinitions>
-      <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id::task-definition/sleep360:2</taskDefinitionArn>
+      <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
     </taskDefinition>
   </DeregisterTaskDefinitionResult>
   <ResponseMetadata>
     <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
   </ResponseMetadata>
 </DeregisterTaskDefinitionResponse>
+`
+
+var DescribeClustersResponse = `
+<DescribeClustersResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <DescribeClustersResult>
+    <failures/>
+    <clusters>
+      <member>
+        <clusterName>test</clusterName>
+        <clusterArn>arn:aws:ecs:us-east-1:aws_account_id:cluster/test</clusterArn>
+        <status>ACTIVE</status>
+      </member>
+      <member>
+        <clusterName>default</clusterName>
+        <clusterArn>arn:aws:ecs:us-east-1:aws_account_id:cluster/default</clusterArn>
+        <status>ACTIVE</status>
+      </member>
+    </clusters>
+  </DescribeClustersResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</DescribeClustersResponse>
+`
+
+var DescribeContainerInstancesResponse = `
+<DescribeContainerInstancesResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">  
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+   <DescribeContainerInstancesResult>
+    <failures/>
+    <containerInstances>
+      <member>
+       <agentConnected>true</agentConnected>
+       <containerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID</containerInstanceArn>
+       <ec2InstanceId>instance_id</ec2InstanceId>
+       <status>ACTIVE</status>
+       <registeredResources>
+          <member>
+            <integerValue>2048</integerValue>
+            <longValue>0</longValue>
+            <type>INTEGER</type>
+            <name>CPU</name>
+            <doubleValue>0.0</doubleValue>
+          </member>
+          <member>
+            <integerValue>3955</integerValue>
+            <longValue>0</longValue>
+            <type>INTEGER</type>
+            <name>MEMORY</name>
+            <doubleValue>0.0</doubleValue>
+          </member>
+          <member>
+            <integerValue>0</integerValue>
+            <longValue>0</longValue>
+            <type>STRINGSET</type>
+            <stringSetValue>
+              <member>2376</member>
+              <member>22</member>
+              <member>51678</member>
+              <member>2375</member>
+            </stringSetValue>
+            <name>PORTS</name>
+            <doubleValue>0.0</doubleValue>
+          </member>
+       </registeredResources>
+       <remainingResources>
+          <member>
+            <integerValue>2048</integerValue>
+            <longValue>0</longValue>
+            <type>INTEGER</type>
+            <name>CPU</name>
+            <doubleValue>0.0</doubleValue>
+          </member>
+          <member>
+            <integerValue>3955</integerValue>
+            <longValue>0</longValue>
+            <type>INTEGER</type>
+            <name>MEMORY</name>
+            <doubleValue>0.0</doubleValue>
+          </member>
+          <member>
+            <integerValue>0</integerValue>
+            <longValue>0</longValue>
+            <type>STRINGSET</type>
+            <stringSetValue>
+              <member>2376</member>
+              <member>22</member>
+              <member>51678</member>
+              <member>2375</member>
+            </stringSetValue>
+            <name>PORTS</name>
+            <doubleValue>0.0</doubleValue>
+          </member>
+       </remainingResources>
+      </member>
+    </containerInstances>
+  </DescribeContainerInstancesResult>
+</DescribeContainerInstancesResponse> 
+`
+
+var DescribeTaskDefinitionResponse = `
+<DescribeTaskDefinitionResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <DescribeTaskDefinitionResult>
+    <taskDefinition>
+      <revision>2</revision>
+      <family>sleep360</family>
+      <containerDefinitions>
+        <member>
+          <portMappings/>
+          <essential>true</essential>
+          <environment>
+            <member>
+              <name>envVar</name>
+              <value>foo</value>
+            </member>
+          </environment>
+          <entryPoint>
+            <member>/bin/sh</member>
+          </entryPoint>
+          <name>sleep</name>
+          <command>
+            <member>sleep</member>
+            <member>360</member>
+          </command>
+          <cpu>10</cpu>
+          <image>busybox</image>
+          <memory>10</memory>
+        </member>
+      </containerDefinitions>
+      <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
+    </taskDefinition>
+  </DescribeTaskDefinitionResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</DescribeTaskDefinitionResponse>
 `

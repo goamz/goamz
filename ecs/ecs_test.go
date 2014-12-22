@@ -119,7 +119,152 @@ func (s *S) TestDeregisterTaskDefinition(c *gocheck.C) {
 	expected := TaskDefinition{
 		Family:            "sleep360",
 		Revision:          2,
-		TaskDefinitionArn: "arn:aws:ecs:us-east-1:aws_account_id::task-definition/sleep360:2",
+		TaskDefinitionArn: "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
+		ContainerDefinitions: []ContainerDefinition{
+			{
+				Command:    []string{"sleep", "360"},
+				Cpu:        10,
+				EntryPoint: []string{"/bin/sh"},
+				Environment: []KeyValuePair{
+					{
+						Name:  "envVar",
+						Value: "foo",
+					},
+				},
+				Essential: true,
+				Image:     "busybox",
+				Memory:    10,
+				Name:      "sleep",
+			},
+		},
+	}
+
+	c.Assert(resp.TaskDefinition, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestDescribeClusters(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeClustersResponse)
+	req := &DescribeClustersReq{
+		Clusters: []string{"test", "default"},
+	}
+	resp, err := s.ecs.DescribeClusters(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeClusters")
+	c.Assert(values.Get("clusters.member.1"), gocheck.Equals, "test")
+	c.Assert(values.Get("clusters.member.2"), gocheck.Equals, "default")
+
+	expected := []Cluster{
+		{
+			ClusterName: "test",
+			ClusterArn:  "arn:aws:ecs:us-east-1:aws_account_id:cluster/test",
+			Status:      "ACTIVE",
+		},
+		{
+			ClusterName: "default",
+			ClusterArn:  "arn:aws:ecs:us-east-1:aws_account_id:cluster/default",
+			Status:      "ACTIVE",
+		},
+	}
+
+	c.Assert(resp.Clusters, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestDescribeContainerInstances(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeContainerInstancesResponse)
+	req := &DescribeContainerInstancesReq{
+		Cluster:            "test",
+		ContainerInstances: []string{"arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID"},
+	}
+	resp, err := s.ecs.DescribeContainerInstances(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeContainerInstances")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("containerInstances.member.1"),
+		gocheck.Equals, "arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID")
+
+	expected := []ContainerInstance{
+		ContainerInstance{
+			AgentConnected:       true,
+			ContainerInstanceArn: "arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID",
+			Status:               "ACTIVE",
+			Ec2InstanceId:        "instance_id",
+			RegisteredResources: []Resource{
+				{
+					DoubleValue:  0.0,
+					IntegerValue: 2048,
+					LongValue:    0,
+					Name:         "CPU",
+					Type:         "INTEGER",
+				},
+				{
+					DoubleValue:  0.0,
+					IntegerValue: 3955,
+					LongValue:    0,
+					Name:         "MEMORY",
+					Type:         "INTEGER",
+				},
+				{
+					DoubleValue:    0.0,
+					IntegerValue:   0,
+					LongValue:      0,
+					Name:           "PORTS",
+					StringSetValue: []string{"2376", "22", "51678", "2375"},
+					Type:           "STRINGSET",
+				},
+			},
+			RemainingResources: []Resource{
+				{
+					DoubleValue:  0.0,
+					IntegerValue: 2048,
+					LongValue:    0,
+					Name:         "CPU",
+					Type:         "INTEGER",
+				},
+				{
+					DoubleValue:  0.0,
+					IntegerValue: 3955,
+					LongValue:    0,
+					Name:         "MEMORY",
+					Type:         "INTEGER",
+				},
+				{
+					DoubleValue:    0.0,
+					IntegerValue:   0,
+					LongValue:      0,
+					Name:           "PORTS",
+					StringSetValue: []string{"2376", "22", "51678", "2375"},
+					Type:           "STRINGSET",
+				},
+			},
+		},
+	}
+
+	c.Assert(resp.ContainerInstances, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestDescribeTaskDefinition(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeTaskDefinitionResponse)
+	req := &DescribeTaskDefinitionReq{
+		TaskDefinition: "sleep360:2",
+	}
+	resp, err := s.ecs.DescribeTaskDefinition(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeTaskDefinition")
+	c.Assert(values.Get("taskDefinition"), gocheck.Equals, "sleep360:2")
+
+	expected := TaskDefinition{
+		Family:            "sleep360",
+		Revision:          2,
+		TaskDefinitionArn: "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
 		ContainerDefinitions: []ContainerDefinition{
 			{
 				Command:    []string{"sleep", "360"},

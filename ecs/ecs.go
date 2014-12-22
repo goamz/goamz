@@ -332,16 +332,18 @@ type TaskDefinition struct {
 	TaskDefinitionArn    string                `xml:"taskDefinitionArn"`
 }
 
-// DeregisterTaskDefinitionReq encapsulates DeregisterTaskDefinitionReq req params
+// DeregisterTaskDefinitionReq encapsulates DeregisterTaskDefinition req params
 type DeregisterTaskDefinitionReq struct {
 	TaskDefinition string
 }
 
+// DeregisterTaskDefinitionResp encapsuates the DeregisterTaskDefinition response
 type DeregisterTaskDefinitionResp struct {
 	TaskDefinition TaskDefinition `xml:"DeregisterTaskDefinitionResult>taskDefinition"`
 	RequestId      string         `xml:"ResponseMetadata>RequestId"`
 }
 
+// DeregisterTaskDefinition deregisters the specified task definition
 func (e *ECS) DeregisterTaskDefinition(req *DeregisterTaskDefinitionReq) (
 	*DeregisterTaskDefinitionResp, error) {
 	if req == nil {
@@ -352,6 +354,106 @@ func (e *ECS) DeregisterTaskDefinition(req *DeregisterTaskDefinitionReq) (
 	params["taskDefinition"] = req.TaskDefinition
 
 	resp := new(DeregisterTaskDefinitionResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// Failure encapsulates the failure type
+type Failure struct {
+	Arn    string `xml:"arn"`
+	Reason string `xml:"reason"`
+}
+
+// DescribeClustersReq encapsulates DescribeClusters req params
+type DescribeClustersReq struct {
+	Clusters []string
+}
+
+// DescribeClustersResp encapsuates the DescribeClusters response
+type DescribeClustersResp struct {
+	Clusters  []Cluster `xml:"DescribeClustersResult>clusters>member"`
+	Failures  []Failure `xml:"DescribeClustersResult>failures>member"`
+	RequestId string    `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeClusters describes one or more of your clusters
+func (e *ECS) DescribeClusters(req *DescribeClustersReq) (*DescribeClustersResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("DescribeClusters")
+	if len(req.Clusters) > 0 {
+		addParamsList(params, "clusters.member", req.Clusters)
+	}
+
+	resp := new(DescribeClustersResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeContainerInstancesReq ecapsulates DescribeContainerInstances req params
+type DescribeContainerInstancesReq struct {
+	Cluster            string
+	ContainerInstances []string
+}
+
+// DescribeContainerInstancesResp ecapsulates DescribeContainerInstances response
+type DescribeContainerInstancesResp struct {
+	ContainerInstances []ContainerInstance `xml:"DescribeContainerInstancesResult>containerInstances>member"`
+	Failures           []Failure           `xml:"DescribeContainerInstancesResult>failures>member"`
+	RequestId          string              `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeContainerInstances describes Amazon EC2 Container Service container instances
+// Returns metadata about registered and remaining resources on each container instance requested
+func (e *ECS) DescribeContainerInstances(req *DescribeContainerInstancesReq) (
+	*DescribeContainerInstancesResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("DescribeContainerInstances")
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if len(req.ContainerInstances) > 0 {
+		addParamsList(params, "containerInstances.member", req.ContainerInstances)
+	}
+
+	resp := new(DescribeContainerInstancesResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DescribeTaskDefinitionReq encapsulates DescribeTaskDefinition req params
+type DescribeTaskDefinitionReq struct {
+	TaskDefinition string
+}
+
+// DescribeTaskDefinitionResp encapsuates the DescribeTaskDefinition response
+type DescribeTaskDefinitionResp struct {
+	TaskDefinition TaskDefinition `xml:"DescribeTaskDefinitionResult>taskDefinition"`
+	RequestId      string         `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeTaskDefinition describes a task definition
+func (e *ECS) DescribeTaskDefinition(req *DescribeTaskDefinitionReq) (
+	*DescribeTaskDefinitionResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("DescribeTaskDefinition")
+	params["taskDefinition"] = req.TaskDefinition
+
+	resp := new(DescribeTaskDefinitionResp)
 	if err := e.query(params, resp); err != nil {
 		return nil, err
 	}
