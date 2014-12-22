@@ -459,3 +459,109 @@ func (e *ECS) DescribeTaskDefinition(req *DescribeTaskDefinitionReq) (
 	}
 	return resp, nil
 }
+
+// NetworkBinding encapsulates the network binding data type
+type NetworkBinding struct {
+	BindIp        string `xml:"bindIp"`
+	ContainerPort int64  `xml:"containerPort"`
+	HostPort      int64  `xml:"hostPort"`
+}
+
+// Container encapsulates the container data type
+type Container struct {
+	ContainerArn    string           `xml:"containerArn"`
+	ExitCode        int64            `xml:"exitCode"`
+	LastStatus      string           `xml:"lastStatus"`
+	Name            string           `xml:"name"`
+	NetworkBindings []NetworkBinding `xml:"networkBindings>member"`
+	Reason          string           `xml:"reason"`
+	TaskArn         string           `xml:"taskArn"`
+}
+
+// ContainerOverride encapsulates the container override data type
+type ContainerOverride struct {
+	Command []string `xml:"command>member"`
+	Name    string   `xml:"name"`
+}
+
+// TaskOverride encapsulates the task override data type
+type TaskOverride struct {
+	ContainerOverrides []ContainerOverride `xml:"containerOverrides>member"`
+}
+
+// Task encapsulates the task data type
+type Task struct {
+	ClusterArn           string       `xml:"clusterArn"`
+	ContainerInstanceArn string       `xml:"containerInstanceArn"`
+	Containers           []Container  `xml:"containers>member"`
+	DesiredStatus        string       `xml:"desiredStatus"`
+	LastStatus           string       `xml:"lastStatus"`
+	Overrides            TaskOverride `xml:"overrides"`
+	TaskArn              string       `xml:"taskArn"`
+	TaskDefinitionArn    string       `xml:"taskDefinitionArn"`
+}
+
+// DescribeTasksReq encapsulates DescribeTasks req params
+type DescribeTasksReq struct {
+	Cluster string
+	Tasks   []string
+}
+
+// DescribeTasksResp encapsuates the DescribeTasks response
+type DescribeTasksResp struct {
+	Tasks     []Task    `xml:"DescribeTasksResult>tasks>member"`
+	Failures  []Failure `xml:"DescribeTasksResult>failures>member"`
+	RequestId string    `xml:"ResponseMetadata>RequestId"`
+}
+
+// DescribeTasks describes a task definition
+func (e *ECS) DescribeTasks(req *DescribeTasksReq) (*DescribeTasksResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("DescribeTasks")
+	if len(req.Tasks) > 0 {
+		addParamsList(params, "tasks.member", req.Tasks)
+	}
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+
+	resp := new(DescribeTasksResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// DiscoverPollEndpointReq encapsulates DiscoverPollEndpoint req params
+type DiscoverPollEndpointReq struct {
+	ContainerInstance string
+}
+
+// DiscoverPollEndpointResp encapsuates the DiscoverPollEndpoint response
+type DiscoverPollEndpointResp struct {
+	Endpoint  string `xml:"DiscoverPollEndpointResult>endpoint"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// DiscoverPollEndpoint returns an endpoint for the Amazon EC2 Container Service agent
+// to poll for updates
+func (e *ECS) DiscoverPollEndpoint(req *DiscoverPollEndpointReq) (
+	*DiscoverPollEndpointResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("DiscoverPollEndpoint")
+	if req.ContainerInstance != "" {
+		params["containerInstance"] = req.ContainerInstance
+	}
+
+	resp := new(DiscoverPollEndpointResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

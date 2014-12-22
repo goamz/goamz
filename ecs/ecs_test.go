@@ -287,3 +287,64 @@ func (s *S) TestDescribeTaskDefinition(c *gocheck.C) {
 	c.Assert(resp.TaskDefinition, gocheck.DeepEquals, expected)
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
+
+func (s *S) TestDescribeTasks(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeTasksResponse)
+	req := &DescribeTasksReq{
+		Cluster: "test",
+		Tasks:   []string{"arn:aws:ecs:us-east-1:aws_account_id:task/UUID"},
+	}
+	resp, err := s.ecs.DescribeTasks(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeTasks")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("tasks.member.1"),
+		gocheck.Equals, "arn:aws:ecs:us-east-1:aws_account_id:task/UUID")
+
+	expected := []Task{
+		Task{
+			Containers: []Container{
+				{
+					TaskArn:      "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+					Name:         "sleep",
+					ContainerArn: "arn:aws:ecs:us-east-1:aws_account_id:container/UUID",
+					LastStatus:   "RUNNING",
+				},
+			},
+			Overrides: TaskOverride{
+				ContainerOverrides: []ContainerOverride{
+					{
+						Name: "sleep",
+					},
+				},
+			},
+			DesiredStatus:        "RUNNING",
+			TaskArn:              "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+			ContainerInstanceArn: "arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID",
+			LastStatus:           "RUNNING",
+			TaskDefinitionArn:    "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
+		},
+	}
+
+	c.Assert(resp.Tasks, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestDiscoverPollEndpoint(c *gocheck.C) {
+	testServer.Response(200, nil, DiscoverPollEndpointResponse)
+	req := &DiscoverPollEndpointReq{
+		ContainerInstance: "arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID",
+	}
+	resp, err := s.ecs.DiscoverPollEndpoint(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "DiscoverPollEndpoint")
+	c.Assert(values.Get("containerInstance"),
+		gocheck.Equals, "arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID")
+
+	c.Assert(resp.Endpoint, gocheck.Equals, "https://ecs-x-1.us-east-1.amazonaws.com/")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}

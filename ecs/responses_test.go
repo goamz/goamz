@@ -262,3 +262,50 @@ var DescribeTaskDefinitionResponse = `
   </ResponseMetadata>
 </DescribeTaskDefinitionResponse>
 `
+
+var DescribeTasksResponse = ` 
+<DescribeTasksResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <DescribeTasksResult>
+    <failures/>
+    <tasks>
+      <member>
+        <containers>
+          <member>
+            <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+            <name>sleep</name>
+            <containerArn>arn:aws:ecs:us-east-1:aws_account_id:container/UUID</containerArn>
+            <networkBindings/>
+            <lastStatus>RUNNING</lastStatus>
+          </member>
+        </containers>
+        <overrides>
+          <containerOverrides>
+            <member>
+              <name>sleep</name>
+            </member>
+          </containerOverrides>
+        </overrides>
+        <desiredStatus>RUNNING</desiredStatus>
+        <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+        <containerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID</containerInstanceArn>
+        <lastStatus>RUNNING</lastStatus>
+        <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
+      </member>
+    </tasks>
+  </DescribeTasksResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</DescribeTasksResponse>
+`
+
+var DiscoverPollEndpointResponse = `
+<DiscoverPollEndpointResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <DiscoverPollEndpointResult>
+    <endpoint>https://ecs-x-1.us-east-1.amazonaws.com/</endpoint>
+  </DiscoverPollEndpointResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</DiscoverPollEndpointResponse>
+`
