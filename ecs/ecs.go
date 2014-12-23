@@ -3,7 +3,8 @@
 //
 // Depends on https://github.com/goamz/goamz
 //
-// Author boyann@gmail.com
+// Author Boyan Dimitrov <boyann@gmail.com>
+//
 
 package ecs
 
@@ -242,7 +243,7 @@ func (e *ECS) CreateCluster(req *CreateClusterReq) (resp *CreateClusterResp, err
 // Resource describes the resources available for a container instance.
 type Resource struct {
 	DoubleValue    float64  `xml:"doubleValue"`
-	IntegerValue   int64    `xml:"integerValue"`
+	IntegerValue   int32    `xml:"integerValue"`
 	LongValue      int64    `xml:"longValue"`
 	Name           string   `xml:"name"`
 	StringSetValue []string `xml:"stringSetValue>member"`
@@ -298,8 +299,8 @@ func (e *ECS) DeregisterContainerInstance(req *DeregisterContainerInstanceReq) (
 
 // PortMapping encapsulates the PortMapping data type
 type PortMapping struct {
-	ContainerPort int64 `xml:containerPort`
-	HostPort      int64 `xml:hostPort`
+	ContainerPort int32 `xml:containerPort`
+	HostPort      int32 `xml:hostPort`
 }
 
 // KeyValuePair encapsulates the KeyValuePair data type
@@ -313,13 +314,13 @@ type KeyValuePair struct {
 // the different containers that are launched as part of a task
 type ContainerDefinition struct {
 	Command      []string       `xml:"command>member"`
-	Cpu          int64          `xml:"cpu"`
+	Cpu          int32          `xml:"cpu"`
 	EntryPoint   []string       `xml:"entryPoint>member"`
 	Environment  []KeyValuePair `xml:"environment>member"`
 	Essential    bool           `xml:"essential"`
 	Image        string         `xml:"image"`
 	Links        []string       `xml:"links>member"`
-	Memory       int64          `xml:"memory"`
+	Memory       int32          `xml:"memory"`
 	Name         string         `xml:"name"`
 	PortMappings []PortMapping  `xml:"portMappings>member"`
 }
@@ -328,7 +329,7 @@ type ContainerDefinition struct {
 type TaskDefinition struct {
 	ContainerDefinitions []ContainerDefinition `xml:"containerDefinitions>member"`
 	Family               string                `xml:"family"`
-	Revision             int64                 `xml:"revision"`
+	Revision             int32                 `xml:"revision"`
 	TaskDefinitionArn    string                `xml:"taskDefinitionArn"`
 }
 
@@ -463,14 +464,14 @@ func (e *ECS) DescribeTaskDefinition(req *DescribeTaskDefinitionReq) (
 // NetworkBinding encapsulates the network binding data type
 type NetworkBinding struct {
 	BindIp        string `xml:"bindIp"`
-	ContainerPort int64  `xml:"containerPort"`
-	HostPort      int64  `xml:"hostPort"`
+	ContainerPort int32  `xml:"containerPort"`
+	HostPort      int32  `xml:"hostPort"`
 }
 
 // Container encapsulates the container data type
 type Container struct {
 	ContainerArn    string           `xml:"containerArn"`
-	ExitCode        int64            `xml:"exitCode"`
+	ExitCode        int32            `xml:"exitCode"`
 	LastStatus      string           `xml:"lastStatus"`
 	Name            string           `xml:"name"`
 	NetworkBindings []NetworkBinding `xml:"networkBindings>member"`
@@ -560,6 +561,168 @@ func (e *ECS) DiscoverPollEndpoint(req *DiscoverPollEndpointReq) (
 	}
 
 	resp := new(DiscoverPollEndpointResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// ListClustersReq encapsulates ListClusters req params
+type ListClustersReq struct {
+	MaxResults int32
+	NextToken  string
+}
+
+// ListClustersResp encapsuates the ListClusters response
+type ListClustersResp struct {
+	ClusterArns []string `xml:"ListClustersResult>clusterArns>member"`
+	NextToken   string   `xml:"ListClustersResult>nextToken"`
+	RequestId   string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListClusters returns a list of existing clusters
+func (e *ECS) ListClusters(req *ListClustersReq) (
+	*ListClustersResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("ListClusters")
+	if req.MaxResults > 0 {
+		params["maxResults"] = strconv.Itoa(int(req.MaxResults))
+	}
+	if req.NextToken != "" {
+		params["nextToken"] = req.NextToken
+	}
+
+	resp := new(ListClustersResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// ListContainerInstancesReq encapsulates ListContainerInstances req params
+type ListContainerInstancesReq struct {
+	Cluster    string
+	MaxResults int32
+	NextToken  string
+}
+
+// ListContainerInstancesResp encapsuates the ListContainerInstances response
+type ListContainerInstancesResp struct {
+	ContainerInstanceArns []string `xml:"ListContainerInstancesResult>containerInstanceArns>member"`
+	NextToken             string   `xml:"ListContainerInstancesResult>nextToken"`
+	RequestId             string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListContainerInstances returns a list of container instances in a specified cluster.
+func (e *ECS) ListContainerInstances(req *ListContainerInstancesReq) (
+	*ListContainerInstancesResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("ListContainerInstances")
+	if req.MaxResults > 0 {
+		params["maxResults"] = strconv.Itoa(int(req.MaxResults))
+	}
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if req.NextToken != "" {
+		params["nextToken"] = req.NextToken
+	}
+
+	resp := new(ListContainerInstancesResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// ListTaskDefinitionsReq encapsulates ListTaskDefinitions req params
+type ListTaskDefinitionsReq struct {
+	FamilyPrefix string
+	MaxResults   int32
+	NextToken    string
+}
+
+// ListTaskDefinitionsResp encapsuates the ListTaskDefinitions response
+type ListTaskDefinitionsResp struct {
+	TaskDefinitionArns []string `xml:"ListTaskDefinitionsResult>taskDefinitionArns>member"`
+	NextToken          string   `xml:"ListTaskDefinitionsResult>nextToken"`
+	RequestId          string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListTaskDefinitions Returns a list of task definitions that are registered to your account.
+func (e *ECS) ListTaskDefinitions(req *ListTaskDefinitionsReq) (
+	*ListTaskDefinitionsResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("ListTaskDefinitions")
+	if req.MaxResults > 0 {
+		params["maxResults"] = strconv.Itoa(int(req.MaxResults))
+	}
+	if req.FamilyPrefix != "" {
+		params["familyPrefix"] = req.FamilyPrefix
+	}
+	if req.NextToken != "" {
+		params["nextToken"] = req.NextToken
+	}
+
+	resp := new(ListTaskDefinitionsResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// ListTasksReq encapsulates ListTasks req params
+type ListTasksReq struct {
+	Cluster           string
+	ContainerInstance string
+	Family            string
+	MaxResults        int32
+	NextToken         string
+}
+
+// ListTasksResp encapsuates the ListTasks response
+type ListTasksResp struct {
+	TaskArns  []string `xml:"ListTasksResult>taskArns>member"`
+	NextToken string   `xml:"ListTasksResult>nextToken"`
+	RequestId string   `xml:"ResponseMetadata>RequestId"`
+}
+
+// ListTasks Returns a list of tasks for a specified cluster.
+// You can filter the results by family name or by a particular container instance
+// with the family and containerInstance parameters.
+func (e *ECS) ListTasks(req *ListTasksReq) (
+	*ListTasksResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("ListTasks")
+	if req.MaxResults > 0 {
+		params["maxResults"] = strconv.Itoa(int(req.MaxResults))
+	}
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if req.ContainerInstance != "" {
+		params["containerInstance"] = req.ContainerInstance
+	}
+	if req.Family != "" {
+		params["family"] = req.Family
+	}
+	if req.NextToken != "" {
+		params["nextToken"] = req.NextToken
+	}
+
+	resp := new(ListTasksResp)
 	if err := e.query(params, resp); err != nil {
 		return nil, err
 	}

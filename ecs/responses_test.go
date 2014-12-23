@@ -309,3 +309,63 @@ var DiscoverPollEndpointResponse = `
   </ResponseMetadata>
 </DiscoverPollEndpointResponse>
 `
+
+var ListClustersResponse = `
+<ListClustersResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <ListClustersResult>
+    <clusterArns>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:cluster/default</member>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:cluster/test</member>
+    </clusterArns>
+    <nextToken>token_UUID</nextToken>
+  </ListClustersResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</ListClustersResponse>
+`
+
+var ListContainerInstancesResponse = `
+<ListContainerInstancesResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <ListContainerInstancesResult>
+    <containerInstanceArns>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:container-instance/uuid-1</member>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:container-instance/uuid-2</member>
+    </containerInstanceArns>
+     <nextToken>token_UUID</nextToken>
+  </ListContainerInstancesResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</ListContainerInstancesResponse>
+`
+
+var ListTaskDefinitionsResponse = `
+<ListTaskDefinitionsResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <ListTaskDefinitionsResult>
+    <taskDefinitionArns>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:1</member>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</member>
+    </taskDefinitionArns>
+     <nextToken>token_UUID</nextToken>
+  </ListTaskDefinitionsResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</ListTaskDefinitionsResponse>
+`
+
+var ListTasksResponse = `
+<ListTasksResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <ListTasksResult>
+    <taskArns>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:task/uuid_1</member>
+      <member>arn:aws:ecs:us-east-1:aws_account_id:task/uuid_2</member>
+    </taskArns>
+    <nextToken>token_UUID</nextToken>
+  </ListTasksResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</ListTasksResponse>
+`

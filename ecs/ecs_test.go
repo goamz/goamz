@@ -348,3 +348,96 @@ func (s *S) TestDiscoverPollEndpoint(c *gocheck.C) {
 	c.Assert(resp.Endpoint, gocheck.Equals, "https://ecs-x-1.us-east-1.amazonaws.com/")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
+
+func (s *S) TestListClusters(c *gocheck.C) {
+	testServer.Response(200, nil, ListClustersResponse)
+	req := &ListClustersReq{
+		MaxResults: 2,
+		NextToken:  "Token_UUID",
+	}
+	resp, err := s.ecs.ListClusters(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListClusters")
+	c.Assert(values.Get("maxResults"), gocheck.Equals, "2")
+	c.Assert(values.Get("nextToken"), gocheck.Equals, "Token_UUID")
+
+	c.Assert(resp.ClusterArns, gocheck.DeepEquals, []string{"arn:aws:ecs:us-east-1:aws_account_id:cluster/default",
+		"arn:aws:ecs:us-east-1:aws_account_id:cluster/test"})
+	c.Assert(resp.NextToken, gocheck.Equals, "token_UUID")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestListContainerInstances(c *gocheck.C) {
+	testServer.Response(200, nil, ListContainerInstancesResponse)
+	req := &ListContainerInstancesReq{
+		MaxResults: 2,
+		NextToken:  "Token_UUID",
+		Cluster:    "test",
+	}
+	resp, err := s.ecs.ListContainerInstances(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListContainerInstances")
+	c.Assert(values.Get("maxResults"), gocheck.Equals, "2")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("nextToken"), gocheck.Equals, "Token_UUID")
+
+	c.Assert(resp.ContainerInstanceArns, gocheck.DeepEquals, []string{
+		"arn:aws:ecs:us-east-1:aws_account_id:container-instance/uuid-1",
+		"arn:aws:ecs:us-east-1:aws_account_id:container-instance/uuid-2"})
+	c.Assert(resp.NextToken, gocheck.Equals, "token_UUID")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestListTaskDefinitions(c *gocheck.C) {
+	testServer.Response(200, nil, ListTaskDefinitionsResponse)
+	req := &ListTaskDefinitionsReq{
+		MaxResults:   2,
+		NextToken:    "Token_UUID",
+		FamilyPrefix: "sleep360",
+	}
+	resp, err := s.ecs.ListTaskDefinitions(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListTaskDefinitions")
+	c.Assert(values.Get("maxResults"), gocheck.Equals, "2")
+	c.Assert(values.Get("familyPrefix"), gocheck.Equals, "sleep360")
+	c.Assert(values.Get("nextToken"), gocheck.Equals, "Token_UUID")
+
+	c.Assert(resp.TaskDefinitionArns, gocheck.DeepEquals, []string{
+		"arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:1",
+		"arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2"})
+	c.Assert(resp.NextToken, gocheck.Equals, "token_UUID")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestListTasks(c *gocheck.C) {
+	testServer.Response(200, nil, ListTasksResponse)
+	req := &ListTasksReq{
+		MaxResults:        2,
+		NextToken:         "Token_UUID",
+		Family:            "sleep360",
+		Cluster:           "test",
+		ContainerInstance: "container_uuid",
+	}
+	resp, err := s.ecs.ListTasks(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "ListTasks")
+	c.Assert(values.Get("maxResults"), gocheck.Equals, "2")
+	c.Assert(values.Get("family"), gocheck.Equals, "sleep360")
+	c.Assert(values.Get("containerInstance"), gocheck.Equals, "container_uuid")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("nextToken"), gocheck.Equals, "Token_UUID")
+
+	c.Assert(resp.TaskArns, gocheck.DeepEquals, []string{
+		"arn:aws:ecs:us-east-1:aws_account_id:task/uuid_1",
+		"arn:aws:ecs:us-east-1:aws_account_id:task/uuid_2"})
+	c.Assert(resp.NextToken, gocheck.Equals, "token_UUID")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
