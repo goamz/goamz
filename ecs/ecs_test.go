@@ -567,3 +567,134 @@ func (s *S) TestRegisterTaskDefinition(c *gocheck.C) {
 	c.Assert(resp.TaskDefinition, gocheck.DeepEquals, expected)
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
+
+func (s *S) TestRunTask(c *gocheck.C) {
+	testServer.Response(200, nil, RunTaskResponse)
+	req := &RunTaskReq{
+		Cluster:        "test",
+		Count:          1,
+		TaskDefinition: "sleep360:2",
+	}
+	resp, err := s.ecs.RunTask(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "RunTask")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("count"), gocheck.Equals, "1")
+	c.Assert(values.Get("taskDefinition"), gocheck.Equals, "sleep360:2")
+
+	expected := []Task{
+		Task{
+			Containers: []Container{
+				{
+					TaskArn:      "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+					Name:         "sleep",
+					ContainerArn: "arn:aws:ecs:us-east-1:aws_account_id:container/UUID",
+					LastStatus:   "RUNNING",
+				},
+			},
+			Overrides: TaskOverride{
+				ContainerOverrides: []ContainerOverride{
+					{
+						Name: "sleep",
+					},
+				},
+			},
+			DesiredStatus:        "RUNNING",
+			TaskArn:              "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+			ContainerInstanceArn: "arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID",
+			LastStatus:           "PENDING",
+			TaskDefinitionArn:    "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
+		},
+	}
+
+	c.Assert(resp.Tasks, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestStartTask(c *gocheck.C) {
+	testServer.Response(200, nil, StartTaskResponse)
+	req := &StartTaskReq{
+		Cluster:            "test",
+		ContainerInstances: []string{"containerUUID"},
+		TaskDefinition:     "sleep360:2",
+	}
+	resp, err := s.ecs.StartTask(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "StartTask")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("taskDefinition"), gocheck.Equals, "sleep360:2")
+	c.Assert(values.Get("containerInstances.member.1"), gocheck.Equals, "containerUUID")
+
+	expected := []Task{
+		Task{
+			Containers: []Container{
+				{
+					TaskArn:      "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+					Name:         "sleep",
+					ContainerArn: "arn:aws:ecs:us-east-1:aws_account_id:container/UUID",
+					LastStatus:   "RUNNING",
+				},
+			},
+			Overrides: TaskOverride{
+				ContainerOverrides: []ContainerOverride{
+					{
+						Name: "sleep",
+					},
+				},
+			},
+			DesiredStatus:        "RUNNING",
+			TaskArn:              "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+			ContainerInstanceArn: "arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID",
+			LastStatus:           "PENDING",
+			TaskDefinitionArn:    "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
+		},
+	}
+
+	c.Assert(resp.Tasks, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestStopTask(c *gocheck.C) {
+	testServer.Response(200, nil, StopTaskResponse)
+	req := &StopTaskReq{
+		Cluster: "test",
+		Task:    "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+	}
+	resp, err := s.ecs.StopTask(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "StopTask")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("task"), gocheck.Equals, "arn:aws:ecs:us-east-1:aws_account_id:task/UUID")
+
+	expected := Task{
+		Containers: []Container{
+			{
+				TaskArn:      "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+				Name:         "sleep",
+				ContainerArn: "arn:aws:ecs:us-east-1:aws_account_id:container/UUID",
+				LastStatus:   "RUNNING",
+			},
+		},
+		Overrides: TaskOverride{
+			ContainerOverrides: []ContainerOverride{
+				{
+					Name: "sleep",
+				},
+			},
+		},
+		DesiredStatus:        "STOPPED",
+		TaskArn:              "arn:aws:ecs:us-east-1:aws_account_id:task/UUID",
+		ContainerInstanceArn: "arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID",
+		LastStatus:           "RUNNING",
+		TaskDefinitionArn:    "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
+	}
+
+	c.Assert(resp.Task, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}

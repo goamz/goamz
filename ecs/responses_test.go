@@ -482,3 +482,108 @@ var RegisterTaskDefinitionResponse = `
   </ResponseMetadata>
 </RegisterTaskDefinitionResponse>
 `
+
+var RunTaskResponse = ` 
+<RunTaskResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <RunTaskResult>
+    <failures/>
+    <tasks>
+      <member>
+        <containers>
+          <member>
+            <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+            <name>sleep</name>
+            <containerArn>arn:aws:ecs:us-east-1:aws_account_id:container/UUID</containerArn>
+            <networkBindings/>
+            <lastStatus>RUNNING</lastStatus>
+          </member>
+        </containers>
+        <overrides>
+          <containerOverrides>
+            <member>
+              <name>sleep</name>
+            </member>
+          </containerOverrides>
+        </overrides>
+        <desiredStatus>RUNNING</desiredStatus>
+        <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+        <containerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID</containerInstanceArn>
+        <lastStatus>PENDING</lastStatus>
+        <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
+      </member>
+    </tasks>
+  </RunTaskResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</RunTaskResponse>
+`
+
+var StartTaskResponse = ` 
+<StartTaskResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <StartTaskResult>
+    <failures/>
+    <tasks>
+      <member>
+        <containers>
+          <member>
+            <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+            <name>sleep</name>
+            <containerArn>arn:aws:ecs:us-east-1:aws_account_id:container/UUID</containerArn>
+            <networkBindings/>
+            <lastStatus>RUNNING</lastStatus>
+          </member>
+        </containers>
+        <overrides>
+          <containerOverrides>
+            <member>
+              <name>sleep</name>
+            </member>
+          </containerOverrides>
+        </overrides>
+        <desiredStatus>RUNNING</desiredStatus>
+        <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+        <containerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID</containerInstanceArn>
+        <lastStatus>PENDING</lastStatus>
+        <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
+      </member>
+    </tasks>
+  </StartTaskResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</StartTaskResponse>
+`
+
+var StopTaskResponse = ` 
+<StopTaskResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <StopTaskResult>
+    <task>
+      <containers>
+        <member>
+          <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+          <name>sleep</name>
+          <containerArn>arn:aws:ecs:us-east-1:aws_account_id:container/UUID</containerArn>
+          <networkBindings/>
+          <lastStatus>RUNNING</lastStatus>
+        </member>
+      </containers>
+      <overrides>
+        <containerOverrides>
+          <member>
+            <name>sleep</name>
+          </member>
+        </containerOverrides>
+      </overrides>
+      <desiredStatus>STOPPED</desiredStatus>
+      <taskArn>arn:aws:ecs:us-east-1:aws_account_id:task/UUID</taskArn>
+      <containerInstanceArn>arn:aws:ecs:us-east-1:aws_account_id:container-instance/UUID</containerInstanceArn>
+      <lastStatus>RUNNING</lastStatus>
+      <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
+    </task>
+  </StopTaskResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</StopTaskResponse>
+`

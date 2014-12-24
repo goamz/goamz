@@ -838,3 +838,133 @@ func (e *ECS) RegisterTaskDefinition(req *RegisterTaskDefinitionReq) (
 	}
 	return resp, nil
 }
+
+// RunTaskReq encapsulates RunTask req params
+type RunTaskReq struct {
+	Cluster        string
+	Count          int32
+	Overrides      TaskOverride
+	TaskDefinition string
+}
+
+// RunTaskResp encapsuates the RunTask response
+type RunTaskResp struct {
+	Tasks     []Task    `xml:"RunTaskResult>tasks>member"`
+	Failures  []Failure `xml:"RunTaskResult>failures>member"`
+	RequestId string    `xml:"ResponseMetadata>RequestId"`
+}
+
+// RunTask Start a task using random placement and the default Amazon ECS scheduler.
+// If you want to use your own scheduler or place a task on a specific container instance,
+// use StartTask instead.
+func (e *ECS) RunTask(req *RunTaskReq) (*RunTaskResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("RunTask")
+	if req.Count > 0 {
+		params["count"] = strconv.Itoa(int(req.Count))
+	}
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if req.TaskDefinition != "" {
+		params["taskDefinition"] = req.TaskDefinition
+	}
+
+	for i, co := range req.Overrides.ContainerOverrides {
+		key := fmt.Sprintf("overrides.containerOverrides.member.%d", i+1)
+		params[fmt.Sprintf("%s.name", key)] = co.Name
+		for k, cmd := range co.Command {
+			params[fmt.Sprintf("%s.command.member.%d", key, k+1)] = cmd
+		}
+	}
+
+	resp := new(RunTaskResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StartTaskReq encapsulates StartTask req params
+type StartTaskReq struct {
+	Cluster            string
+	ContainerInstances []string
+	Overrides          TaskOverride
+	TaskDefinition     string
+}
+
+// StartTaskResp encapsuates the StartTask response
+type StartTaskResp struct {
+	Tasks     []Task    `xml:"StartTaskResult>tasks>member"`
+	Failures  []Failure `xml:"StartTaskResult>failures>member"`
+	RequestId string    `xml:"ResponseMetadata>RequestId"`
+}
+
+// StartTask Starts a new task from the specified task definition on the specified
+// container instance or instances. If you want to use the default Amazon ECS scheduler
+// to place your task, use RunTask instead.
+func (e *ECS) StartTask(req *StartTaskReq) (*StartTaskResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("StartTask")
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if req.TaskDefinition != "" {
+		params["taskDefinition"] = req.TaskDefinition
+	}
+	for i, ci := range req.ContainerInstances {
+		params[fmt.Sprintf("containerInstances.member.%d", i+1)] = ci
+	}
+	for i, co := range req.Overrides.ContainerOverrides {
+		key := fmt.Sprintf("overrides.containerOverrides.member.%d", i+1)
+		params[fmt.Sprintf("%s.name", key)] = co.Name
+		for k, cmd := range co.Command {
+			params[fmt.Sprintf("%s.command.member.%d", key, k+1)] = cmd
+		}
+	}
+
+	resp := new(StartTaskResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StopTaskReq encapsulates StopTask req params
+type StopTaskReq struct {
+	Cluster string
+	Task    string
+}
+
+// StopTaskResp encapsuates the StopTask response
+type StopTaskResp struct {
+	Task      Task   `xml:"StopTaskResult>task"`
+	RequestId string `xml:"ResponseMetadata>RequestId"`
+}
+
+// StopTask stops a running task
+func (e *ECS) StopTask(req *StopTaskReq) (*StopTaskResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("StopTask")
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if req.Task != "" {
+		params["task"] = req.Task
+	}
+
+	resp := new(StopTaskResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
