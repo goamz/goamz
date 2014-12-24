@@ -441,3 +441,129 @@ func (s *S) TestListTasks(c *gocheck.C) {
 	c.Assert(resp.NextToken, gocheck.Equals, "token_UUID")
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
+
+func (s *S) TestRegisterContainerInstance(c *gocheck.C) {
+	testServer.Response(200, nil, RegisterContainerInstanceResponse)
+
+	resources := []Resource{
+		{
+			DoubleValue:  0.0,
+			IntegerValue: 2048,
+			LongValue:    0,
+			Name:         "CPU",
+			Type:         "INTEGER",
+		},
+		{
+			DoubleValue:  0.0,
+			IntegerValue: 3955,
+			LongValue:    0,
+			Name:         "MEMORY",
+			Type:         "INTEGER",
+		},
+		{
+			DoubleValue:    0.0,
+			IntegerValue:   0,
+			LongValue:      0,
+			Name:           "PORTS",
+			StringSetValue: []string{"2376", "22", "51678", "2375"},
+			Type:           "STRINGSET",
+		},
+	}
+
+	req := &RegisterContainerInstanceReq{
+		Cluster:                           "default",
+		InstanceIdentityDocument:          "foo",
+		InstanceIdentityDocumentSignature: "baz",
+		TotalResources:                    resources,
+	}
+
+	resp, err := s.ecs.RegisterContainerInstance(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "RegisterContainerInstance")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "default")
+	c.Assert(values.Get("instanceIdentityDocument"), gocheck.Equals, "foo")
+	c.Assert(values.Get("instanceIdentityDocumentSignature"), gocheck.Equals, "baz")
+	c.Assert(values.Get("totalResources.member.1.doubleValue"), gocheck.Equals, "0.0")
+	c.Assert(values.Get("totalResources.member.1.integerValue"), gocheck.Equals, "2048")
+	c.Assert(values.Get("totalResources.member.1.longValue"), gocheck.Equals, "0")
+	c.Assert(values.Get("totalResources.member.1.name"), gocheck.Equals, "CPU")
+	c.Assert(values.Get("totalResources.member.1.type"), gocheck.Equals, "INTEGER")
+	c.Assert(values.Get("totalResources.member.2.doubleValue"), gocheck.Equals, "0.0")
+	c.Assert(values.Get("totalResources.member.2.integerValue"), gocheck.Equals, "3955")
+	c.Assert(values.Get("totalResources.member.2.longValue"), gocheck.Equals, "0")
+	c.Assert(values.Get("totalResources.member.2.name"), gocheck.Equals, "MEMORY")
+	c.Assert(values.Get("totalResources.member.2.type"), gocheck.Equals, "INTEGER")
+	c.Assert(values.Get("totalResources.member.3.doubleValue"), gocheck.Equals, "0.0")
+	c.Assert(values.Get("totalResources.member.3.integerValue"), gocheck.Equals, "0")
+	c.Assert(values.Get("totalResources.member.3.longValue"), gocheck.Equals, "0")
+	c.Assert(values.Get("totalResources.member.3.name"), gocheck.Equals, "PORTS")
+	c.Assert(values.Get("totalResources.member.3.stringSetValue.member.1"), gocheck.Equals, "2376")
+	c.Assert(values.Get("totalResources.member.3.stringSetValue.member.2"), gocheck.Equals, "22")
+	c.Assert(values.Get("totalResources.member.3.stringSetValue.member.3"), gocheck.Equals, "51678")
+	c.Assert(values.Get("totalResources.member.3.stringSetValue.member.4"), gocheck.Equals, "2375")
+	c.Assert(values.Get("totalResources.member.3.type"), gocheck.Equals, "STRINGSET")
+
+	c.Assert(resp.ContainerInstance.AgentConnected, gocheck.Equals, true)
+	c.Assert(resp.ContainerInstance.ContainerInstanceArn, gocheck.Equals, "arn:aws:ecs:us-east-1:aws_account_id:container-instance/container_instance_UUID")
+	c.Assert(resp.ContainerInstance.Status, gocheck.Equals, "ACTIVE")
+	c.Assert(resp.ContainerInstance.Ec2InstanceId, gocheck.Equals, "instance_id")
+	c.Assert(resp.ContainerInstance.RegisteredResources, gocheck.DeepEquals, resources)
+	c.Assert(resp.ContainerInstance.RemainingResources, gocheck.DeepEquals, resources)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestRegisterTaskDefinition(c *gocheck.C) {
+	testServer.Response(200, nil, RegisterTaskDefinitionResponse)
+
+	CDefinitions := []ContainerDefinition{
+		{
+			Command:    []string{"sleep", "360"},
+			Cpu:        10,
+			EntryPoint: []string{"/bin/sh"},
+			Environment: []KeyValuePair{
+				{
+					Name:  "envVar",
+					Value: "foo",
+				},
+			},
+			Essential: true,
+			Image:     "busybox",
+			Memory:    10,
+			Name:      "sleep",
+		},
+	}
+
+	req := &RegisterTaskDefinitionReq{
+		Family:               "sleep360",
+		ContainerDefinitions: CDefinitions,
+	}
+	resp, err := s.ecs.RegisterTaskDefinition(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "RegisterTaskDefinition")
+	c.Assert(values.Get("containerDefinitions.member.1.command.member.1"), gocheck.Equals, "sleep")
+	c.Assert(values.Get("containerDefinitions.member.1.command.member.2"), gocheck.Equals, "360")
+	c.Assert(values.Get("containerDefinitions.member.1.cpu"), gocheck.Equals, "10")
+	c.Assert(values.Get("containerDefinitions.member.1.memory"), gocheck.Equals, "10")
+	c.Assert(values.Get("containerDefinitions.member.1.entryPoint.member.1"), gocheck.Equals, "/bin/sh")
+	c.Assert(values.Get("containerDefinitions.member.1.environment.member.1.name"), gocheck.Equals, "envVar")
+	c.Assert(values.Get("containerDefinitions.member.1.environment.member.1.value"), gocheck.Equals, "foo")
+	c.Assert(values.Get("containerDefinitions.member.1.essential"), gocheck.Equals, "true")
+	c.Assert(values.Get("containerDefinitions.member.1.image"), gocheck.Equals, "busybox")
+	c.Assert(values.Get("containerDefinitions.member.1.memory"), gocheck.Equals, "10")
+	c.Assert(values.Get("containerDefinitions.member.1.name"), gocheck.Equals, "sleep")
+	c.Assert(values.Get("family"), gocheck.Equals, "sleep360")
+
+	expected := TaskDefinition{
+		Family:               "sleep360",
+		Revision:             2,
+		TaskDefinitionArn:    "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
+		ContainerDefinitions: CDefinitions,
+	}
+
+	c.Assert(resp.TaskDefinition, gocheck.DeepEquals, expected)
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}

@@ -728,3 +728,113 @@ func (e *ECS) ListTasks(req *ListTasksReq) (
 	}
 	return resp, nil
 }
+
+// RegisterContainerInstanceReq encapsulates RegisterContainerInstance req params
+type RegisterContainerInstanceReq struct {
+	Cluster                           string
+	InstanceIdentityDocument          string
+	InstanceIdentityDocumentSignature string
+	TotalResources                    []Resource
+}
+
+// DeregisterContainerInstanceResp encapsulates RegisterContainerInstance response
+type RegisterContainerInstanceResp struct {
+	ContainerInstance ContainerInstance `xml:"RegisterContainerInstanceResult>containerInstance"`
+	RequestId         string            `xml:"ResponseMetadata>RequestId"`
+}
+
+// RegisterContainerInstance registers an Amazon EC2 instance into the specified cluster.
+// This instance will become available to place containers on.
+func (e *ECS) RegisterContainerInstance(req *RegisterContainerInstanceReq) (
+	resp *RegisterContainerInstanceResp, err error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("RegisterContainerInstance")
+	if req.InstanceIdentityDocument != "" {
+		params["instanceIdentityDocument"] = req.InstanceIdentityDocument
+	}
+	if req.InstanceIdentityDocumentSignature != "" {
+		params["instanceIdentityDocumentSignature"] = req.InstanceIdentityDocumentSignature
+	}
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	// Marshal Resources
+	for i, r := range req.TotalResources {
+		key := fmt.Sprintf("totalResources.member.%d", i+1)
+		params[fmt.Sprintf("%s.doubleValue", key)] = strconv.FormatFloat(r.DoubleValue, 'f', 1, 64)
+		params[fmt.Sprintf("%s.integerValue", key)] = strconv.Itoa(int(r.IntegerValue))
+		params[fmt.Sprintf("%s.longValue", key)] = strconv.Itoa(int(r.LongValue))
+		params[fmt.Sprintf("%s.name", key)] = r.Name
+		params[fmt.Sprintf("%s.type", key)] = r.Type
+		for k, sv := range r.StringSetValue {
+			params[fmt.Sprintf("%s.stringSetValue.member.%d", key, k+1)] = sv
+		}
+	}
+
+	resp = new(RegisterContainerInstanceResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// RegisterTaskDefinitionReq encapsulates RegisterTaskDefinition req params
+type RegisterTaskDefinitionReq struct {
+	Family               string
+	ContainerDefinitions []ContainerDefinition
+}
+
+// RegisterTaskDefinitionResp encapsulates RegisterTaskDefinition response
+type RegisterTaskDefinitionResp struct {
+	TaskDefinition TaskDefinition `xml:"RegisterTaskDefinitionResult>taskDefinition"`
+	RequestId      string         `xml:"ResponseMetadata>RequestId"`
+}
+
+// RegisterTaskDefinition registers a new task definition from the supplied family and containerDefinitions.
+func (e *ECS) RegisterTaskDefinition(req *RegisterTaskDefinitionReq) (
+	resp *RegisterTaskDefinitionResp, err error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+	params := makeParams("RegisterTaskDefinition")
+	if req.Family != "" {
+		params["family"] = req.Family
+	}
+
+	// Marshal Container Definitions
+	for i, c := range req.ContainerDefinitions {
+		key := fmt.Sprintf("containerDefinitions.member.%d", i+1)
+		params[fmt.Sprintf("%s.cpu", key)] = strconv.Itoa(int(c.Cpu))
+		params[fmt.Sprintf("%s.essential", key)] = strconv.FormatBool(c.Essential)
+		params[fmt.Sprintf("%s.image", key)] = c.Image
+		params[fmt.Sprintf("%s.memory", key)] = strconv.Itoa(int(c.Memory))
+		params[fmt.Sprintf("%s.name", key)] = c.Name
+
+		for k, cmd := range c.Command {
+			params[fmt.Sprintf("%s.command.member.%d", key, k+1)] = cmd
+		}
+		for k, ep := range c.EntryPoint {
+			params[fmt.Sprintf("%s.entryPoint.member.%d", key, k+1)] = ep
+		}
+		for k, env := range c.Environment {
+			params[fmt.Sprintf("%s.environment.member.%d.name", key, k+1)] = env.Name
+			params[fmt.Sprintf("%s.environment.member.%d.value", key, k+1)] = env.Value
+		}
+		for k, l := range c.Links {
+			params[fmt.Sprintf("%s.links.member.%d", key, k+1)] = l
+		}
+		for k, p := range c.PortMappings {
+			params[fmt.Sprintf("%s.portMappings.member.%d.containerPort", key, k+1)] = strconv.Itoa(int(p.ContainerPort))
+			params[fmt.Sprintf("%s.portMappings.member.%d.hostPort", key, k+1)] = strconv.Itoa(int(p.HostPort))
+		}
+	}
+
+	resp = new(RegisterTaskDefinitionResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
