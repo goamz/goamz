@@ -111,6 +111,21 @@ func (s *S) TestDeleteQueue(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 }
 
+func (s *S) TestPurgeQueue(c *gocheck.C) {
+	testServer.PrepareResponse(200, nil, TestDeleteQueueXmlOK)
+
+	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
+	resp, err := q.Purge()
+	req := testServer.WaitRequest()
+
+	c.Assert(req.Method, gocheck.Equals, "GET")
+	c.Assert(req.URL.Path, gocheck.Equals, "/123456789012/testQueue/")
+	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
+
+	c.Assert(resp.ResponseMetadata.RequestId, gocheck.Equals, "6fde8d1e-52cd-4581-8cd9-c512f4c64223")
+	c.Assert(err, gocheck.IsNil)
+}
+
 func (s *S) TestSendMessage(c *gocheck.C) {
 	testServer.PrepareResponse(200, nil, TestSendMessageXmlOK)
 

@@ -102,6 +102,10 @@ type DeleteQueueResponse struct {
 	ResponseMetadata ResponseMetadata
 }
 
+type PurgeQueueResponse struct {
+	ResponseMetadata ResponseMetadata
+}
+
 type SendMessageResponse struct {
 	MD5              string `xml:"SendMessageResult>MD5OfMessageBody"`
 	Id               string `xml:"SendMessageResult>MessageId"`
@@ -260,6 +264,14 @@ func (s *SQS) ListQueues(QueueNamePrefix string) (resp *ListQueuesResponse, err 
 func (q *Queue) Delete() (resp *DeleteQueueResponse, err error) {
 	resp = &DeleteQueueResponse{}
 	params := makeParams("DeleteQueue")
+
+	err = q.SQS.query(q.Url, params, resp)
+	return
+}
+
+func (q *Queue) Purge() (resp *PurgeQueueResponse, err error) {
+	resp = &PurgeQueueResponse{}
+	params := makeParams("PurgeQueue")
 
 	err = q.SQS.query(q.Url, params, resp)
 	return
