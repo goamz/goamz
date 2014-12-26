@@ -112,7 +112,7 @@ func (s *S) TestDeleteQueue(c *gocheck.C) {
 }
 
 func (s *S) TestPurgeQueue(c *gocheck.C) {
-	testServer.PrepareResponse(200, nil, TestDeleteQueueXmlOK)
+	testServer.PrepareResponse(200, nil, TestPurgeQueueXmlOK)
 
 	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
 	resp, err := q.Purge()
