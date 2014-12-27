@@ -968,3 +968,105 @@ func (e *ECS) StopTask(req *StopTaskReq) (*StopTaskResp, error) {
 	}
 	return resp, nil
 }
+
+// SubmitContainerStateChangeReq encapsulates SubmitContainerStateChange req params
+type SubmitContainerStateChangeReq struct {
+	Cluster         string
+	ContainerName   string
+	ExitCode        int32
+	NetworkBindings []NetworkBinding
+	Reason          string
+	Status          string
+	Task            string
+}
+
+// SubmitContainerStateChangeResp encapsuates the SubmitContainerStateChange response
+type SubmitContainerStateChangeResp struct {
+	Acknowledgment string `xml:"SubmitContainerStateChangeResult>acknowledgment"`
+	RequestId      string `xml:"ResponseMetadata>RequestId"`
+}
+
+// SubmitContainerStateChange is used to acknowledge that a container changed states.
+// Note: This action is only used by the Amazon EC2 Container Service agent,
+// and it is not intended for use outside of the agent.
+func (e *ECS) SubmitContainerStateChange(req *SubmitContainerStateChangeReq) (
+	*SubmitContainerStateChangeResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("SubmitContainerStateChange")
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+	if req.ContainerName != "" {
+		params["containerName"] = req.ContainerName
+	}
+	if req.Reason != "" {
+		params["reason"] = req.Reason
+	}
+	if req.Status != "" {
+		params["status"] = req.Status
+	}
+	if req.Task != "" {
+		params["task"] = req.Task
+	}
+	for i, nb := range req.NetworkBindings {
+		key := fmt.Sprintf("networkBindings.member.%d", i+1)
+		params[fmt.Sprintf("%s.bindIp", key)] = nb.BindIp
+		params[fmt.Sprintf("%s.containerPort", key)] = strconv.Itoa(int(nb.ContainerPort))
+		params[fmt.Sprintf("%s.hostPort", key)] = strconv.Itoa(int(nb.HostPort))
+	}
+	params["exitCode"] = strconv.Itoa(int(req.ExitCode))
+
+	resp := new(SubmitContainerStateChangeResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// SubmitTaskStateChangeReq encapsulates SubmitTaskStateChange req params
+type SubmitTaskStateChangeReq struct {
+	Cluster string
+	Reason  string
+	Status  string
+	Task    string
+}
+
+// SubmitTaskStateChangeResp encapsuates the SubmitTaskStateChange response
+type SubmitTaskStateChangeResp struct {
+	Acknowledgment string `xml:"SubmitTaskStateChangeResult>acknowledgment"`
+	RequestId      string `xml:"ResponseMetadata>RequestId"`
+}
+
+// SubmitTaskStateChange is used to acknowledge that a task changed states.
+// Note: This action is only used by the Amazon EC2 Container Service agent,
+// and it is not intended for use outside of the agent.
+func (e *ECS) SubmitTaskStateChange(req *SubmitTaskStateChangeReq) (
+	*SubmitTaskStateChangeResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("The req params cannot be nil")
+	}
+
+	params := makeParams("SubmitTaskStateChange")
+	if req.Cluster != "" {
+		params["cluster"] = req.Cluster
+	}
+
+	if req.Reason != "" {
+		params["reason"] = req.Reason
+	}
+	if req.Status != "" {
+		params["status"] = req.Status
+	}
+	if req.Task != "" {
+		params["task"] = req.Task
+	}
+
+	resp := new(SubmitTaskStateChangeResp)
+	if err := e.query(params, resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

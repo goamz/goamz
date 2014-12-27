@@ -587,3 +587,25 @@ var StopTaskResponse = `
   </ResponseMetadata>
 </StopTaskResponse>
 `
+
+var SubmitContainerStateChangeResponse = `
+<SubmitContainerStateChangeResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <SubmitContainerStateChangeResult>
+   <acknowledgment>ACK</acknowledgment>
+  </SubmitContainerStateChangeResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</SubmitContainerStateChangeResponse>
+`
+
+var SubmitTaskStateChangeResponse = `
+<SubmitTaskStateChangeResponse xmlns="http://ecs.amazonaws.com/doc/2014-11-13/">
+  <SubmitTaskStateChangeResult>
+   <acknowledgment>ACK</acknowledgment>
+  </SubmitTaskStateChangeResult>
+  <ResponseMetadata>
+    <RequestId>8d798a29-f083-11e1-bdfb-cb223EXAMPLE</RequestId>
+  </ResponseMetadata>
+</SubmitTaskStateChangeResponse>
+`

@@ -698,3 +698,64 @@ func (s *S) TestStopTask(c *gocheck.C) {
 	c.Assert(resp.Task, gocheck.DeepEquals, expected)
 	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
+
+func (s *S) TestSubmitContainerStateChange(c *gocheck.C) {
+	testServer.Response(200, nil, SubmitContainerStateChangeResponse)
+	networkBindings := []NetworkBinding{
+		{
+			BindIp:        "127.0.0.1",
+			ContainerPort: 80,
+			HostPort:      80,
+		},
+	}
+	req := &SubmitContainerStateChangeReq{
+		Cluster:         "test",
+		ContainerName:   "container",
+		ExitCode:        0,
+		Reason:          "reason",
+		Status:          "status",
+		Task:            "taskUUID",
+		NetworkBindings: networkBindings,
+	}
+
+	resp, err := s.ecs.SubmitContainerStateChange(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "SubmitContainerStateChange")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("containerName"), gocheck.Equals, "container")
+	c.Assert(values.Get("exitCode"), gocheck.Equals, "0")
+	c.Assert(values.Get("reason"), gocheck.Equals, "reason")
+	c.Assert(values.Get("status"), gocheck.Equals, "status")
+	c.Assert(values.Get("task"), gocheck.Equals, "taskUUID")
+	c.Assert(values.Get("networkBindings.member.1.bindIp"), gocheck.Equals, "127.0.0.1")
+	c.Assert(values.Get("networkBindings.member.1.containerPort"), gocheck.Equals, "80")
+	c.Assert(values.Get("networkBindings.member.1.hostPort"), gocheck.Equals, "80")
+
+	c.Assert(resp.Acknowledgment, gocheck.Equals, "ACK")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
+
+func (s *S) TestSubmitTaskStateChange(c *gocheck.C) {
+	testServer.Response(200, nil, SubmitTaskStateChangeResponse)
+	req := &SubmitTaskStateChangeReq{
+		Cluster: "test",
+		Reason:  "reason",
+		Status:  "status",
+		Task:    "taskUUID",
+	}
+
+	resp, err := s.ecs.SubmitTaskStateChange(req)
+	c.Assert(err, gocheck.IsNil)
+	values := testServer.WaitRequest().PostForm
+	c.Assert(values.Get("Version"), gocheck.Equals, "2014-11-13")
+	c.Assert(values.Get("Action"), gocheck.Equals, "SubmitTaskStateChange")
+	c.Assert(values.Get("cluster"), gocheck.Equals, "test")
+	c.Assert(values.Get("reason"), gocheck.Equals, "reason")
+	c.Assert(values.Get("status"), gocheck.Equals, "status")
+	c.Assert(values.Get("task"), gocheck.Equals, "taskUUID")
+
+	c.Assert(resp.Acknowledgment, gocheck.Equals, "ACK")
+	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+}
