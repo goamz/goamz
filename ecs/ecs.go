@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -147,50 +146,6 @@ func makeParams(action string) map[string]string {
 func addParamsList(params map[string]string, label string, ids []string) {
 	for i, id := range ids {
 		params[label+"."+strconv.Itoa(i+1)] = id
-	}
-}
-
-// ----------------------------------------------------------------------------
-// Filtering helper.
-
-// Filter builds filtering parameters to be used in an e query which supports
-// filtering.  For example:
-//
-//     filter := NewFilter()
-//     filter.Add("architecture", "i386")
-//     filter.Add("launch-index", "0")
-//     resp, err := e.DescribeTags(filter,nil,nil)
-//
-type Filter struct {
-	m map[string][]string
-}
-
-// NewFilter creates a new Filter.
-func NewFilter() *Filter {
-	return &Filter{make(map[string][]string)}
-}
-
-// Add appends a filtering parameter with the given name and value(s).
-func (f *Filter) Add(name string, value ...string) {
-	f.m[name] = append(f.m[name], value...)
-}
-
-func (f *Filter) addParams(params map[string]string) {
-	if f != nil {
-		a := make([]string, len(f.m))
-		i := 0
-		for k := range f.m {
-			a[i] = k
-			i++
-		}
-		sort.StringSlice(a).Sort()
-		for i, k := range a {
-			prefix := "Filters.member." + strconv.Itoa(i+1)
-			params[prefix+".Name"] = k
-			for j, v := range f.m[k] {
-				params[prefix+".Values.member."+strconv.Itoa(j+1)] = v
-			}
-		}
 	}
 }
 
