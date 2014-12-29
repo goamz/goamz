@@ -135,7 +135,7 @@ var EUCentral = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.eu-central-1.amazonaws.com",
 	"https://ecs.eu-central-1.amazonaws.com",
-	"",
+	"https://kinesis.eu-central-1.amazonaws.com",
 }
 
 var APSoutheast = Region{
@@ -158,7 +158,7 @@ var APSoutheast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-southeast-1.amazonaws.com",
 	"https://ecs.ap-southeast-1.amazonaws.com",
-	"",
+	"https://kinesis.ap-southeast-1.amazonaws.com",
 }
 
 var APSoutheast2 = Region{
@@ -181,7 +181,7 @@ var APSoutheast2 = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-southeast-2.amazonaws.com",
 	"https://ecs.ap-southeast-2.amazonaws.com",
-	"",
+	"https://kinesis.ap-southeast-2.amazonaws.com",
 }
 
 var APNortheast = Region{
@@ -204,7 +204,7 @@ var APNortheast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-northeast-1.amazonaws.com",
 	"https://ecs.ap-northeast-1.amazonaws.com",
-	"",
+	"https://kinesis.ap-northeast-1.amazonaws.com",
 }
 
 var SAEast = Region{
