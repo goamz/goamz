@@ -21,6 +21,7 @@ github.com/goamz/goamz/ecs
 github.com/goamz/goamz/ec2
 github.com/goamz/goamz/elb
 github.com/goamz/goamz/iam
+github.com/goamz/goamz/kinesis
 github.com/goamz/goamz/rds
 github.com/goamz/goamz/route53
 github.com/goamz/goamz/s3
