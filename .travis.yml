@@ -16,6 +16,7 @@ script:
   - go test -v ./ec2/
   - go test -v ./elb/
   - go test -v ./iam/
+  - go test -v ./kinesis/
   - go test -v ./rds/
   - go test -v ./route53/
   - go test -v ./s3/
