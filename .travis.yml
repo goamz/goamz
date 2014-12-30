@@ -10,13 +10,20 @@ before_script:
 script:
   - go test -v ./autoscaling/
   - go test -v ./aws/
+  - go test -v ./cloudformation/
   - go test -v ./cloudfront/
   - go test -v ./cloudwatch/
   - go test -v ./dynamodb/
   - go test -v ./ec2/
+  - go test -v ./ecs/
   - go test -v ./elb/
   - go test -v ./iam/
   - go test -v ./rds/
   - go test -v ./route53/
   - go test -v ./s3/
   - go test -v ./sqs/
+  - go test -v ./sts/
+  - go test -v ./exp/mturk/
+  - go test -v ./exp/sdb/
+  # - go test -v ./exp/ses/
+  # - go test -v ./exp/sns/
