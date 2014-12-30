@@ -10,7 +10,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/s3"
 	"github.com/goamz/goamz/testutil"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {

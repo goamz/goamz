@@ -1,9 +1,10 @@
 package dynamodb_test
 
 import (
-	"github.com/goamz/goamz/dynamodb"
-	"github.com/motain/gocheck"
 	"time"
+
+	"github.com/goamz/goamz/dynamodb"
+	gocheck "gopkg.in/check.v1"
 )
 
 type TestSubStruct struct {

@@ -2,13 +2,14 @@ package ec2_test
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
+
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/ec2"
 	"github.com/goamz/goamz/ec2/ec2test"
 	"github.com/goamz/goamz/testutil"
-	"github.com/motain/gocheck"
-	"regexp"
-	"sort"
+	gocheck "gopkg.in/check.v1"
 )
 
 // LocalServer represents a local ec2test fake server.

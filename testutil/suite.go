@@ -2,8 +2,9 @@ package testutil
 
 import (
 	"flag"
+
 	"github.com/goamz/goamz/aws"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 // Amazon must be used by all tested packages to determine whether to

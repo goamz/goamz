@@ -3,7 +3,7 @@ package sdb_test
 import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/exp/sdb"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 // SimpleDB ReST authentication docs: http://goo.gl/CaY81

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/testutil"

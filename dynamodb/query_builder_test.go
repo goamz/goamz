@@ -4,7 +4,7 @@ import (
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/dynamodb"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 type QueryBuilderSuite struct {

@@ -2,12 +2,13 @@ package elb_test
 
 import (
 	"fmt"
-	"github.com/motain/gocheck"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	gocheck "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {

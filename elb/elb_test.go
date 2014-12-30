@@ -1,10 +1,11 @@
 package elb_test
 
 import (
+	"time"
+
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/elb"
-	"github.com/motain/gocheck"
-	"time"
+	gocheck "gopkg.in/check.v1"
 )
 
 type S struct {

@@ -3,13 +3,14 @@ package sqs
 import (
 	"flag"
 	"fmt"
-	"github.com/goamz/goamz/aws"
-	"github.com/motain/gocheck"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/goamz/goamz/aws"
+	gocheck "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {

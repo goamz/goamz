@@ -3,7 +3,7 @@ package ec2_test
 import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/ec2"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 // EC2 ReST authentication docs: http://goo.gl/fQmAN

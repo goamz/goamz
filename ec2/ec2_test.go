@@ -1,11 +1,12 @@
 package ec2_test
 
 import (
+	"testing"
+
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/ec2"
 	"github.com/goamz/goamz/testutil"
-	"github.com/motain/gocheck"
-	"testing"
+	gocheck "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {

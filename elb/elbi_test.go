@@ -2,10 +2,11 @@ package elb_test
 
 import (
 	"flag"
+
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/ec2"
 	"github.com/goamz/goamz/elb"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 var amazon = flag.Bool("amazon", false, "Enable tests against amazon server")

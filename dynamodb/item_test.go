@@ -2,7 +2,7 @@ package dynamodb_test
 
 import (
 	"github.com/goamz/goamz/dynamodb"
-	"github.com/motain/gocheck"
+	gocheck "gopkg.in/check.v1"
 )
 
 type ItemSuite struct {
