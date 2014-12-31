@@ -227,6 +227,7 @@ var CNNorth = Region{
 	"",
 	true,
 	true,
+	"https://sdb.cn-north-1.amazonaws.com.cn",
 	"",
 	"https://sns.cn-north-1.amazonaws.com.cn",
 	"https://sqs.cn-north-1.amazonaws.com.cn",
@@ -238,4 +239,5 @@ var CNNorth = Region{
 	ServiceInfo{"https://rds.cn-north-1.amazonaws.com.cn", V4Signature},
 	"https://sts.cn-north-1.amazonaws.com.cn",
 	"https://cloudformation.cn-north-1.amazonaws.com.cn",
+	"https://ecs.cn-north-1.amazonaws.com.cn",
 }
