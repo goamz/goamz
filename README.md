@@ -51,7 +51,7 @@ Just use `go get` with any of the available packages. For example:
 
 To run tests, first install gocheck with:
 
-`$ go get github.com/motain/gocheck`
+`$ go get gopkg.in/check.v1`
 
 Then run go test as usual:
 

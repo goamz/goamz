@@ -2,27 +2,28 @@ package elb_test
 
 import (
 	"fmt"
-	"github.com/motain/gocheck"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	. "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	TestingT(t)
 }
 
 type HTTPSuite struct{}
 
 var testServer = NewTestHTTPServer("http://localhost:4444", 5*time.Second)
 
-func (s *HTTPSuite) SetUpSuite(c *gocheck.C) {
+func (s *HTTPSuite) SetUpSuite(c *C) {
 	testServer.Start()
 }
 
-func (s *HTTPSuite) TearDownTest(c *gocheck.C) {
+func (s *HTTPSuite) TearDownTest(c *C) {
 	testServer.FlushRequests()
 }
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/motain/gocheck"
+	. "gopkg.in/check.v1"
 
 	"github.com/goamz/goamz/aws"
 	cf "github.com/goamz/goamz/cloudformation"
@@ -12,10 +12,10 @@ import (
 )
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	TestingT(t)
 }
 
-var _ = gocheck.Suite(&S{})
+var _ = Suite(&S{})
 
 type S struct {
 	cf *cf.CloudFormation
@@ -25,31 +25,31 @@ var testServer = testutil.NewHTTPServer()
 
 var mockTest bool
 
-func (s *S) SetUpSuite(c *gocheck.C) {
+func (s *S) SetUpSuite(c *C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
 	s.cf = cf.New(auth, aws.Region{CloudFormationEndpoint: testServer.URL})
 }
 
-func (s *S) TearDownTest(c *gocheck.C) {
+func (s *S) TearDownTest(c *C) {
 	testServer.Flush()
 }
 
-func (s *S) TestCancelUpdateStack(c *gocheck.C) {
+func (s *S) TestCancelUpdateStack(c *C) {
 	testServer.Response(200, nil, CancelUpdateStackResponse)
 
 	resp, err := s.cf.CancelUpdateStack("foo")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CancelUpdateStack")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "foo")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "CancelUpdateStack")
+	c.Assert(values.Get("StackName"), Equals, "foo")
 	// Response test
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
-func (s *S) TestCreateStack(c *gocheck.C) {
+func (s *S) TestCreateStack(c *C) {
 	testServer.Response(200, nil, CreateStackResponse)
 
 	stackParams := &cf.CreateStackParams{
@@ -64,22 +64,22 @@ func (s *S) TestCreateStack(c *gocheck.C) {
 		TemplateBody: "[Template Document]",
 	}
 	resp, err := s.cf.CreateStack(stackParams)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateStack")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("NotificationARNs.member.1"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
-	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "[Template Document]")
-	c.Assert(values.Get("Parameters.member.1.ParameterKey"), gocheck.Equals, "AvailabilityZone")
-	c.Assert(values.Get("Parameters.member.1.ParameterValue"), gocheck.Equals, "us-east-1a")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "CreateStack")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("NotificationARNs.member.1"), Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
+	c.Assert(values.Get("TemplateBody"), Equals, "[Template Document]")
+	c.Assert(values.Get("Parameters.member.1.ParameterKey"), Equals, "AvailabilityZone")
+	c.Assert(values.Get("Parameters.member.1.ParameterValue"), Equals, "us-east-1a")
 	// Response test
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
-	c.Assert(resp.StackId, gocheck.Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.StackId, Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
 }
 
-func (s *S) TestCreateStackWithInvalidParams(c *gocheck.C) {
+func (s *S) TestCreateStackWithInvalidParams(c *C) {
 	testServer.Response(400, nil, CreateStackWithInvalidParamsResponse)
 	//testServer.Response(200, nil, DeleteAutoScalingGroupResponse)
 
@@ -138,67 +138,67 @@ func (s *S) TestCreateStackWithInvalidParams(c *gocheck.C) {
 		TimeoutInMinutes: 20,
 	}
 	resp, err := s.cf.CreateStack(stackParams)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(resp, gocheck.IsNil)
+	c.Assert(err, NotNil)
+	c.Assert(resp, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateStack")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("NotificationARNs.member.1"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
-	c.Assert(values.Get("NotificationARNs.member.2"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic2")
-	c.Assert(values.Get("Capabilities.member.1"), gocheck.Equals, "CAPABILITY_IAM")
-	c.Assert(values.Get("TemplateBody"), gocheck.Equals, cfTemplate)
-	c.Assert(values.Get("TemplateURL"), gocheck.Equals, "http://url")
-	c.Assert(values.Get("StackPolicyBody"), gocheck.Equals, "{PolicyBody}")
-	c.Assert(values.Get("StackPolicyURL"), gocheck.Equals, "http://stack-policy-url")
-	c.Assert(values.Get("OnFailure"), gocheck.Equals, "ROLLBACK")
-	c.Assert(values.Get("DisableRollback"), gocheck.Equals, "true")
-	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "TagKey")
-	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "TagValue")
-	c.Assert(values.Get("Parameters.member.1.ParameterKey"), gocheck.Equals, "AvailabilityZone")
-	c.Assert(values.Get("Parameters.member.1.ParameterValue"), gocheck.Equals, "us-east-1a")
-	c.Assert(values.Get("TimeoutInMinutes"), gocheck.Equals, "20")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "CreateStack")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("NotificationARNs.member.1"), Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
+	c.Assert(values.Get("NotificationARNs.member.2"), Equals, "arn:aws:sns:us-east-1:1234567890:my-topic2")
+	c.Assert(values.Get("Capabilities.member.1"), Equals, "CAPABILITY_IAM")
+	c.Assert(values.Get("TemplateBody"), Equals, cfTemplate)
+	c.Assert(values.Get("TemplateURL"), Equals, "http://url")
+	c.Assert(values.Get("StackPolicyBody"), Equals, "{PolicyBody}")
+	c.Assert(values.Get("StackPolicyURL"), Equals, "http://stack-policy-url")
+	c.Assert(values.Get("OnFailure"), Equals, "ROLLBACK")
+	c.Assert(values.Get("DisableRollback"), Equals, "true")
+	c.Assert(values.Get("Tags.member.1.Key"), Equals, "TagKey")
+	c.Assert(values.Get("Tags.member.1.Value"), Equals, "TagValue")
+	c.Assert(values.Get("Parameters.member.1.ParameterKey"), Equals, "AvailabilityZone")
+	c.Assert(values.Get("Parameters.member.1.ParameterValue"), Equals, "us-east-1a")
+	c.Assert(values.Get("TimeoutInMinutes"), Equals, "20")
 
 	// Response test
-	c.Assert(err.(*cf.Error).RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
-	c.Assert(err.(*cf.Error).Message, gocheck.Equals, "Either Template URL or Template Body must be specified.")
-	c.Assert(err.(*cf.Error).Type, gocheck.Equals, "Sender")
-	c.Assert(err.(*cf.Error).Code, gocheck.Equals, "ValidationError")
-	c.Assert(err.(*cf.Error).StatusCode, gocheck.Equals, 400)
+	c.Assert(err.(*cf.Error).RequestId, Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
+	c.Assert(err.(*cf.Error).Message, Equals, "Either Template URL or Template Body must be specified.")
+	c.Assert(err.(*cf.Error).Type, Equals, "Sender")
+	c.Assert(err.(*cf.Error).Code, Equals, "ValidationError")
+	c.Assert(err.(*cf.Error).StatusCode, Equals, 400)
 
 }
 
-func (s *S) TestDeleteStack(c *gocheck.C) {
+func (s *S) TestDeleteStack(c *C) {
 	testServer.Response(200, nil, DeleteStackResponse)
 
 	resp, err := s.cf.DeleteStack("foo")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteStack")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "foo")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "DeleteStack")
+	c.Assert(values.Get("StackName"), Equals, "foo")
 	// Response test
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
-func (s *S) TestDescribeStackEvents(c *gocheck.C) {
+func (s *S) TestDescribeStackEvents(c *C) {
 	testServer.Response(200, nil, DescribeStackEventsResponse)
 
 	resp, err := s.cf.DescribeStackEvents("MyStack", "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
 	t1, _ := time.Parse(time.RFC3339, "2010-07-27T22:26:28Z")
 	t2, _ := time.Parse(time.RFC3339, "2010-07-27T22:27:28Z")
 	t3, _ := time.Parse(time.RFC3339, "2010-07-27T22:28:28Z")
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStackEvents")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("NextToken"), gocheck.Equals, "")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "DescribeStackEvents")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("NextToken"), Equals, "")
 
 	// Response test
 	expected := &cf.DescribeStackEventsResponse{
@@ -239,20 +239,20 @@ func (s *S) TestDescribeStackEvents(c *gocheck.C) {
 		NextToken: "",
 		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeStackResource(c *gocheck.C) {
+func (s *S) TestDescribeStackResource(c *C) {
 	testServer.Response(200, nil, DescribeStackResourceResponse)
 
 	resp, err := s.cf.DescribeStackResource("MyStack", "MyDBInstance")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStackResource")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("LogicalResourceId"), gocheck.Equals, "MyDBInstance")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "DescribeStackResource")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("LogicalResourceId"), Equals, "MyDBInstance")
 	t, _ := time.Parse(time.RFC3339, "2011-07-07T22:27:28Z")
 	// Response test
 	expected := &cf.DescribeStackResourceResponse{
@@ -267,24 +267,24 @@ func (s *S) TestDescribeStackResource(c *gocheck.C) {
 		},
 		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeStackResources(c *gocheck.C) {
+func (s *S) TestDescribeStackResources(c *C) {
 	testServer.Response(200, nil, DescribeStackResourcesResponse)
 
 	resp, err := s.cf.DescribeStackResources("MyStack", "", "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
 	t1, _ := time.Parse(time.RFC3339, "2010-07-27T22:27:28Z")
 	t2, _ := time.Parse(time.RFC3339, "2010-07-27T22:28:28Z")
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStackResources")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("PhysicalResourceId"), gocheck.Equals, "")
-	c.Assert(values.Get("LogicalResourceId"), gocheck.Equals, "")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "DescribeStackResources")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("PhysicalResourceId"), Equals, "")
+	c.Assert(values.Get("LogicalResourceId"), Equals, "")
 
 	// Response test
 	expected := &cf.DescribeStackResourcesResponse{
@@ -310,22 +310,22 @@ func (s *S) TestDescribeStackResources(c *gocheck.C) {
 		},
 		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeStacks(c *gocheck.C) {
+func (s *S) TestDescribeStacks(c *C) {
 	testServer.Response(200, nil, DescribeStacksResponse)
 
 	resp, err := s.cf.DescribeStacks("MyStack", "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
 	t, _ := time.Parse(time.RFC3339, "2010-07-27T22:28:28Z")
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeStacks")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("NextToken"), gocheck.Equals, "")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "DescribeStacks")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("NextToken"), Equals, "")
 
 	// Response test
 	expected := &cf.DescribeStacksResponse{
@@ -363,36 +363,36 @@ func (s *S) TestDescribeStacks(c *gocheck.C) {
 		NextToken: "",
 		RequestId: "4af14eec-350e-11e4-b260-EXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestEstimateTemplateCost(c *gocheck.C) {
+func (s *S) TestEstimateTemplateCost(c *C) {
 	testServer.Response(200, nil, EstimateTemplateCostResponse)
 
 	resp, err := s.cf.EstimateTemplateCost(nil, "", "https://s3.amazonaws.com/cloudformation-samples-us-east-1/Drupal_Simple.template")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "EstimateTemplateCost")
-	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "")
-	c.Assert(values.Get("TemplateURL"), gocheck.Equals, "https://s3.amazonaws.com/cloudformation-samples-us-east-1/Drupal_Simple.template")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "EstimateTemplateCost")
+	c.Assert(values.Get("TemplateBody"), Equals, "")
+	c.Assert(values.Get("TemplateURL"), Equals, "https://s3.amazonaws.com/cloudformation-samples-us-east-1/Drupal_Simple.template")
 	// Response test
-	c.Assert(resp.Url, gocheck.Equals, "http://calculator.s3.amazonaws.com/calc5.html?key=cf-2e351785-e821-450c-9d58-625e1e1ebfb6")
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.Url, Equals, "http://calculator.s3.amazonaws.com/calc5.html?key=cf-2e351785-e821-450c-9d58-625e1e1ebfb6")
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
-func (s *S) TestGetStackPolicy(c *gocheck.C) {
+func (s *S) TestGetStackPolicy(c *C) {
 	testServer.Response(200, nil, GetStackPolicyResponse)
 
 	resp, err := s.cf.GetStackPolicy("MyStack")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "GetStackPolicy")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "GetStackPolicy")
 
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
 	// Response test
 	policy := `{
       "Statement" : [
@@ -410,21 +410,21 @@ func (s *S) TestGetStackPolicy(c *gocheck.C) {
         }
       ]
     }`
-	c.Assert(resp.StackPolicyBody, gocheck.Equals, policy)
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.StackPolicyBody, Equals, policy)
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
-func (s *S) TestGetTemplate(c *gocheck.C) {
+func (s *S) TestGetTemplate(c *C) {
 	testServer.Response(200, nil, GetTemplateResponse)
 
 	resp, err := s.cf.GetTemplate("MyStack")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "GetTemplate")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "GetTemplate")
 
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
 	// Response test
 	templateBody := `{
       "AWSTemplateFormatVersion" : "2010-09-09",
@@ -437,22 +437,22 @@ func (s *S) TestGetTemplate(c *gocheck.C) {
          }
         }
       }`
-	c.Assert(resp.TemplateBody, gocheck.Equals, templateBody)
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.TemplateBody, Equals, templateBody)
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
-func (s *S) TestListStackResources(c *gocheck.C) {
+func (s *S) TestListStackResources(c *C) {
 	testServer.Response(200, nil, ListStackResourcesResponse)
 
 	resp, err := s.cf.ListStackResources("MyStack", "4dad1-32131da-d-31")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ListStackResources")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("NextToken"), gocheck.Equals, "4dad1-32131da-d-31")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "ListStackResources")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("NextToken"), Equals, "4dad1-32131da-d-31")
 
 	// Response test
 	t1, _ := time.Parse(time.RFC3339, "2011-06-21T20:15:58Z")
@@ -510,22 +510,22 @@ func (s *S) TestListStackResources(c *gocheck.C) {
 		NextToken: "",
 		RequestId: "2d06e36c-ac1d-11e0-a958-f9382b6eb86b",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestListStacks(c *gocheck.C) {
+func (s *S) TestListStacks(c *C) {
 	testServer.Response(200, nil, ListStacksResponse)
 
 	resp, err := s.cf.ListStacks([]string{"CREATE_IN_PROGRESS", "DELETE_COMPLETE"}, "4dad1-32131da-d-31")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ListStacks")
-	c.Assert(values.Get("StackStatusFilter.member.1"), gocheck.Equals, "CREATE_IN_PROGRESS")
-	c.Assert(values.Get("StackStatusFilter.member.2"), gocheck.Equals, "DELETE_COMPLETE")
-	c.Assert(values.Get("NextToken"), gocheck.Equals, "4dad1-32131da-d-31")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "ListStacks")
+	c.Assert(values.Get("StackStatusFilter.member.1"), Equals, "CREATE_IN_PROGRESS")
+	c.Assert(values.Get("StackStatusFilter.member.2"), Equals, "DELETE_COMPLETE")
+	c.Assert(values.Get("NextToken"), Equals, "4dad1-32131da-d-31")
 
 	// Response test
 	c1, _ := time.Parse(time.RFC3339, "2011-05-23T15:47:44Z")
@@ -553,26 +553,26 @@ func (s *S) TestListStacks(c *gocheck.C) {
 		NextToken: "",
 		RequestId: "2d06e36c-ac1d-11e0-a958-f9382b6eb86b",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestSetStackPolicy(c *gocheck.C) {
+func (s *S) TestSetStackPolicy(c *C) {
 	testServer.Response(200, nil, SetStackPolicyResponse)
 
 	resp, err := s.cf.SetStackPolicy("MyStack", "[Stack Policy Document]", "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "SetStackPolicy")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("StackPolicyBody"), gocheck.Equals, "[Stack Policy Document]")
-	c.Assert(values.Get("StackPolicyUrl"), gocheck.Equals, "")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "SetStackPolicy")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("StackPolicyBody"), Equals, "[Stack Policy Document]")
+	c.Assert(values.Get("StackPolicyUrl"), Equals, "")
 	// Response test
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
 }
 
-func (s *S) TestUpdateStack(c *gocheck.C) {
+func (s *S) TestUpdateStack(c *C) {
 	testServer.Response(200, nil, UpdateStackResponse)
 
 	stackParams := &cf.UpdateStackParams{
@@ -591,38 +591,38 @@ func (s *S) TestUpdateStack(c *gocheck.C) {
 		TemplateBody:        "[Template Document]",
 	}
 	resp, err := s.cf.UpdateStack(stackParams)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "UpdateStack")
-	c.Assert(values.Get("StackName"), gocheck.Equals, "MyStack")
-	c.Assert(values.Get("NotificationARNs.member.1"), gocheck.Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
-	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "[Template Document]")
-	c.Assert(values.Get("Parameters.member.1.ParameterKey"), gocheck.Equals, "AvailabilityZone")
-	c.Assert(values.Get("Parameters.member.1.ParameterValue"), gocheck.Equals, "us-east-1a")
-	c.Assert(values.Get("Capabilities.member.1"), gocheck.Equals, "CAPABILITY_IAM")
-	c.Assert(values.Get("StackPolicyBody"), gocheck.Equals, "{PolicyBody}")
-	c.Assert(values.Get("StackPolicyDuringUpdateBody"), gocheck.Equals, "{PolicyDuringUpdateBody}")
-	c.Assert(values.Get("UsePreviousTemplate"), gocheck.Equals, "true")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "UpdateStack")
+	c.Assert(values.Get("StackName"), Equals, "MyStack")
+	c.Assert(values.Get("NotificationARNs.member.1"), Equals, "arn:aws:sns:us-east-1:1234567890:my-topic")
+	c.Assert(values.Get("TemplateBody"), Equals, "[Template Document]")
+	c.Assert(values.Get("Parameters.member.1.ParameterKey"), Equals, "AvailabilityZone")
+	c.Assert(values.Get("Parameters.member.1.ParameterValue"), Equals, "us-east-1a")
+	c.Assert(values.Get("Capabilities.member.1"), Equals, "CAPABILITY_IAM")
+	c.Assert(values.Get("StackPolicyBody"), Equals, "{PolicyBody}")
+	c.Assert(values.Get("StackPolicyDuringUpdateBody"), Equals, "{PolicyDuringUpdateBody}")
+	c.Assert(values.Get("UsePreviousTemplate"), Equals, "true")
 
 	// Response test
-	c.Assert(resp.RequestId, gocheck.Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
-	c.Assert(resp.StackId, gocheck.Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
+	c.Assert(resp.RequestId, Equals, "4af14eec-350e-11e4-b260-EXAMPLE")
+	c.Assert(resp.StackId, Equals, "arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83")
 }
 
-func (s *S) TestValidateTemplate(c *gocheck.C) {
+func (s *S) TestValidateTemplate(c *C) {
 	testServer.Response(200, nil, ValidateTemplateResponse)
 
 	resp, err := s.cf.ValidateTemplate("", "http://myTemplateRepository/TemplateOne.template")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 
 	// Post request test
-	c.Assert(values.Get("Version"), gocheck.Equals, "2010-05-15")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ValidateTemplate")
-	c.Assert(values.Get("TemplateURL"), gocheck.Equals, "http://myTemplateRepository/TemplateOne.template")
-	c.Assert(values.Get("TemplateBody"), gocheck.Equals, "")
+	c.Assert(values.Get("Version"), Equals, "2010-05-15")
+	c.Assert(values.Get("Action"), Equals, "ValidateTemplate")
+	c.Assert(values.Get("TemplateURL"), Equals, "http://myTemplateRepository/TemplateOne.template")
+	c.Assert(values.Get("TemplateBody"), Equals, "")
 
 	// Response test
 	expected := &cf.ValidateTemplateResponse{
@@ -649,5 +649,5 @@ func (s *S) TestValidateTemplate(c *gocheck.C) {
 		},
 		RequestId: "0be7b6e8-e4a0-11e0-a5bd-9f8d5a7dbc91",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }

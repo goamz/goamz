@@ -4,7 +4,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/iam"
 	"github.com/goamz/goamz/iam/iamtest"
-	"github.com/motain/gocheck"
+	. "gopkg.in/check.v1"
 )
 
 // LocalServer represents a local ec2test fake server.
@@ -14,10 +14,10 @@ type LocalServer struct {
 	srv    *iamtest.Server
 }
 
-func (s *LocalServer) SetUp(c *gocheck.C) {
+func (s *LocalServer) SetUp(c *C) {
 	srv, err := iamtest.NewServer()
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(srv, gocheck.NotNil)
+	c.Assert(err, IsNil)
+	c.Assert(srv, NotNil)
 
 	s.srv = srv
 	s.region = aws.Region{IAMEndpoint: srv.URL()}
@@ -31,9 +31,9 @@ type LocalServerSuite struct {
 	ClientTests
 }
 
-var _ = gocheck.Suite(&LocalServerSuite{})
+var _ = Suite(&LocalServerSuite{})
 
-func (s *LocalServerSuite) SetUpSuite(c *gocheck.C) {
+func (s *LocalServerSuite) SetUpSuite(c *C) {
 	s.srv.SetUp(c)
 	s.ClientTests.iam = iam.New(s.srv.auth, s.srv.region)
 }

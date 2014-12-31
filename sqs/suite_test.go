@@ -3,17 +3,18 @@ package sqs
 import (
 	"flag"
 	"fmt"
-	"github.com/goamz/goamz/aws"
-	"github.com/motain/gocheck"
 	"net/http"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/goamz/goamz/aws"
+	. "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	TestingT(t)
 }
 
 var integration = flag.Bool("i", false, "Enable integration tests")
@@ -22,7 +23,7 @@ type SuiteI struct {
 	auth aws.Auth
 }
 
-func (s *SuiteI) SetUpSuite(c *gocheck.C) {
+func (s *SuiteI) SetUpSuite(c *C) {
 	if !*integration {
 		c.Skip("Integration tests not enabled (-i flag)")
 	}
@@ -37,11 +38,11 @@ type HTTPSuite struct{}
 
 var testServer = NewTestHTTPServer("http://localhost:4455", 5e9)
 
-func (s *HTTPSuite) SetUpSuite(c *gocheck.C) {
+func (s *HTTPSuite) SetUpSuite(c *C) {
 	testServer.Start()
 }
 
-func (s *HTTPSuite) TearDownTest(c *gocheck.C) {
+func (s *HTTPSuite) TearDownTest(c *C) {
 	testServer.FlushRequests()
 }
 

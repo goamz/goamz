@@ -4,7 +4,7 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/s3"
 	"github.com/goamz/goamz/s3/s3test"
-	"github.com/motain/gocheck"
+	. "gopkg.in/check.v1"
 )
 
 type LocalServer struct {
@@ -14,10 +14,10 @@ type LocalServer struct {
 	config *s3test.Config
 }
 
-func (s *LocalServer) SetUp(c *gocheck.C) {
+func (s *LocalServer) SetUp(c *C) {
 	srv, err := s3test.NewServer(s.config)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(srv, gocheck.NotNil)
+	c.Assert(err, IsNil)
+	c.Assert(srv, NotNil)
 
 	s.srv = srv
 	s.region = aws.Region{
@@ -39,8 +39,8 @@ type LocalServerSuite struct {
 
 var (
 	// run tests twice, once in us-east-1 mode, once not.
-	_ = gocheck.Suite(&LocalServerSuite{})
-	_ = gocheck.Suite(&LocalServerSuite{
+	_ = Suite(&LocalServerSuite{})
+	_ = Suite(&LocalServerSuite{
 		srv: LocalServer{
 			config: &s3test.Config{
 				Send409Conflict: true,
@@ -49,7 +49,7 @@ var (
 	})
 )
 
-func (s *LocalServerSuite) SetUpSuite(c *gocheck.C) {
+func (s *LocalServerSuite) SetUpSuite(c *C) {
 	s.srv.SetUp(c)
 	s.clientTests.s3 = s3.New(s.srv.auth, s.srv.region)
 
@@ -58,22 +58,22 @@ func (s *LocalServerSuite) SetUpSuite(c *gocheck.C) {
 	s.clientTests.Cleanup()
 }
 
-func (s *LocalServerSuite) TearDownTest(c *gocheck.C) {
+func (s *LocalServerSuite) TearDownTest(c *C) {
 	s.clientTests.Cleanup()
 }
 
-func (s *LocalServerSuite) TestBasicFunctionality(c *gocheck.C) {
+func (s *LocalServerSuite) TestBasicFunctionality(c *C) {
 	s.clientTests.TestBasicFunctionality(c)
 }
 
-func (s *LocalServerSuite) TestGetNotFound(c *gocheck.C) {
+func (s *LocalServerSuite) TestGetNotFound(c *C) {
 	s.clientTests.TestGetNotFound(c)
 }
 
-func (s *LocalServerSuite) TestBucketList(c *gocheck.C) {
+func (s *LocalServerSuite) TestBucketList(c *C) {
 	s.clientTests.TestBucketList(c)
 }
 
-func (s *LocalServerSuite) TestDoublePutBucket(c *gocheck.C) {
+func (s *LocalServerSuite) TestDoublePutBucket(c *C) {
 	s.clientTests.TestDoublePutBucket(c)
 }
