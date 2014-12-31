@@ -42,7 +42,7 @@ func (s *V2Signer) Sign(method, path string, params map[string]string) {
 	// AWS specifies that the parameters in a signed request must
 	// be provided in the natural order of the keys. This is distinct
 	// from the natural order of the encoded value of key=value.
-	// Percent and gocheck.Equals affect the sorting order.
+	// Percent and Equals affect the sorting order.
 	var keys, sarray []string
 	for k, _ := range params {
 		keys = append(keys, k)

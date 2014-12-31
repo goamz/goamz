@@ -4,17 +4,17 @@ import (
 	"testing"
 	"time"
 
-	gocheck "gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/testutil"
 )
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	TestingT(t)
 }
 
-var _ = gocheck.Suite(&S{})
+var _ = Suite(&S{})
 
 type S struct {
 	as *AutoScaling
@@ -24,13 +24,13 @@ var testServer = testutil.NewHTTPServer()
 
 var mockTest bool
 
-func (s *S) SetUpSuite(c *gocheck.C) {
+func (s *S) SetUpSuite(c *C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
 	s.as = New(auth, aws.Region{AutoScalingEndpoint: testServer.URL})
 }
 
-func (s *S) TearDownTest(c *gocheck.C) {
+func (s *S) TearDownTest(c *C) {
 	testServer.Flush()
 }
 
@@ -229,20 +229,20 @@ func TestAutoScalingGroup(t *testing.T) {
 // --------------------------------------------------------------------------
 // Detailed Unit Tests
 
-func (s *S) TestAttachInstances(c *gocheck.C) {
+func (s *S) TestAttachInstances(c *C) {
 	testServer.Response(200, nil, AttachInstancesResponse)
 	resp, err := s.as.AttachInstances("my-test-asg", []string{"i-21321afs", "i-baaffg23"})
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "AttachInstances")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-21321afs")
-	c.Assert(values.Get("InstanceIds.member.2"), gocheck.Equals, "i-baaffg23")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "AttachInstances")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("InstanceIds.member.1"), Equals, "i-21321afs")
+	c.Assert(values.Get("InstanceIds.member.2"), Equals, "i-baaffg23")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
+func (s *S) TestCreateAutoScalingGroup(c *C) {
 	testServer.Response(200, nil, CreateAutoScalingGroupResponse)
 	testServer.Response(200, nil, DeleteAutoScalingGroupResponse)
 
@@ -268,30 +268,30 @@ func (s *S) TestCreateAutoScalingGroup(c *gocheck.C) {
 		VPCZoneIdentifier: "subnet-610acd08,subnet-530fc83a",
 	}
 	resp, err := s.as.CreateAutoScalingGroup(createAS)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	defer s.as.DeleteAutoScalingGroup(createAS.AutoScalingGroupName, true)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateAutoScalingGroup")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("AvailabilityZones.member.1"), gocheck.Equals, "us-east-1a")
-	c.Assert(values.Get("AvailabilityZones.member.2"), gocheck.Equals, "us-east-1b")
-	c.Assert(values.Get("MinSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("MaxSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("DefaultCooldown"), gocheck.Equals, "600")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "0")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(values.Get("LoadBalancerNames.member.1"), gocheck.Equals, "elb-1")
-	c.Assert(values.Get("LoadBalancerNames.member.2"), gocheck.Equals, "elb-2")
-	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
-	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
-	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
-	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
-	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "CreateAutoScalingGroup")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("AvailabilityZones.member.1"), Equals, "us-east-1a")
+	c.Assert(values.Get("AvailabilityZones.member.2"), Equals, "us-east-1b")
+	c.Assert(values.Get("MinSize"), Equals, "3")
+	c.Assert(values.Get("MaxSize"), Equals, "3")
+	c.Assert(values.Get("DefaultCooldown"), Equals, "600")
+	c.Assert(values.Get("DesiredCapacity"), Equals, "0")
+	c.Assert(values.Get("LaunchConfigurationName"), Equals, "my-test-lc")
+	c.Assert(values.Get("LoadBalancerNames.member.1"), Equals, "elb-1")
+	c.Assert(values.Get("LoadBalancerNames.member.2"), Equals, "elb-2")
+	c.Assert(values.Get("Tags.member.1.Key"), Equals, "foo")
+	c.Assert(values.Get("Tags.member.1.Value"), Equals, "bar")
+	c.Assert(values.Get("Tags.member.2.Key"), Equals, "baz")
+	c.Assert(values.Get("Tags.member.2.Value"), Equals, "qux")
+	c.Assert(values.Get("VPCZoneIdentifier"), Equals, "subnet-610acd08,subnet-530fc83a")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
+func (s *S) TestCreateLaunchConfiguration(c *C) {
 	testServer.Response(200, nil, CreateLaunchConfigurationResponse)
 	testServer.Response(200, nil, DeleteLaunchConfigurationResponse)
 
@@ -328,34 +328,34 @@ func (s *S) TestCreateLaunchConfiguration(c *gocheck.C) {
 		},
 	}
 	resp, err := s.as.CreateLaunchConfiguration(launchConfig)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	defer s.as.DeleteLaunchConfiguration(launchConfig.LaunchConfigurationName)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateLaunchConfiguration")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(values.Get("AssociatePublicIpAddress"), gocheck.Equals, "true")
-	c.Assert(values.Get("EbsOptimized"), gocheck.Equals, "true")
-	c.Assert(values.Get("SecurityGroups.member.1"), gocheck.Equals, "sec-grp1")
-	c.Assert(values.Get("SecurityGroups.member.2"), gocheck.Equals, "sec-grp2")
-	c.Assert(values.Get("UserData"), gocheck.Equals, "MTIzNA==")
-	c.Assert(values.Get("KeyName"), gocheck.Equals, "secretKeyPair")
-	c.Assert(values.Get("ImageId"), gocheck.Equals, "ami-0078da69")
-	c.Assert(values.Get("InstanceType"), gocheck.Equals, "m1.small")
-	c.Assert(values.Get("SpotPrice"), gocheck.Equals, "0.03")
-	c.Assert(values.Get("BlockDeviceMappings.member.1.DeviceName"), gocheck.Equals, "/dev/sda1")
-	c.Assert(values.Get("BlockDeviceMappings.member.1.VirtualName"), gocheck.Equals, "ephemeral0")
-	c.Assert(values.Get("BlockDeviceMappings.member.2.DeviceName"), gocheck.Equals, "/dev/sdb")
-	c.Assert(values.Get("BlockDeviceMappings.member.2.VirtualName"), gocheck.Equals, "ephemeral1")
-	c.Assert(values.Get("BlockDeviceMappings.member.3.DeviceName"), gocheck.Equals, "/dev/sdf")
-	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.DeleteOnTermination"), gocheck.Equals, "true")
-	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.SnapshotId"), gocheck.Equals, "snap-2a2b3c4d")
-	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.VolumeSize"), gocheck.Equals, "100")
-	c.Assert(values.Get("InstanceMonitoring.Enabled"), gocheck.Equals, "true")
-	c.Assert(resp.RequestId, gocheck.Equals, "7c6e177f-f082-11e1-ac58-3714bEXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "CreateLaunchConfiguration")
+	c.Assert(values.Get("LaunchConfigurationName"), Equals, "my-test-lc")
+	c.Assert(values.Get("AssociatePublicIpAddress"), Equals, "true")
+	c.Assert(values.Get("EbsOptimized"), Equals, "true")
+	c.Assert(values.Get("SecurityGroups.member.1"), Equals, "sec-grp1")
+	c.Assert(values.Get("SecurityGroups.member.2"), Equals, "sec-grp2")
+	c.Assert(values.Get("UserData"), Equals, "MTIzNA==")
+	c.Assert(values.Get("KeyName"), Equals, "secretKeyPair")
+	c.Assert(values.Get("ImageId"), Equals, "ami-0078da69")
+	c.Assert(values.Get("InstanceType"), Equals, "m1.small")
+	c.Assert(values.Get("SpotPrice"), Equals, "0.03")
+	c.Assert(values.Get("BlockDeviceMappings.member.1.DeviceName"), Equals, "/dev/sda1")
+	c.Assert(values.Get("BlockDeviceMappings.member.1.VirtualName"), Equals, "ephemeral0")
+	c.Assert(values.Get("BlockDeviceMappings.member.2.DeviceName"), Equals, "/dev/sdb")
+	c.Assert(values.Get("BlockDeviceMappings.member.2.VirtualName"), Equals, "ephemeral1")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.DeviceName"), Equals, "/dev/sdf")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.DeleteOnTermination"), Equals, "true")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.SnapshotId"), Equals, "snap-2a2b3c4d")
+	c.Assert(values.Get("BlockDeviceMappings.member.3.Ebs.VolumeSize"), Equals, "100")
+	c.Assert(values.Get("InstanceMonitoring.Enabled"), Equals, "true")
+	c.Assert(resp.RequestId, Equals, "7c6e177f-f082-11e1-ac58-3714bEXAMPLE")
 }
 
-func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
+func (s *S) TestCreateOrUpdateTags(c *C) {
 	testServer.Response(200, nil, CreateOrUpdateTagsResponse)
 	tags := []Tag{
 		{
@@ -371,78 +371,78 @@ func (s *S) TestCreateOrUpdateTags(c *gocheck.C) {
 		},
 	}
 	resp, err := s.as.CreateOrUpdateTags(tags)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "CreateOrUpdateTags")
-	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
-	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
-	c.Assert(values.Get("Tags.member.1.ResourceId"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
-	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
-	c.Assert(values.Get("Tags.member.2.ResourceId"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), gocheck.Equals, "true")
-	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "CreateOrUpdateTags")
+	c.Assert(values.Get("Tags.member.1.Key"), Equals, "foo")
+	c.Assert(values.Get("Tags.member.1.Value"), Equals, "bar")
+	c.Assert(values.Get("Tags.member.1.ResourceId"), Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.Key"), Equals, "baz")
+	c.Assert(values.Get("Tags.member.2.Value"), Equals, "qux")
+	c.Assert(values.Get("Tags.member.2.ResourceId"), Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), Equals, "true")
+	c.Assert(resp.RequestId, Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
 }
 
-func (s *S) TestDeleteAutoScalingGroup(c *gocheck.C) {
+func (s *S) TestDeleteAutoScalingGroup(c *C) {
 	testServer.Response(200, nil, DeleteAutoScalingGroupResponse)
 	resp, err := s.as.DeleteAutoScalingGroup("my-test-asg", true)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteAutoScalingGroup")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(resp.RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DeleteAutoScalingGroup")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(resp.RequestId, Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
 }
 
-func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *gocheck.C) {
+func (s *S) TestDeleteAutoScalingGroupWithExistingInstances(c *C) {
 	testServer.Response(400, nil, DeleteAutoScalingGroupErrorResponse)
 	resp, err := s.as.DeleteAutoScalingGroup("my-test-asg", false)
 	testServer.WaitRequest()
-	c.Assert(resp, gocheck.IsNil)
-	c.Assert(err, gocheck.NotNil)
+	c.Assert(resp, IsNil)
+	c.Assert(err, NotNil)
 	e, ok := err.(*Error)
 	if !ok {
 		c.Errorf("Unable to unmarshal error into AWS Autoscaling Error")
 	}
-	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(e.Message, gocheck.Equals, "You cannot delete an AutoScalingGroup while there are instances or pending Spot instance request(s) still in the group.")
-	c.Assert(e.Code, gocheck.Equals, "ResourceInUse")
-	c.Assert(e.StatusCode, gocheck.Equals, 400)
-	c.Assert(e.RequestId, gocheck.Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
+	c.Assert(ok, Equals, true)
+	c.Assert(e.Message, Equals, "You cannot delete an AutoScalingGroup while there are instances or pending Spot instance request(s) still in the group.")
+	c.Assert(e.Code, Equals, "ResourceInUse")
+	c.Assert(e.StatusCode, Equals, 400)
+	c.Assert(e.RequestId, Equals, "70a76d42-9665-11e2-9fdf-211deEXAMPLE")
 }
 
-func (s *S) TestDeleteLaunchConfiguration(c *gocheck.C) {
+func (s *S) TestDeleteLaunchConfiguration(c *C) {
 	testServer.Response(200, nil, DeleteLaunchConfigurationResponse)
 	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteLaunchConfiguration")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(resp.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DeleteLaunchConfiguration")
+	c.Assert(values.Get("LaunchConfigurationName"), Equals, "my-test-lc")
+	c.Assert(resp.RequestId, Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
 }
 
-func (s *S) TestDeleteLaunchConfigurationInUse(c *gocheck.C) {
+func (s *S) TestDeleteLaunchConfigurationInUse(c *C) {
 	testServer.Response(400, nil, DeleteLaunchConfigurationInUseResponse)
 	resp, err := s.as.DeleteLaunchConfiguration("my-test-lc")
 	testServer.WaitRequest()
-	c.Assert(resp, gocheck.IsNil)
-	c.Assert(err, gocheck.NotNil)
+	c.Assert(resp, IsNil)
+	c.Assert(err, NotNil)
 	e, ok := err.(*Error)
 	if !ok {
 		c.Errorf("Unable to unmarshal error into AWS Autoscaling Error")
 	}
 	c.Logf("%v %v %v", e.Code, e.Message, e.RequestId)
-	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(e.Message, gocheck.Equals, "Cannot delete launch configuration my-test-lc because it is attached to AutoScalingGroup test")
-	c.Assert(e.Code, gocheck.Equals, "ResourceInUse")
-	c.Assert(e.StatusCode, gocheck.Equals, 400)
-	c.Assert(e.RequestId, gocheck.Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
+	c.Assert(ok, Equals, true)
+	c.Assert(e.Message, Equals, "Cannot delete launch configuration my-test-lc because it is attached to AutoScalingGroup test")
+	c.Assert(e.Code, Equals, "ResourceInUse")
+	c.Assert(e.StatusCode, Equals, 400)
+	c.Assert(e.RequestId, Equals, "7347261f-97df-11e2-8756-35eEXAMPLE")
 }
 
-func (s *S) TestDeleteTags(c *gocheck.C) {
+func (s *S) TestDeleteTags(c *C) {
 	testServer.Response(200, nil, DeleteTagsResponse)
 	tags := []Tag{
 		{
@@ -458,54 +458,54 @@ func (s *S) TestDeleteTags(c *gocheck.C) {
 		},
 	}
 	resp, err := s.as.DeleteTags(tags)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DeleteTags")
-	c.Assert(values.Get("Tags.member.1.Key"), gocheck.Equals, "foo")
-	c.Assert(values.Get("Tags.member.1.Value"), gocheck.Equals, "bar")
-	c.Assert(values.Get("Tags.member.1.ResourceId"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Tags.member.2.Key"), gocheck.Equals, "baz")
-	c.Assert(values.Get("Tags.member.2.Value"), gocheck.Equals, "qux")
-	c.Assert(values.Get("Tags.member.2.ResourceId"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), gocheck.Equals, "true")
-	c.Assert(resp.RequestId, gocheck.Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DeleteTags")
+	c.Assert(values.Get("Tags.member.1.Key"), Equals, "foo")
+	c.Assert(values.Get("Tags.member.1.Value"), Equals, "bar")
+	c.Assert(values.Get("Tags.member.1.ResourceId"), Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.Key"), Equals, "baz")
+	c.Assert(values.Get("Tags.member.2.Value"), Equals, "qux")
+	c.Assert(values.Get("Tags.member.2.ResourceId"), Equals, "my-test-asg")
+	c.Assert(values.Get("Tags.member.2.PropagateAtLaunch"), Equals, "true")
+	c.Assert(resp.RequestId, Equals, "b0203919-bf1b-11e2-8a01-13263EXAMPLE")
 }
 
-func (s *S) TestDescribeAccountLimits(c *gocheck.C) {
+func (s *S) TestDescribeAccountLimits(c *C) {
 	testServer.Response(200, nil, DescribeAccountLimitsResponse)
 
 	resp, err := s.as.DescribeAccountLimits()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAccountLimits")
-	c.Assert(resp.RequestId, gocheck.Equals, "a32bd184-519d-11e3-a8a4-c1c467cbcc3b")
-	c.Assert(resp.MaxNumberOfAutoScalingGroups, gocheck.Equals, 20)
-	c.Assert(resp.MaxNumberOfLaunchConfigurations, gocheck.Equals, 100)
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeAccountLimits")
+	c.Assert(resp.RequestId, Equals, "a32bd184-519d-11e3-a8a4-c1c467cbcc3b")
+	c.Assert(resp.MaxNumberOfAutoScalingGroups, Equals, 20)
+	c.Assert(resp.MaxNumberOfLaunchConfigurations, Equals, 100)
 
 }
 
-func (s *S) TestDescribeAdjustmentTypes(c *gocheck.C) {
+func (s *S) TestDescribeAdjustmentTypes(c *C) {
 	testServer.Response(200, nil, DescribeAdjustmentTypesResponse)
 	resp, err := s.as.DescribeAdjustmentTypes()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAdjustmentTypes")
-	c.Assert(resp.RequestId, gocheck.Equals, "cc5f0337-b694-11e2-afc0-6544dEXAMPLE")
-	c.Assert(resp.AdjustmentTypes, gocheck.DeepEquals, []AdjustmentType{{"ChangeInCapacity"}, {"ExactCapacity"}, {"PercentChangeInCapacity"}})
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeAdjustmentTypes")
+	c.Assert(resp.RequestId, Equals, "cc5f0337-b694-11e2-afc0-6544dEXAMPLE")
+	c.Assert(resp.AdjustmentTypes, DeepEquals, []AdjustmentType{{"ChangeInCapacity"}, {"ExactCapacity"}, {"PercentChangeInCapacity"}})
 }
 
-func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
+func (s *S) TestDescribeAutoScalingGroups(c *C) {
 	testServer.Response(200, nil, DescribeAutoScalingGroupsResponse)
 	resp, err := s.as.DescribeAutoScalingGroups([]string{"my-test-asg-lbs"}, 0, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	t, _ := time.Parse(time.RFC3339, "2013-05-06T17:47:15.107Z")
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAutoScalingGroups")
-	c.Assert(values.Get("AutoScalingGroupNames.member.1"), gocheck.Equals, "my-test-asg-lbs")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeAutoScalingGroups")
+	c.Assert(values.Get("AutoScalingGroupNames.member.1"), Equals, "my-test-asg-lbs")
 
 	expected := &DescribeAutoScalingGroupsResp{
 		AutoScalingGroups: []AutoScalingGroup{
@@ -560,18 +560,18 @@ func (s *S) TestDescribeAutoScalingGroups(c *gocheck.C) {
 		},
 		RequestId: "0f02a07d-b677-11e2-9eb0-dd50EXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeAutoScalingInstances(c *gocheck.C) {
+func (s *S) TestDescribeAutoScalingInstances(c *C) {
 	testServer.Response(200, nil, DescribeAutoScalingInstancesResponse)
 	resp, err := s.as.DescribeAutoScalingInstances([]string{"i-78e0d40b"}, 0, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeAutoScalingInstances")
-	c.Assert(resp.RequestId, gocheck.Equals, "df992dc3-b72f-11e2-81e1-750aa6EXAMPLE")
-	c.Assert(resp.AutoScalingInstances, gocheck.DeepEquals, []Instance{
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeAutoScalingInstances")
+	c.Assert(resp.RequestId, Equals, "df992dc3-b72f-11e2-81e1-750aa6EXAMPLE")
+	c.Assert(resp.AutoScalingInstances, DeepEquals, []Instance{
 		{
 			AutoScalingGroupName:    "my-test-asg",
 			AvailabilityZone:        "us-east-1a",
@@ -583,15 +583,15 @@ func (s *S) TestDescribeAutoScalingInstances(c *gocheck.C) {
 	})
 }
 
-func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
+func (s *S) TestDescribeLaunchConfigurations(c *C) {
 	testServer.Response(200, nil, DescribeLaunchConfigurationsResponse)
 	resp, err := s.as.DescribeLaunchConfigurations([]string{"my-test-lc"}, 0, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
 	t, _ := time.Parse(time.RFC3339, "2013-01-21T23:04:42.200Z")
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeLaunchConfigurations")
-	c.Assert(values.Get("LaunchConfigurationNames.member.1"), gocheck.Equals, "my-test-lc")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeLaunchConfigurations")
+	c.Assert(values.Get("LaunchConfigurationNames.member.1"), Equals, "my-test-lc")
 	expected := &DescribeLaunchConfigurationsResp{
 		LaunchConfigurations: []LaunchConfiguration{
 			{
@@ -623,18 +623,18 @@ func (s *S) TestDescribeLaunchConfigurations(c *gocheck.C) {
 		},
 		RequestId: "d05a22f8-b690-11e2-bf8e-2113fEXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeMetricCollectionTypes(c *gocheck.C) {
+func (s *S) TestDescribeMetricCollectionTypes(c *C) {
 	testServer.Response(200, nil, DescribeMetricCollectionTypesResponse)
 	resp, err := s.as.DescribeMetricCollectionTypes()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeMetricCollectionTypes")
-	c.Assert(resp.RequestId, gocheck.Equals, "07f3fea2-bf3c-11e2-9b6f-f3cdbb80c073")
-	c.Assert(resp.Metrics, gocheck.DeepEquals, []MetricCollection{
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeMetricCollectionTypes")
+	c.Assert(resp.RequestId, Equals, "07f3fea2-bf3c-11e2-9b6f-f3cdbb80c073")
+	c.Assert(resp.Metrics, DeepEquals, []MetricCollection{
 		{
 			Metric: "GroupMinSize",
 		},
@@ -657,22 +657,22 @@ func (s *S) TestDescribeMetricCollectionTypes(c *gocheck.C) {
 			Metric: "GroupTotalInstances",
 		},
 	})
-	c.Assert(resp.Granularities, gocheck.DeepEquals, []MetricGranularity{
+	c.Assert(resp.Granularities, DeepEquals, []MetricGranularity{
 		{
 			Granularity: "1Minute",
 		},
 	})
 }
 
-func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
+func (s *S) TestDescribeNotificationConfigurations(c *C) {
 	testServer.Response(200, nil, DescribeNotificationConfigurationsResponse)
 	resp, err := s.as.DescribeNotificationConfigurations([]string{"i-78e0d40b"}, 0, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeNotificationConfigurations")
-	c.Assert(resp.RequestId, gocheck.Equals, "07f3fea2-bf3c-11e2-9b6f-f3cdbb80c073")
-	c.Assert(resp.NotificationConfigurations, gocheck.DeepEquals, []NotificationConfiguration{
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeNotificationConfigurations")
+	c.Assert(resp.RequestId, Equals, "07f3fea2-bf3c-11e2-9b6f-f3cdbb80c073")
+	c.Assert(resp.NotificationConfigurations, DeepEquals, []NotificationConfiguration{
 		{
 			AutoScalingGroupName: "my-test-asg",
 			NotificationType:     "autoscaling: EC2_INSTANCE_LAUNCH",
@@ -681,14 +681,14 @@ func (s *S) TestDescribeNotificationConfigurations(c *gocheck.C) {
 	})
 }
 
-func (s *S) TestDescribePolicies(c *gocheck.C) {
+func (s *S) TestDescribePolicies(c *C) {
 	testServer.Response(200, nil, DescribePoliciesResponse)
 	resp, err := s.as.DescribePolicies("my-test-asg", []string{}, 2, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribePolicies")
-	c.Assert(values.Get("MaxRecords"), gocheck.Equals, "2")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribePolicies")
+	c.Assert(values.Get("MaxRecords"), Equals, "2")
 	expected := &DescribePoliciesResp{
 		RequestId: "ec3bffad-b739-11e2-b38d-15fbEXAMPLE",
 		NextToken: "3ef417fe-9202-12-8ddd-d13e1313413",
@@ -723,18 +723,18 @@ func (s *S) TestDescribePolicies(c *gocheck.C) {
 			},
 		},
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeScalingActivities(c *gocheck.C) {
+func (s *S) TestDescribeScalingActivities(c *C) {
 	testServer.Response(200, nil, DescribeScalingActivitiesResponse)
 	resp, err := s.as.DescribeScalingActivities("my-test-asg", []string{}, 1, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScalingActivities")
-	c.Assert(values.Get("MaxRecords"), gocheck.Equals, "1")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeScalingActivities")
+	c.Assert(values.Get("MaxRecords"), Equals, "1")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
 	st, _ := time.Parse(time.RFC3339, "2012-04-12T17:32:07.882Z")
 	et, _ := time.Parse(time.RFC3339, "2012-04-12T17:32:08Z")
 	expected := &DescribeScalingActivitiesResp{
@@ -755,18 +755,18 @@ func (s *S) TestDescribeScalingActivities(c *gocheck.C) {
 			},
 		},
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDescribeScalingProcessTypes(c *gocheck.C) {
+func (s *S) TestDescribeScalingProcessTypes(c *C) {
 	testServer.Response(200, nil, DescribeScalingProcessTypesResponse)
 	resp, err := s.as.DescribeScalingProcessTypes()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScalingProcessTypes")
-	c.Assert(resp.RequestId, gocheck.Equals, "27f2eacc-b73f-11e2-ad99-c7aba3a9c963")
-	c.Assert(resp.Processes, gocheck.DeepEquals, []ProcessType{
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeScalingProcessTypes")
+	c.Assert(resp.RequestId, Equals, "27f2eacc-b73f-11e2-ad99-c7aba3a9c963")
+	c.Assert(resp.Processes, DeepEquals, []ProcessType{
 		{"AZRebalance"},
 		{"AddToLoadBalancer"},
 		{"AlarmNotification"},
@@ -778,7 +778,7 @@ func (s *S) TestDescribeScalingProcessTypes(c *gocheck.C) {
 	})
 }
 
-func (s *S) TestDescribeScheduledActions(c *gocheck.C) {
+func (s *S) TestDescribeScheduledActions(c *C) {
 	testServer.Response(200, nil, DescribeScheduledActionsResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-06-01T00:30:00Z")
 	request := &DescribeScheduledActionsParams{
@@ -787,12 +787,12 @@ func (s *S) TestDescribeScheduledActions(c *gocheck.C) {
 		StartTime:            st,
 	}
 	resp, err := s.as.DescribeScheduledActions(request)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeScheduledActions")
-	c.Assert(resp.RequestId, gocheck.Equals, "0eb4217f-8421-11e3-9233-7100ef811766")
-	c.Assert(resp.ScheduledUpdateGroupActions, gocheck.DeepEquals, []ScheduledUpdateGroupAction{
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeScheduledActions")
+	c.Assert(resp.RequestId, Equals, "0eb4217f-8421-11e3-9233-7100ef811766")
+	c.Assert(resp.ScheduledUpdateGroupActions, DeepEquals, []ScheduledUpdateGroupAction{
 		{
 			AutoScalingGroupName: "ASGTest1",
 			ScheduledActionARN:   "arn:aws:autoscaling:us-west-2:193024542802:scheduledUpdateGroupAction:61f68b2c-bde3-4316-9a81-eb95dc246509:autoScalingGroupName/ASGTest1:scheduledActionName/SATest1",
@@ -805,20 +805,20 @@ func (s *S) TestDescribeScheduledActions(c *gocheck.C) {
 	})
 }
 
-func (s *S) TestDescribeTags(c *gocheck.C) {
+func (s *S) TestDescribeTags(c *C) {
 	testServer.Response(200, nil, DescribeTagsResponse)
 	filter := NewFilter()
 	filter.Add("auto-scaling-group", "my-test-asg")
 	resp, err := s.as.DescribeTags(filter, 1, "")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeTags")
-	c.Assert(values.Get("MaxRecords"), gocheck.Equals, "1")
-	c.Assert(values.Get("Filters.member.1.Name"), gocheck.Equals, "auto-scaling-group")
-	c.Assert(values.Get("Filters.member.1.Values.member.1"), gocheck.Equals, "my-test-asg")
-	c.Assert(resp.RequestId, gocheck.Equals, "086265fd-bf3e-11e2-85fc-fbb1EXAMPLE")
-	c.Assert(resp.Tags, gocheck.DeepEquals, []Tag{
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeTags")
+	c.Assert(values.Get("MaxRecords"), Equals, "1")
+	c.Assert(values.Get("Filters.member.1.Name"), Equals, "auto-scaling-group")
+	c.Assert(values.Get("Filters.member.1.Values.member.1"), Equals, "my-test-asg")
+	c.Assert(resp.RequestId, Equals, "086265fd-bf3e-11e2-85fc-fbb1EXAMPLE")
+	c.Assert(resp.Tags, DeepEquals, []Tag{
 		{
 			Key:               "version",
 			Value:             "1.0",
@@ -829,27 +829,27 @@ func (s *S) TestDescribeTags(c *gocheck.C) {
 	})
 }
 
-func (s *S) TestDescribeTerminationPolicyTypes(c *gocheck.C) {
+func (s *S) TestDescribeTerminationPolicyTypes(c *C) {
 	testServer.Response(200, nil, DescribeTerminationPolicyTypesResponse)
 	resp, err := s.as.DescribeTerminationPolicyTypes()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DescribeTerminationPolicyTypes")
-	c.Assert(resp.RequestId, gocheck.Equals, "d9a05827-b735-11e2-a40c-c79a5EXAMPLE")
-	c.Assert(resp.TerminationPolicyTypes, gocheck.DeepEquals, []string{"ClosestToNextInstanceHour", "Default", "NewestInstance", "OldestInstance", "OldestLaunchConfiguration"})
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DescribeTerminationPolicyTypes")
+	c.Assert(resp.RequestId, Equals, "d9a05827-b735-11e2-a40c-c79a5EXAMPLE")
+	c.Assert(resp.TerminationPolicyTypes, DeepEquals, []string{"ClosestToNextInstanceHour", "Default", "NewestInstance", "OldestInstance", "OldestLaunchConfiguration"})
 }
 
-func (s *S) TestDetachInstances(c *gocheck.C) {
+func (s *S) TestDetachInstances(c *C) {
 	testServer.Response(200, nil, DetachInstancesResponse)
 	resp, err := s.as.DetachInstances("my-asg", []string{"i-5f2e8a0d"}, true)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DetachInstances")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
-	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), gocheck.Equals, "true")
-	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-5f2e8a0d")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DetachInstances")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-asg")
+	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), Equals, "true")
+	c.Assert(values.Get("InstanceIds.member.1"), Equals, "i-5f2e8a0d")
 	st, _ := time.Parse(time.RFC3339, "2014-06-14T00:07:30.280Z")
 	expected := &DetachInstancesResult{
 		RequestId: "e04f3b11-f357-11e3-a434-7f10009d5849",
@@ -866,45 +866,45 @@ func (s *S) TestDetachInstances(c *gocheck.C) {
 			},
 		},
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestDisableMetricsCollection(c *gocheck.C) {
+func (s *S) TestDisableMetricsCollection(c *C) {
 	testServer.Response(200, nil, DisableMetricsCollectionResponse)
 	resp, err := s.as.DisableMetricsCollection("my-test-asg", []string{"GroupMinSize"})
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "DisableMetricsCollection")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Metrics.member.1"), gocheck.Equals, "GroupMinSize")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "DisableMetricsCollection")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("Metrics.member.1"), Equals, "GroupMinSize")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestEnableMetricsCollection(c *gocheck.C) {
+func (s *S) TestEnableMetricsCollection(c *C) {
 	testServer.Response(200, nil, DisableMetricsCollectionResponse)
 	resp, err := s.as.EnableMetricsCollection("my-test-asg", []string{"GroupMinSize", "GroupMaxSize"}, "1Minute")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "EnableMetricsCollection")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("Granularity"), gocheck.Equals, "1Minute")
-	c.Assert(values.Get("Metrics.member.1"), gocheck.Equals, "GroupMinSize")
-	c.Assert(values.Get("Metrics.member.2"), gocheck.Equals, "GroupMaxSize")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "EnableMetricsCollection")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("Granularity"), Equals, "1Minute")
+	c.Assert(values.Get("Metrics.member.1"), Equals, "GroupMinSize")
+	c.Assert(values.Get("Metrics.member.2"), Equals, "GroupMaxSize")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestEnterStandby(c *gocheck.C) {
+func (s *S) TestEnterStandby(c *C) {
 	testServer.Response(200, nil, EnterStandbyResponse)
 	resp, err := s.as.EnterStandby("my-asg", []string{"i-5b73d709"}, true)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "EnterStandby")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
-	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), gocheck.Equals, "true")
-	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-5b73d709")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "EnterStandby")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-asg")
+	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), Equals, "true")
+	c.Assert(values.Get("InstanceIds.member.1"), Equals, "i-5b73d709")
 	st, _ := time.Parse(time.RFC3339, "2014-06-13T22:35:50.884Z")
 	expected := &EnterStandbyResult{
 		RequestId: "126f2f31-f34b-11e3-bc51-b35178f0274f",
@@ -921,31 +921,31 @@ func (s *S) TestEnterStandby(c *gocheck.C) {
 			},
 		},
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestExecutePolicy(c *gocheck.C) {
+func (s *S) TestExecutePolicy(c *C) {
 	testServer.Response(200, nil, ExecutePolicyResponse)
 	resp, err := s.as.ExecutePolicy("my-scaleout-policy", "my-test-asg", true)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ExecutePolicy")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("PolicyName"), gocheck.Equals, "my-scaleout-policy")
-	c.Assert(values.Get("HonorCooldown"), gocheck.Equals, "true")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "ExecutePolicy")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("PolicyName"), Equals, "my-scaleout-policy")
+	c.Assert(values.Get("HonorCooldown"), Equals, "true")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestExitStandby(c *gocheck.C) {
+func (s *S) TestExitStandby(c *C) {
 	testServer.Response(200, nil, ExitStandbyResponse)
 	resp, err := s.as.ExitStandby("my-asg", []string{"i-5b73d709"})
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ExitStandby")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
-	c.Assert(values.Get("InstanceIds.member.1"), gocheck.Equals, "i-5b73d709")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "ExitStandby")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-asg")
+	c.Assert(values.Get("InstanceIds.member.1"), Equals, "i-5b73d709")
 	st, _ := time.Parse(time.RFC3339, "2014-06-13T22:43:53.523Z")
 	expected := &ExitStandbyResult{
 		RequestId: "321a11c8-f34c-11e3-a434-7f10009d5849",
@@ -962,10 +962,10 @@ func (s *S) TestExitStandby(c *gocheck.C) {
 			},
 		},
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestPutLifecycleHook(c *gocheck.C) {
+func (s *S) TestPutLifecycleHook(c *C) {
 	testServer.Response(200, nil, PutLifecycleHookResponse)
 	request := &PutLifecycleHookParams{
 		AutoScalingGroupName:  "my-asg",
@@ -975,36 +975,36 @@ func (s *S) TestPutLifecycleHook(c *gocheck.C) {
 		RoleARN:               "arn:aws:iam::896650972448:role/AutoScaling",
 	}
 	resp, err := s.as.PutLifecycleHook(request)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "PutLifecycleHook")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-asg")
-	c.Assert(values.Get("LifecycleHookName"), gocheck.Equals, "ReadyForSoftwareInstall")
-	c.Assert(values.Get("RoleARN"), gocheck.Equals, "arn:aws:iam::896650972448:role/AutoScaling")
-	c.Assert(values.Get("LifecycleTransition"), gocheck.Equals, "autoscaling:EC2_INSTANCE_LAUNCHING")
-	c.Assert(values.Get("NotificationTargetARN"), gocheck.Equals, "arn:aws:sqs:us-east-1:896650972448:lifecyclehookqueue")
-	c.Assert(values.Get("DefaultResult"), gocheck.Equals, "")
-	c.Assert(values.Get("HeartbeatTimeout"), gocheck.Equals, "")
-	c.Assert(values.Get("NotificationMetadata"), gocheck.Equals, "")
-	c.Assert(resp.RequestId, gocheck.Equals, "1952f458-f645-11e3-bc51-b35178f0274f")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "PutLifecycleHook")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-asg")
+	c.Assert(values.Get("LifecycleHookName"), Equals, "ReadyForSoftwareInstall")
+	c.Assert(values.Get("RoleARN"), Equals, "arn:aws:iam::896650972448:role/AutoScaling")
+	c.Assert(values.Get("LifecycleTransition"), Equals, "autoscaling:EC2_INSTANCE_LAUNCHING")
+	c.Assert(values.Get("NotificationTargetARN"), Equals, "arn:aws:sqs:us-east-1:896650972448:lifecyclehookqueue")
+	c.Assert(values.Get("DefaultResult"), Equals, "")
+	c.Assert(values.Get("HeartbeatTimeout"), Equals, "")
+	c.Assert(values.Get("NotificationMetadata"), Equals, "")
+	c.Assert(resp.RequestId, Equals, "1952f458-f645-11e3-bc51-b35178f0274f")
 }
 
-func (s *S) TestPutNotificationConfiguration(c *gocheck.C) {
+func (s *S) TestPutNotificationConfiguration(c *C) {
 	testServer.Response(200, nil, PutNotificationConfigurationResponse)
 	resp, err := s.as.PutNotificationConfiguration("my-test-asg", []string{"autoscaling:EC2_INSTANCE_LAUNCH", "autoscaling:EC2_INSTANCE_LAUNCH_ERROR"}, "myTopicARN")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "PutNotificationConfiguration")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("TopicARN"), gocheck.Equals, "myTopicARN")
-	c.Assert(values.Get("NotificationTypes.member.1"), gocheck.Equals, "autoscaling:EC2_INSTANCE_LAUNCH")
-	c.Assert(values.Get("NotificationTypes.member.2"), gocheck.Equals, "autoscaling:EC2_INSTANCE_LAUNCH_ERROR")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "PutNotificationConfiguration")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("TopicARN"), Equals, "myTopicARN")
+	c.Assert(values.Get("NotificationTypes.member.1"), Equals, "autoscaling:EC2_INSTANCE_LAUNCH")
+	c.Assert(values.Get("NotificationTypes.member.2"), Equals, "autoscaling:EC2_INSTANCE_LAUNCH_ERROR")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestPutScalingPolicy(c *gocheck.C) {
+func (s *S) TestPutScalingPolicy(c *C) {
 	testServer.Response(200, nil, PutScalingPolicyResponse)
 	request := &PutScalingPolicyParams{
 		AutoScalingGroupName: "my-test-asg",
@@ -1015,19 +1015,19 @@ func (s *S) TestPutScalingPolicy(c *gocheck.C) {
 		MinAdjustmentStep:    0,
 	}
 	resp, err := s.as.PutScalingPolicy(request)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "PutScalingPolicy")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("PolicyName"), gocheck.Equals, "my-scaleout-policy")
-	c.Assert(values.Get("AdjustmentType"), gocheck.Equals, "PercentChangeInCapacity")
-	c.Assert(values.Get("ScalingAdjustment"), gocheck.Equals, "30")
-	c.Assert(resp.RequestId, gocheck.Equals, "3cfc6fef-c08b-11e2-a697-2922EXAMPLE")
-	c.Assert(resp.PolicyARN, gocheck.Equals, "arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:b0dcf5e8-02e6-4e31-9719-0675d0dc31ae:autoScalingGroupName/my-test-asg:policyName/my-scaleout-policy")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "PutScalingPolicy")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("PolicyName"), Equals, "my-scaleout-policy")
+	c.Assert(values.Get("AdjustmentType"), Equals, "PercentChangeInCapacity")
+	c.Assert(values.Get("ScalingAdjustment"), Equals, "30")
+	c.Assert(resp.RequestId, Equals, "3cfc6fef-c08b-11e2-a697-2922EXAMPLE")
+	c.Assert(resp.PolicyARN, Equals, "arn:aws:autoscaling:us-east-1:803981987763:scalingPolicy:b0dcf5e8-02e6-4e31-9719-0675d0dc31ae:autoScalingGroupName/my-test-asg:policyName/my-scaleout-policy")
 }
 
-func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
+func (s *S) TestPutScheduledUpdateGroupAction(c *C) {
 	testServer.Response(200, nil, PutScheduledUpdateGroupActionResponse)
 	st, _ := time.Parse(time.RFC3339, "2013-05-25T08:00:00Z")
 	request := &PutScheduledUpdateGroupActionParams{
@@ -1037,18 +1037,18 @@ func (s *S) TestPutScheduledUpdateGroupAction(c *gocheck.C) {
 		StartTime:            st,
 	}
 	resp, err := s.as.PutScheduledUpdateGroupAction(request)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "PutScheduledUpdateGroupAction")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("ScheduledActionName"), gocheck.Equals, "ScaleUp")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
-	c.Assert(values.Get("StartTime"), gocheck.Equals, "2013-05-25T08:00:00Z")
-	c.Assert(resp.RequestId, gocheck.Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "PutScheduledUpdateGroupAction")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("ScheduledActionName"), Equals, "ScaleUp")
+	c.Assert(values.Get("DesiredCapacity"), Equals, "3")
+	c.Assert(values.Get("StartTime"), Equals, "2013-05-25T08:00:00Z")
+	c.Assert(resp.RequestId, Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
 }
 
-func (s *S) TestPutScheduledUpdateGroupActionCron(c *gocheck.C) {
+func (s *S) TestPutScheduledUpdateGroupActionCron(c *C) {
 	testServer.Response(200, nil, PutScheduledUpdateGroupActionResponse)
 	st, _ := time.Parse(time.RFC3339, "2013-05-25T08:00:00Z")
 	request := &PutScheduledUpdateGroupActionParams{
@@ -1059,81 +1059,81 @@ func (s *S) TestPutScheduledUpdateGroupActionCron(c *gocheck.C) {
 		Recurrence:           "30 0 1 1,6,12 *",
 	}
 	resp, err := s.as.PutScheduledUpdateGroupAction(request)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "PutScheduledUpdateGroupAction")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("ScheduledActionName"), gocheck.Equals, "scaleup-schedule-year")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
-	c.Assert(values.Get("Recurrence"), gocheck.Equals, "30 0 1 1,6,12 *")
-	c.Assert(resp.RequestId, gocheck.Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "PutScheduledUpdateGroupAction")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("ScheduledActionName"), Equals, "scaleup-schedule-year")
+	c.Assert(values.Get("DesiredCapacity"), Equals, "3")
+	c.Assert(values.Get("Recurrence"), Equals, "30 0 1 1,6,12 *")
+	c.Assert(resp.RequestId, Equals, "3bc8c9bc-6a62-11e2-8a51-4b8a1EXAMPLE")
 
 }
 
-func (s *S) TestResumeProcesses(c *gocheck.C) {
+func (s *S) TestResumeProcesses(c *C) {
 	testServer.Response(200, nil, ResumeProcessesResponse)
 	resp, err := s.as.ResumeProcesses("my-test-asg", []string{"Launch", "Terminate"})
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "ResumeProcesses")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
-	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "ResumeProcesses")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("ScalingProcesses.member.1"), Equals, "Launch")
+	c.Assert(values.Get("ScalingProcesses.member.2"), Equals, "Terminate")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 
 }
 
-func (s *S) TestSetDesiredCapacity(c *gocheck.C) {
+func (s *S) TestSetDesiredCapacity(c *C) {
 	testServer.Response(200, nil, SetDesiredCapacityResponse)
 	resp, err := s.as.SetDesiredCapacity("my-test-asg", 3, true)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "SetDesiredCapacity")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("HonorCooldown"), gocheck.Equals, "true")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
-	c.Assert(resp.RequestId, gocheck.Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "SetDesiredCapacity")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("HonorCooldown"), Equals, "true")
+	c.Assert(values.Get("DesiredCapacity"), Equals, "3")
+	c.Assert(resp.RequestId, Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
 }
 
-func (s *S) TestSetInstanceHealth(c *gocheck.C) {
+func (s *S) TestSetInstanceHealth(c *C) {
 	testServer.Response(200, nil, SetInstanceHealthResponse)
 	resp, err := s.as.SetInstanceHealth("i-baha3121", "Unhealthy", false)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "SetInstanceHealth")
-	c.Assert(values.Get("HealthStatus"), gocheck.Equals, "Unhealthy")
-	c.Assert(values.Get("InstanceId"), gocheck.Equals, "i-baha3121")
-	c.Assert(values.Get("ShouldRespectGracePeriod"), gocheck.Equals, "false")
-	c.Assert(resp.RequestId, gocheck.Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "SetInstanceHealth")
+	c.Assert(values.Get("HealthStatus"), Equals, "Unhealthy")
+	c.Assert(values.Get("InstanceId"), Equals, "i-baha3121")
+	c.Assert(values.Get("ShouldRespectGracePeriod"), Equals, "false")
+	c.Assert(resp.RequestId, Equals, "9fb7e2db-6998-11e2-a985-57c82EXAMPLE")
 }
 
-func (s *S) TestSuspendProcesses(c *gocheck.C) {
+func (s *S) TestSuspendProcesses(c *C) {
 	testServer.Response(200, nil, SuspendProcessesResponse)
 	resp, err := s.as.SuspendProcesses("my-test-asg", []string{"Launch", "Terminate"})
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "SuspendProcesses")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("ScalingProcesses.member.1"), gocheck.Equals, "Launch")
-	c.Assert(values.Get("ScalingProcesses.member.2"), gocheck.Equals, "Terminate")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "SuspendProcesses")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("ScalingProcesses.member.1"), Equals, "Launch")
+	c.Assert(values.Get("ScalingProcesses.member.2"), Equals, "Terminate")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }
 
-func (s *S) TestTerminateInstanceInAutoScalingGroup(c *gocheck.C) {
+func (s *S) TestTerminateInstanceInAutoScalingGroup(c *C) {
 	testServer.Response(200, nil, TerminateInstanceInAutoScalingGroupResponse)
 	st, _ := time.Parse(time.RFC3339, "2014-01-26T14:08:30.560Z")
 	resp, err := s.as.TerminateInstanceInAutoScalingGroup("i-br234123", false)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "TerminateInstanceInAutoScalingGroup")
-	c.Assert(values.Get("InstanceId"), gocheck.Equals, "i-br234123")
-	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), gocheck.Equals, "false")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "TerminateInstanceInAutoScalingGroup")
+	c.Assert(values.Get("InstanceId"), Equals, "i-br234123")
+	c.Assert(values.Get("ShouldDecrementDesiredCapacity"), Equals, "false")
 	expected := &TerminateInstanceInAutoScalingGroupResp{
 		Activity: Activity{
 			ActivityId:  "cczc44a87-7d04-dsa15-31-d27c219864c5",
@@ -1146,10 +1146,10 @@ func (s *S) TestTerminateInstanceInAutoScalingGroup(c *gocheck.C) {
 		},
 		RequestId: "8d798a29-f083-11e1-bdfb-cb223EXAMPLE",
 	}
-	c.Assert(resp, gocheck.DeepEquals, expected)
+	c.Assert(resp, DeepEquals, expected)
 }
 
-func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
+func (s *S) TestUpdateAutoScalingGroup(c *C) {
 	testServer.Response(200, nil, UpdateAutoScalingGroupResponse)
 
 	asg := &AutoScalingGroup{
@@ -1163,18 +1163,18 @@ func (s *S) TestUpdateAutoScalingGroup(c *gocheck.C) {
 		VPCZoneIdentifier:       "subnet-610acd08,subnet-530fc83a",
 	}
 	resp, err := s.as.UpdateAutoScalingGroup(asg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, IsNil)
 	values := testServer.WaitRequest().PostForm
-	c.Assert(values.Get("Version"), gocheck.Equals, "2011-01-01")
-	c.Assert(values.Get("Action"), gocheck.Equals, "UpdateAutoScalingGroup")
-	c.Assert(values.Get("AutoScalingGroupName"), gocheck.Equals, "my-test-asg")
-	c.Assert(values.Get("AvailabilityZones.member.1"), gocheck.Equals, "us-east-1a")
-	c.Assert(values.Get("AvailabilityZones.member.2"), gocheck.Equals, "us-east-1b")
-	c.Assert(values.Get("MinSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("MaxSize"), gocheck.Equals, "3")
-	c.Assert(values.Get("DefaultCooldown"), gocheck.Equals, "600")
-	c.Assert(values.Get("DesiredCapacity"), gocheck.Equals, "3")
-	c.Assert(values.Get("LaunchConfigurationName"), gocheck.Equals, "my-test-lc")
-	c.Assert(values.Get("VPCZoneIdentifier"), gocheck.Equals, "subnet-610acd08,subnet-530fc83a")
-	c.Assert(resp.RequestId, gocheck.Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
+	c.Assert(values.Get("Version"), Equals, "2011-01-01")
+	c.Assert(values.Get("Action"), Equals, "UpdateAutoScalingGroup")
+	c.Assert(values.Get("AutoScalingGroupName"), Equals, "my-test-asg")
+	c.Assert(values.Get("AvailabilityZones.member.1"), Equals, "us-east-1a")
+	c.Assert(values.Get("AvailabilityZones.member.2"), Equals, "us-east-1b")
+	c.Assert(values.Get("MinSize"), Equals, "3")
+	c.Assert(values.Get("MaxSize"), Equals, "3")
+	c.Assert(values.Get("DefaultCooldown"), Equals, "600")
+	c.Assert(values.Get("DesiredCapacity"), Equals, "3")
+	c.Assert(values.Get("LaunchConfigurationName"), Equals, "my-test-lc")
+	c.Assert(values.Get("VPCZoneIdentifier"), Equals, "subnet-610acd08,subnet-530fc83a")
+	c.Assert(resp.RequestId, Equals, "8d798a29-f083-11e1-bdfb-cb223EXAMPLE")
 }

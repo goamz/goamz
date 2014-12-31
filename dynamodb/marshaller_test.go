@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/goamz/goamz/dynamodb"
-	gocheck "gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 )
 
 type TestSubStruct struct {
@@ -171,9 +171,9 @@ func testAttrsWithNilSets() []dynamodb.Attribute {
 type MarshallerSuite struct {
 }
 
-var _ = gocheck.Suite(&MarshallerSuite{})
+var _ = Suite(&MarshallerSuite{})
 
-func (s *MarshallerSuite) TestMarshal(c *gocheck.C) {
+func (s *MarshallerSuite) TestMarshal(c *C) {
 	testObj := testObject()
 	attrs, err := dynamodb.MarshalAttributes(testObj)
 	if err != nil {
@@ -181,10 +181,10 @@ func (s *MarshallerSuite) TestMarshal(c *gocheck.C) {
 	}
 
 	expected := testAttrs()
-	c.Check(attrs, gocheck.DeepEquals, expected)
+	c.Check(attrs, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestUnmarshal(c *gocheck.C) {
+func (s *MarshallerSuite) TestUnmarshal(c *C) {
 	testObj := &TestStruct{}
 
 	attrMap := map[string]*dynamodb.Attribute{}
@@ -199,10 +199,10 @@ func (s *MarshallerSuite) TestUnmarshal(c *gocheck.C) {
 	}
 
 	expected := testObject()
-	c.Check(testObj, gocheck.DeepEquals, expected)
+	c.Check(testObj, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestMarshalTime(c *gocheck.C) {
+func (s *MarshallerSuite) TestMarshalTime(c *C) {
 	testObj := testObjectTime()
 	attrs, err := dynamodb.MarshalAttributes(testObj)
 	if err != nil {
@@ -210,10 +210,10 @@ func (s *MarshallerSuite) TestMarshalTime(c *gocheck.C) {
 	}
 
 	expected := testAttrsTime()
-	c.Check(attrs, gocheck.DeepEquals, expected)
+	c.Check(attrs, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestUnmarshalTime(c *gocheck.C) {
+func (s *MarshallerSuite) TestUnmarshalTime(c *C) {
 	testObj := &TestStructTime{}
 
 	attrMap := map[string]*dynamodb.Attribute{}
@@ -228,10 +228,10 @@ func (s *MarshallerSuite) TestUnmarshalTime(c *gocheck.C) {
 	}
 
 	expected := testObjectTime()
-	c.Check(testObj, gocheck.DeepEquals, expected)
+	c.Check(testObj, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestMarshalNilSets(c *gocheck.C) {
+func (s *MarshallerSuite) TestMarshalNilSets(c *C) {
 	testObj := testObjectWithNilSets()
 	attrs, err := dynamodb.MarshalAttributes(testObj)
 	if err != nil {
@@ -239,10 +239,10 @@ func (s *MarshallerSuite) TestMarshalNilSets(c *gocheck.C) {
 	}
 
 	expected := testAttrsWithNilSets()
-	c.Check(attrs, gocheck.DeepEquals, expected)
+	c.Check(attrs, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestMarshalZeroValues(c *gocheck.C) {
+func (s *MarshallerSuite) TestMarshalZeroValues(c *C) {
 	testObj := testObjectWithZeroValues()
 	attrs, err := dynamodb.MarshalAttributes(testObj)
 	if err != nil {
@@ -250,10 +250,10 @@ func (s *MarshallerSuite) TestMarshalZeroValues(c *gocheck.C) {
 	}
 
 	expected := testAttrsWithZeroValues()
-	c.Check(attrs, gocheck.DeepEquals, expected)
+	c.Check(attrs, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestMarshalEmptySets(c *gocheck.C) {
+func (s *MarshallerSuite) TestMarshalEmptySets(c *C) {
 	testObj := testObjectWithEmptySets()
 	attrs, err := dynamodb.MarshalAttributes(testObj)
 	if err != nil {
@@ -261,10 +261,10 @@ func (s *MarshallerSuite) TestMarshalEmptySets(c *gocheck.C) {
 	}
 
 	expected := testAttrsWithNilSets()
-	c.Check(attrs, gocheck.DeepEquals, expected)
+	c.Check(attrs, DeepEquals, expected)
 }
 
-func (s *MarshallerSuite) TestUnmarshalEmptySets(c *gocheck.C) {
+func (s *MarshallerSuite) TestUnmarshalEmptySets(c *C) {
 	testObj := &TestStruct{}
 
 	attrMap := map[string]*dynamodb.Attribute{}
@@ -279,5 +279,5 @@ func (s *MarshallerSuite) TestUnmarshalEmptySets(c *gocheck.C) {
 	}
 
 	expected := testObjectWithNilSets()
-	c.Check(testObj, gocheck.DeepEquals, expected)
+	c.Check(testObj, DeepEquals, expected)
 }

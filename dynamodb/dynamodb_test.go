@@ -7,7 +7,7 @@ import (
 
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/dynamodb"
-	gocheck "gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 )
 
 const TIMEOUT = 3 * time.Minute
@@ -26,7 +26,7 @@ type DynamoDBTest struct {
 }
 
 // Delete all items in the table
-func (s *DynamoDBTest) TearDownTest(c *gocheck.C) {
+func (s *DynamoDBTest) TearDownTest(c *C) {
 	pk, err := s.TableDescriptionT.BuildPrimaryKey()
 	if err != nil {
 		c.Fatal(err)
@@ -49,7 +49,7 @@ func (s *DynamoDBTest) TearDownTest(c *gocheck.C) {
 	}
 }
 
-func (s *DynamoDBTest) TearDownSuite(c *gocheck.C) {
+func (s *DynamoDBTest) TearDownSuite(c *C) {
 	// return immediately in the case of calling c.Skip() in SetUpSuite()
 	if s.server == nil {
 		return
@@ -99,7 +99,7 @@ func (s *DynamoDBTest) TearDownSuite(c *gocheck.C) {
 	}
 }
 
-func (s *DynamoDBTest) WaitUntilStatus(c *gocheck.C, status string) {
+func (s *DynamoDBTest) WaitUntilStatus(c *C, status string) {
 	// We should wait until the table is in specified status because a real DynamoDB has some delay for ready
 	done := make(chan bool)
 	timeout := time.After(TIMEOUT)
@@ -130,7 +130,7 @@ func (s *DynamoDBTest) WaitUntilStatus(c *gocheck.C, status string) {
 	}
 }
 
-func setUpAuth(c *gocheck.C) {
+func setUpAuth(c *C) {
 	if !*amazon {
 		c.Skip("Test against amazon not enabled.")
 	}
@@ -159,5 +159,5 @@ func findTableByName(tables []string, name string) bool {
 }
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	TestingT(t)
 }

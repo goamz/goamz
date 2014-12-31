@@ -9,40 +9,40 @@ import (
 	"github.com/goamz/goamz/aws"
 	"github.com/goamz/goamz/exp/ses"
 	"github.com/goamz/goamz/testutil"
-	gocheck "gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {
-	gocheck.TestingT(t)
+	TestingT(t)
 }
 
 type S struct {
 	ses *ses.SES
 }
 
-var _ = gocheck.Suite(&S{})
+var _ = Suite(&S{})
 
 var testServer = testutil.NewHTTPServer()
 
-func (s *S) SetUpSuite(c *gocheck.C) {
+func (s *S) SetUpSuite(c *C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
 	s.ses = ses.NewSES(auth, aws.Region{Name: "faux-region-1", S3Endpoint: testServer.URL})
 }
 
-func (s *S) TearDownStrategy(c *gocheck.C) {
+func (s *S) TearDownStrategy(c *C) {
 
 }
 
-func (s *S) SetUpTest(c *gocheck.C) {
+func (s *S) SetUpTest(c *C) {
 
 }
 
-func (s *S) TearDownTest(c *gocheck.C) {
+func (s *S) TearDownTest(c *C) {
 	testServer.Flush()
 }
 
-func (s *S) TestSendEmail(c *gocheck.C) {
+func (s *S) TestSendEmail(c *C) {
 	testServer.Response(200, nil, "")
 
 	email := ses.NewEmail()
@@ -54,16 +54,16 @@ func (s *S) TestSendEmail(c *gocheck.C) {
 	s.ses.SendEmail(email)
 	req := testServer.WaitRequest()
 
-	c.Assert(req.Method, gocheck.Equals, "POST")
-	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
+	c.Assert(req.Method, Equals, "POST")
+	c.Assert(req.Header["Date"], Not(Equals), "")
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(req.Body)
 	body, _ := url.ParseQuery(buf.String())
 
-	c.Assert(body, gocheck.Not(gocheck.IsNil))
-	c.Assert(body["Destination.ToAddresses.member.1"], gocheck.Equals, "test@test.com")
-	c.Assert(body["Source"], gocheck.Equals, "test@test.com")
-	c.Assert(body["Message.Subject.Data"], gocheck.Equals, "test")
-	c.Assert(body["Message.Body.Html.Data"], gocheck.Equals, "test")
+	c.Assert(body, Not(IsNil))
+	c.Assert(body["Destination.ToAddresses.member.1"], Equals, "test@test.com")
+	c.Assert(body["Source"], Equals, "test@test.com")
+	c.Assert(body["Message.Subject.Data"], Equals, "test")
+	c.Assert(body["Message.Body.Html.Data"], Equals, "test")
 }
