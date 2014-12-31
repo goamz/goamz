@@ -58,7 +58,7 @@ func (b *Bucket) ListMulti(prefix, delim string) (multis []*Multi, prefixes []st
 	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
 		req := &request{
 			method: "GET",
-			bucket: b.Name,
+			bucket: b,
 			params: params,
 		}
 		var resp listMultiResp
@@ -116,7 +116,7 @@ func (b *Bucket) InitMulti(key string, contType string, perm ACL) (*Multi, error
 	}
 	req := &request{
 		method:  "POST",
-		bucket:  b.Name,
+		bucket:  b,
 		path:    key,
 		headers: headers,
 		params:  params,
@@ -165,7 +165,7 @@ func (m *Multi) putPart(n int, r io.ReadSeeker, partSize int64, md5b64 string) (
 		}
 		req := &request{
 			method:  "PUT",
-			bucket:  m.Bucket.Name,
+			bucket:  m.Bucket,
 			path:    m.Key,
 			headers: headers,
 			params:  params,
@@ -241,7 +241,7 @@ func (m *Multi) ListParts() ([]Part, error) {
 	for attempt := m.Bucket.S3.AttemptStrategy.Start(); attempt.Next(); {
 		req := &request{
 			method: "GET",
-			bucket: m.Bucket.Name,
+			bucket: m.Bucket,
 			path:   m.Key,
 			params: params,
 		}
@@ -359,7 +359,7 @@ func (m *Multi) Complete(parts []Part) error {
 	for attempt := m.Bucket.S3.AttemptStrategy.Start(); attempt.Next(); {
 		req := &request{
 			method:  "POST",
-			bucket:  m.Bucket.Name,
+			bucket:  m.Bucket,
 			path:    m.Key,
 			params:  params,
 			payload: bytes.NewReader(data),
@@ -395,7 +395,7 @@ func (m *Multi) Abort() error {
 	for attempt := m.Bucket.S3.AttemptStrategy.Start(); attempt.Next(); {
 		req := &request{
 			method: "DELETE",
-			bucket: m.Bucket.Name,
+			bucket: m.Bucket,
 			path:   m.Key,
 			params: params,
 		}
