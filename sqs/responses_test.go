@@ -124,6 +124,19 @@ var TestChangeMessageVisibilityXmlOK = `
 </ChangeMessageVisibilityResponse>
 `
 
+var TestChangeMessageVisibilityBatchXmlOK = `
+<ChangeMessageVisibilityBatchResponse>
+    <ChangeMessageVisibilityBatchResult>
+        <ChangeMessageVisibilityBatchResultEntry>
+            <Id>5fea7756-0ea4-451a-a703-a558b933e274</Id>
+        </ChangeMessageVisibilityBatchResultEntry>
+    </ChangeMessageVisibilityBatchResult>
+    <ResponseMetadata>
+        <RequestId>6a7a282a-d013-4a59-aba9-335b0fa48bed</RequestId>
+    </ResponseMetadata>
+</ChangeMessageVisibilityBatchResponse>
+`
+
 var TestDeleteMessageBatchXmlOK = `
 <DeleteMessageBatchResponse>
     <DeleteMessageBatchResult>

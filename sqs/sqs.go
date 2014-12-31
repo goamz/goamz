@@ -339,11 +339,15 @@ func (q *Queue) ChangeMessageVisibility(M *Message, VisibilityTimeout int) (resp
 	return
 }
 
-func (q *Queue) GetQueueAttributes(A string) (resp *GetQueueAttributesResponse, err error) {
+func (q *Queue) GetQueueAttributes(attributes ...string) (resp *GetQueueAttributesResponse, err error) {
 	resp = &GetQueueAttributesResponse{}
 	params := makeParams("GetQueueAttributes")
-	params["AttributeName"] = A
-
+	if attributes == nil {
+		attributes = []string{"All"}
+	}
+	for i, attributeValue := range attributes {
+		params[fmt.Sprintf("AttributeName.%d", i+1)] = attributeValue
+	}
 	err = q.SQS.query(q.Url, params, resp)
 	return
 }
@@ -401,6 +405,47 @@ func (q *Queue) SendMessageBatchString(msgList []string) (resp *SendMessageBatch
 	}
 
 	err = q.SQS.query(q.Url, params, resp)
+	return
+}
+
+type ChangeMessageVisibilityBatchResponse struct {
+	ChangeMessageVisibilityBatchResult []struct {
+		Id          string
+		SenderFault bool
+		Code        string
+		Message     string
+	} `xml:"ChangeMessageVisibilityBatchResult>ChangeMessageVisibilityBatchResultEntry"`
+	ResponseMetadata ResponseMetadata
+}
+
+/* ChangeMessageVisibilityBatch - see http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibilityBatch.html */
+func (q *Queue) ChangeMessageVisibilityBatch(msgList []Message, duration int) (resp *ChangeMessageVisibilityBatchResponse, err error) {
+	resp = &ChangeMessageVisibilityBatchResponse{}
+	params := makeParams("ChangeMessageVisibilityBatch")
+
+	for idx := range msgList {
+		params[fmt.Sprintf("ChangeMessageVisibilityBatchRequestEntry.%d.Id", idx+1)] = msgList[idx].MessageId
+		params[fmt.Sprintf("ChangeMessageVisibilityBatchRequestEntry.%d.ReceiptHandle", idx+1)] = msgList[idx].ReceiptHandle
+		params[fmt.Sprintf("ChangeMessageVisibilityBatchRequestEntry.%d.VisibilityTimeout", idx+1)] = strconv.Itoa(duration)
+	}
+
+	err = q.SQS.query(q.Url, params, resp)
+	if err != nil {
+		return
+	}
+
+	var messagesWithErrors int
+
+	for idx := range resp.ChangeMessageVisibilityBatchResult {
+		if resp.ChangeMessageVisibilityBatchResult[idx].SenderFault {
+			messagesWithErrors++
+		}
+	}
+
+	if messagesWithErrors > 0 {
+		log.Printf("%d Messages have not had their visibility changed to %d seconds", messagesWithErrors, duration)
+	}
+
 	return
 }
 
