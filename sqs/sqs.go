@@ -60,6 +60,8 @@ func NewFrom(accessKey, secretKey, region string) (*SQS, error) {
 		aws_region = aws.APNortheast
 	case "sa.east", "sa.east.1":
 		aws_region = aws.SAEast
+	case "cn.north", "cn.north.1":
+		aws_region = aws.CNNorth
 	default:
 		return nil, errors.New(fmt.Sprintf("Unknow/Unsupported region %s", region))
 	}
@@ -476,15 +478,32 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 	if s.Auth.Token() != "" {
 		params["SecurityToken"] = s.Auth.Token()
 	}
-	sign(s.Auth, "GET", path, params, url_.Host)
 
-	url_.RawQuery = multimap(params).Encode()
+	var r *http.Response
+	if s.Region.Name == "cn-north-1" {
+		var sarray []string
+		for k, v := range params {
+			sarray = append(sarray, aws.Encode(k)+"="+aws.Encode(v))
+		}
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", url_, strings.Join(sarray, "&")), nil)
+		if err != nil {
+			return err
+		}
+		signer := aws.NewV4Signer(s.Auth, "sqs", s.Region)
+		signer.Sign(req)
+		client := http.Client{}
+		r, err = client.Do(req)
+	} else {
+		sign(s.Auth, "GET", path, params, url_.Host)
+		url_.RawQuery = multimap(params).Encode()
+		r, err = http.Get(url_.String())
+	}
 
 	if debug {
 		log.Printf("GET ", url_.String())
 	}
 
-	r, err := http.Get(url_.String())
 	if err != nil {
 		return err
 	}

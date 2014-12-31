@@ -230,7 +230,7 @@ func (s *V4Signer) canonicalQueryString(u *url.URL) string {
 		k = url.QueryEscape(k)
 		for _, v := range vs {
 			if v == "" {
-				a = append(a, k)
+				a = append(a, k+"=")
 			} else {
 				v = url.QueryEscape(v)
 				a = append(a, k+"="+v)

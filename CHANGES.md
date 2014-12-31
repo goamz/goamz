@@ -1,5 +1,5 @@
 # Changes in this fork
 
-* Added EC2.CreateImage()
-* Added EC2.CreateKeyPair()
-* Added EC2.DeleteKeyPair()
+* Added CNNorth Region
+* Change SignV2 to SignV4
+* V4Signer.canonicalQueryString empty value must append "="
