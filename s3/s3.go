@@ -15,6 +15,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
+  "crypto/sha256"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -942,7 +943,10 @@ func (s3 *S3) prepare(req *request) error {
 	if s3.Auth.Token() != "" {
 		req.headers["X-Amz-Security-Token"] = []string{s3.Auth.Token()}
 	}
-	sign(s3.Auth, req.method, reqSignpathSpaceFix, req.params, req.headers)
+	if s3.Region.Name != "cn-north-1" {
+		sign(s3.Auth, req.method, reqSignpathSpaceFix, req.params, req.headers)
+	}
+
 	return nil
 }
 
@@ -966,6 +970,8 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		ProtoMinor: 1,
 		Close:      true,
 		Header:     req.headers,
+		Proto:      "HTTP/1.1",
+		Host:       u.Host,
 	}
 
 	if v, ok := req.headers["Content-Length"]; ok {
@@ -975,6 +981,14 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 	if req.payload != nil {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
+
+	if s3.Region.Name == "cn-north-1" {
+		hreq.Header.Del("Authorization")
+		hreq.Header.Set("x-amz-content-sha256", s3.contentHash(&hreq))
+		signer := aws.NewV4Signer(s3.Auth, "s3", s3.Region)
+		signer.Sign(&hreq)
+	}
+
 
 	if s3.client == nil {
 		s3.client = &http.Client{
@@ -1142,3 +1156,28 @@ func (c *ioTimeoutConn) Write(b []byte) (int, error) {
 	}
 	return c.TCPConn.Write(b)
 }
+
+
+// Hash http.Request body
+func (s *S3) contentHash(req *http.Request) string {
+	var b []byte
+	if req.Body == nil {
+		b = []byte("")
+	} else {
+		var err error
+		b, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			panic(err)
+		}
+	}
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	return s.hash(string(b))
+}
+
+// hash method calculates the sha256 hash for a given string
+func (s *S3) hash(in string) string {
+	h := sha256.New()
+	fmt.Fprintf(h, "%s", in)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
