@@ -15,7 +15,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
-  "crypto/sha256"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -989,7 +989,6 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		signer.Sign(&hreq)
 	}
 
-
 	if s3.client == nil {
 		s3.client = &http.Client{
 			Transport: &http.Transport{
@@ -1157,7 +1156,6 @@ func (c *ioTimeoutConn) Write(b []byte) (int, error) {
 	return c.TCPConn.Write(b)
 }
 
-
 // Hash http.Request body
 func (s *S3) contentHash(req *http.Request) string {
 	var b []byte
@@ -1180,4 +1178,3 @@ func (s *S3) hash(in string) string {
 	fmt.Fprintf(h, "%s", in)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
-
