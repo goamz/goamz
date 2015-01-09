@@ -1084,3 +1084,65 @@ func (s *S) TestModifyInstance(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
 }
+
+func (s *S) TestDescribeAvailabilityZonesExample1(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeAvailabilityZonesExample1)
+
+	resp, err := s.ec2.DescribeAvailabilityZones(nil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DescribeAvailabilityZones"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Zones, gocheck.HasLen, 4)
+
+	z0 := resp.Zones[0]
+	c.Assert(z0.Name, gocheck.Equals, "us-east-1a")
+	c.Assert(z0.Region, gocheck.Equals, "us-east-1")
+	c.Assert(z0.State, gocheck.Equals, "available")
+	c.Assert(z0.MessageSet, gocheck.HasLen, 0)
+
+	z1 := resp.Zones[1]
+	c.Assert(z1.Name, gocheck.Equals, "us-east-1b")
+	c.Assert(z1.Region, gocheck.Equals, "us-east-1")
+	c.Assert(z1.State, gocheck.Equals, "available")
+	c.Assert(z1.MessageSet, gocheck.HasLen, 0)
+
+	z2 := resp.Zones[2]
+	c.Assert(z2.Name, gocheck.Equals, "us-east-1c")
+	c.Assert(z2.Region, gocheck.Equals, "us-east-1")
+	c.Assert(z2.State, gocheck.Equals, "available")
+	c.Assert(z2.MessageSet, gocheck.HasLen, 0)
+
+	z3 := resp.Zones[3]
+	c.Assert(z3.Name, gocheck.Equals, "us-east-1d")
+	c.Assert(z3.Region, gocheck.Equals, "us-east-1")
+	c.Assert(z3.State, gocheck.Equals, "available")
+	c.Assert(z3.MessageSet, gocheck.HasLen, 0)
+}
+
+func (s *S) TestDescribeAvailabilityZonesExample2(c *gocheck.C) {
+	testServer.Response(200, nil, DescribeAvailabilityZonesExample2)
+
+	resp, err := s.ec2.DescribeAvailabilityZones(nil)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], gocheck.DeepEquals, []string{"DescribeAvailabilityZones"})
+
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.RequestId, gocheck.Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Zones, gocheck.HasLen, 2)
+
+	z0 := resp.Zones[0]
+	c.Assert(z0.Name, gocheck.Equals, "us-east-1a")
+	c.Assert(z0.Region, gocheck.Equals, "us-east-1")
+	c.Assert(z0.State, gocheck.Equals, "impaired")
+	c.Assert(z0.MessageSet, gocheck.HasLen, 0)
+
+	z1 := resp.Zones[1]
+	c.Assert(z1.Name, gocheck.Equals, "us-east-1b")
+	c.Assert(z1.Region, gocheck.Equals, "us-east-1")
+	c.Assert(z1.State, gocheck.Equals, "unavailable")
+	c.Assert(z1.MessageSet, gocheck.DeepEquals, []string{"us-east-1b is currently down for maintenance."})
+}
