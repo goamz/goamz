@@ -83,6 +83,10 @@ func (q *Query) AddNewStartingHashKey(hashKey string) {
 	q.buffer["NewStartingHashKey"] = hashKey
 }
 
+func (q *Query) AddRecords(records []PutRecordsRecord) {
+	q.buffer["Records"] = records
+}
+
 func (q *Query) String() string {
 	bytes, err := json.Marshal(q.buffer)
 	if err != nil {
