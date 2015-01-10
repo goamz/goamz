@@ -96,6 +96,11 @@ type Record struct {
 	SequenceNumber string
 }
 
+type PutRecordsRecord struct {
+	Data         []byte
+	PartitionKey string
+}
+
 // Represents the output of a DescribeStream operation.
 type DescribeStreamResponse struct {
 	StreamDescription StreamDescription
@@ -120,6 +125,18 @@ type ListStreamResponse struct {
 
 // Represents the output of a PutRecord operation.
 type PutRecordResponse struct {
+	SequenceNumber string
+	ShardId        string
+}
+
+type PutRecordsResponse struct {
+	FailedRecordCount int
+	Records           []PutRecordsRecordResponse
+}
+
+type PutRecordsRecordResponse struct {
+	ErrorCode      string
+	ErrorMessage   string
 	SequenceNumber string
 	ShardId        string
 }
