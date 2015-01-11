@@ -13,7 +13,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 const API_VERSION = "2012-11-05"
@@ -301,24 +302,24 @@ func (q *Queue) SendMessage(MessageBody string) (resp *SendMessageResponse, err 
 }
 
 func (q *Queue) SendMessageWithAttributes(MessageBody string, attrs map[string]string) (resp *SendMessageResponse, err error) {
-        resp = &SendMessageResponse{}
-        params := makeParams("SendMessage")
+	resp = &SendMessageResponse{}
+	params := makeParams("SendMessage")
 
-        params["MessageBody"] = MessageBody
+	params["MessageBody"] = MessageBody
 
-        i := 1
-        for k, v := range attrs {
-                nameParam := fmt.Sprintf("MessageAttribute.%d.Name", i)
-                valParam := fmt.Sprintf("MessageAttribute.%d.Value.StringValue", i)
-                typeParam := fmt.Sprintf("MessageAttribute.%d.Value.DataType", i)
-                params[nameParam] = k
-                params[valParam] = v
-                params[typeParam] = "String"
-                i++
-        }
+	i := 1
+	for k, v := range attrs {
+		nameParam := fmt.Sprintf("MessageAttribute.%d.Name", i)
+		valParam := fmt.Sprintf("MessageAttribute.%d.Value.StringValue", i)
+		typeParam := fmt.Sprintf("MessageAttribute.%d.Value.DataType", i)
+		params[nameParam] = k
+		params[valParam] = v
+		params[typeParam] = "String"
+		i++
+	}
 
-        err = q.SQS.query(q.Url, params, resp)
-        return
+	err = q.SQS.query(q.Url, params, resp)
+	return
 }
 
 // ReceiveMessageWithVisibilityTimeout
