@@ -300,6 +300,27 @@ func (q *Queue) SendMessage(MessageBody string) (resp *SendMessageResponse, err 
 	return
 }
 
+func (q *Queue) SendMessageWithAttributes(MessageBody string, attrs map[string]string) (resp *SendMessageResponse, err error) {
+        resp = &SendMessageResponse{}
+        params := makeParams("SendMessage")
+
+        params["MessageBody"] = MessageBody
+
+        i := 1
+        for k, v := range attrs {
+                nameParam := fmt.Sprintf("MessageAttribute.%d.Name", i)
+                valParam := fmt.Sprintf("MessageAttribute.%d.Value.StringValue", i)
+                typeParam := fmt.Sprintf("MessageAttribute.%d.Value.DataType", i)
+                params[nameParam] = k
+                params[valParam] = v
+                params[typeParam] = "String"
+                i++
+        }
+
+        err = q.SQS.query(q.Url, params, resp)
+        return
+}
+
 // ReceiveMessageWithVisibilityTimeout
 func (q *Queue) ReceiveMessageWithVisibilityTimeout(MaxNumberOfMessages, VisibilityTimeoutSec int) (*ReceiveMessageResponse, error) {
 	params := map[string]string{
