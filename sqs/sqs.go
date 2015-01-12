@@ -13,7 +13,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 const API_VERSION = "2012-11-05"
@@ -109,9 +110,10 @@ type PurgeQueueResponse struct {
 }
 
 type SendMessageResponse struct {
-	MD5              string `xml:"SendMessageResult>MD5OfMessageBody"`
-	Id               string `xml:"SendMessageResult>MessageId"`
-	ResponseMetadata ResponseMetadata
+	MD5                    string `xml:"SendMessageResult>MD5OfMessageBody"`
+	MD5OfMessageAttributes string `xml:"SendMessageResult>MD5OfMessageAttributes"`
+	Id                     string `xml:"SendMessageResult>MessageId"`
+	ResponseMetadata       ResponseMetadata
 }
 
 type ReceiveMessageResponse struct {
@@ -295,6 +297,27 @@ func (q *Queue) SendMessage(MessageBody string) (resp *SendMessageResponse, err 
 	params := makeParams("SendMessage")
 
 	params["MessageBody"] = MessageBody
+
+	err = q.SQS.query(q.Url, params, resp)
+	return
+}
+
+func (q *Queue) SendMessageWithAttributes(MessageBody string, attrs map[string]string) (resp *SendMessageResponse, err error) {
+	resp = &SendMessageResponse{}
+	params := makeParams("SendMessage")
+
+	params["MessageBody"] = MessageBody
+
+	i := 1
+	for k, v := range attrs {
+		nameParam := fmt.Sprintf("MessageAttribute.%d.Name", i)
+		valParam := fmt.Sprintf("MessageAttribute.%d.Value.StringValue", i)
+		typeParam := fmt.Sprintf("MessageAttribute.%d.Value.DataType", i)
+		params[nameParam] = k
+		params[valParam] = v
+		params[typeParam] = "String"
+		i++
+	}
 
 	err = q.SQS.query(q.Url, params, resp)
 	return
