@@ -110,9 +110,10 @@ type PurgeQueueResponse struct {
 }
 
 type SendMessageResponse struct {
-	MD5              string `xml:"SendMessageResult>MD5OfMessageBody"`
-	Id               string `xml:"SendMessageResult>MessageId"`
-	ResponseMetadata ResponseMetadata
+	MD5                    string `xml:"SendMessageResult>MD5OfMessageBody"`
+	MD5OfMessageAttributes string `xml:"SendMessageResult>MD5OfMessageAttributes"`
+	Id                     string `xml:"SendMessageResult>MessageId"`
+	ResponseMetadata       ResponseMetadata
 }
 
 type ReceiveMessageResponse struct {
