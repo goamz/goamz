@@ -174,7 +174,7 @@ func encodeMessageAttribute(str string) []byte {
 	return bs
 }
 
-func (s *S) TestSendMessageWithAttributes(c *gocheck.C) {
+func (s *S) TestSendMessageWithAttributes(c *C) {
 	testServer.PrepareResponse(200, nil, TestSendMessageXmlOK)
 
 	q := &Queue{s.sqs, testServer.URL + "/123456789012/testQueue/"}
@@ -184,23 +184,23 @@ func (s *S) TestSendMessageWithAttributes(c *gocheck.C) {
 	resp, err := q.SendMessageWithAttributes("This is a test message", attrs)
 	req := testServer.WaitRequest()
 
-	c.Assert(req.Method, gocheck.Equals, "GET")
-	c.Assert(req.URL.Path, gocheck.Equals, "/123456789012/testQueue/")
-	c.Assert(req.Header["Date"], gocheck.Not(gocheck.Equals), "")
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.URL.Path, Equals, "/123456789012/testQueue/")
+	c.Assert(req.Header["Date"], Not(Equals), "")
 
 	var attrsHash = md5.New()
 	attrsHash.Write(encodeMessageAttribute("test_attribute_name_1"))
 	attrsHash.Write(encodeMessageAttribute("String"))
 	attrsHash.Write([]byte{1})
 	attrsHash.Write(encodeMessageAttribute("test_attribute_value_1"))
-	c.Assert(resp.MD5OfMessageAttributes, gocheck.Equals, fmt.Sprintf("%x", attrsHash.Sum(nil)))
+	c.Assert(resp.MD5OfMessageAttributes, Equals, fmt.Sprintf("%x", attrsHash.Sum(nil)))
 
 	msg := "This is a test message"
 	var h hash.Hash = md5.New()
 	h.Write([]byte(msg))
-	c.Assert(resp.MD5, gocheck.Equals, fmt.Sprintf("%x", h.Sum(nil)))
-	c.Assert(resp.Id, gocheck.Equals, "5fea7756-0ea4-451a-a703-a558b933e274")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(resp.MD5, Equals, fmt.Sprintf("%x", h.Sum(nil)))
+	c.Assert(resp.Id, Equals, "5fea7756-0ea4-451a-a703-a558b933e274")
+	c.Assert(err, IsNil)
 }
 
 func (s *S) TestSendMessageBatch(c *C) {
