@@ -6,7 +6,10 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type RetryableFunc func(*http.Request, *http.Response, error) bool
@@ -100,6 +103,7 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 			res.Body.Close()
 		}
 		if t.Wait != nil {
+			log.Warnf("Waiting before retrying")
 			t.Wait(try)
 		}
 	}
@@ -123,6 +127,8 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 	// Retry if there's a temporary network error.
 	if neterr, ok := err.(net.Error); ok {
 		if neterr.Temporary() {
+			log.Warnf(
+				"Retryable network error\n%s %s\n%s", req.Method, req.URL.String(), err)
 			return true
 		}
 	}
@@ -130,6 +136,9 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 	// Retry if we get a 5xx series error.
 	if res != nil {
 		if res.StatusCode >= 500 && res.StatusCode < 600 {
+			dump, _ := httputil.DumpResponse(res, false)
+			log.Warnf(
+				"Retryable error\n%s %s\n%v", req.Method, req.URL.String(), string(dump))
 			return true
 		}
 	}
@@ -142,9 +151,11 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 		body, _ := ioutil.ReadAll(res.Body)                // Read the body
 		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
 		if int64(len(body)) != res.ContentLength {
+			dump, _ := httputil.DumpResponse(res, true)
+			log.Warnf("Retryable error. Content length mismatch.\n%s %s\n%v",
+				req.Method, req.URL.String(), string(dump))
 			return true
 		}
 	}
-
 	return false
 }
