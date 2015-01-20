@@ -13,7 +13,7 @@ import (
 )
 
 type RetryableFunc func(*http.Request, *http.Response, error) bool
-type WaitFunc func(try int)
+type WaitFunc func(try int, minWait time.Duration, maxWait time.Duration)
 type DeadlineFunc func() time.Time
 
 type ResilientTransport struct {
@@ -26,15 +26,29 @@ type ResilientTransport struct {
 	// its own earlier timeout. For instance, TCP timeouts are
 	// often around 3 minutes.
 	DialTimeout time.Duration
-
-	// MaxTries, if non-zero, specifies the number of times we will retry on
-	// failure. Retries are only attempted for temporary network errors or known
-	// safe failures.
-	MaxTries    int
 	Deadline    DeadlineFunc
 	ShouldRetry RetryableFunc
 	Wait        WaitFunc
 	transport   *http.Transport
+
+	// Retries are only attempted for temporary network errors or known
+	// safe failures.
+
+	// MinRetryWait is the minimum time to wait between retries
+	MinRetryWait time.Duration
+
+	// MaxRetryWait is the maximum time to wait between retries
+	MaxRetryWait time.Duration
+
+	// Total cumulative time before giving up on retries. Note
+	// this is only an estimate. Actual timeout
+	// may be upto RetryingTimeout + MaxRetryWait
+	// The value for this should usually be less that 15 minutes
+	// as the signatures in the request becomes invalid
+	// after 15 minutes. From AWS doc: http://goo.gl/TNqMCr
+	// A request must reach AWS within 15 minutes of the time stamp
+	// in the request. Otherwise, AWS denies the request.
+	RetryingTimeout time.Duration
 }
 
 // Convenience method for creating an http client
@@ -61,10 +75,12 @@ var retryingTransport = &ResilientTransport{
 	Deadline: func() time.Time {
 		return time.Now().Add(10 * time.Second)
 	},
-	DialTimeout: 10 * time.Second,
-	MaxTries:    3,
-	ShouldRetry: awsRetry,
-	Wait:        ExpBackoff,
+	DialTimeout:     10 * time.Second,
+	ShouldRetry:     awsRetry,
+	Wait:            ExpBackoff,
+	MaxRetryWait:    10 * time.Second,
+	MinRetryWait:    100 * time.Millisecond,
+	RetryingTimeout: 60 * time.Second, // give up retrying after 60 seconds
 }
 
 // Exported default client
@@ -87,7 +103,11 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 		buf.ReadFrom(req.Body)
 	}
 
-	for try := 0; try < t.MaxTries; try += 1 {
+	// deadline for retrying
+	retryingDeadline := time.Now().Add(t.RetryingTimeout)
+
+	// retry till we are past the deadline
+	for try := 0; retryingDeadline.Sub(time.Now()) > 0; try += 1 {
 		// Each retry should use a copy of the body.
 		// This fixes a bug where subsequent retries would be using a reader
 		// that was already read.
@@ -103,17 +123,21 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 			res.Body.Close()
 		}
 		if t.Wait != nil {
-			log.Warnf("Waiting before retrying")
-			t.Wait(try)
+			t.Wait(try, t.MinRetryWait, t.MaxRetryWait)
 		}
 	}
 
 	return
 }
 
-func ExpBackoff(try int) {
-	time.Sleep(100 * time.Millisecond *
-		time.Duration(math.Exp2(float64(try))))
+func ExpBackoff(try int, minWait time.Duration, maxWait time.Duration) {
+	wait := time.Duration(math.Pow(2, float64(try))) * minWait
+	if wait < minWait || wait > maxWait {
+		wait = maxWait
+	}
+
+	log.Warnf("Waiting %v before retrying #%d", wait, try+1)
+	time.Sleep(wait)
 }
 
 func LinearBackoff(try int) {
