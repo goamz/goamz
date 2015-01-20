@@ -76,7 +76,7 @@ var retryingTransport = &ResilientTransport{
 		return time.Now().Add(10 * time.Second)
 	},
 	DialTimeout:     10 * time.Second,
-	ShouldRetry:     awsRetry,
+	ShouldRetry:     AwsRetry,
 	Wait:            ExpBackoff,
 	MaxRetryWait:    10 * time.Second,
 	MinRetryWait:    100 * time.Millisecond,
@@ -147,7 +147,7 @@ func LinearBackoff(try int) {
 // Decide if we should retry a request.
 // In general, the criteria for retrying a request is described here
 // http://docs.aws.amazon.com/general/latest/gr/api-retries.html
-func awsRetry(req *http.Request, res *http.Response, err error) bool {
+func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 	// Retry if there's a temporary network error.
 	if neterr, ok := err.(net.Error); ok {
 		if neterr.Temporary() {
