@@ -90,9 +90,7 @@ func (rs *Redshift) query(params map[string]string, resp interface{}) error {
 	log.SetLevel(log.DebugLevel)
 
 	// make the request
-	//log.Debugf("GET %v", endpoint.String())
-	d, _ := httputil.DumpRequest(req, true)
-	log.Debugf("Request\n%v", string(d))
+	log.Debugf("GET %v", endpoint.String())
 	r, err := rs.httpClient.Do(req)
 	if err != nil {
 		return err
