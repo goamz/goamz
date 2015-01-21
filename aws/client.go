@@ -82,7 +82,7 @@ var retryingTransport = &ResilientTransport{
 	Wait:            ExpBackoff,
 	MaxRetryWait:    10 * time.Second,
 	MinRetryWait:    100 * time.Millisecond,
-	RetryingTimeout: 60 * time.Second, // give up retrying after 60 seconds
+	RetryingTimeout: 60 * time.Second,
 }
 
 // Exported default client
@@ -139,7 +139,7 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 
 func ExpBackoff(try int, minWait time.Duration, maxWait time.Duration) {
 	wait := time.Duration(math.Pow(2, float64(try))) * minWait
-	if wait < minWait || wait > maxWait {
+	if wait < minWait || wait > maxWait { // check < minWait to deal with overflow
 		wait = maxWait
 	}
 
@@ -181,10 +181,11 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 	if res != nil && res.ContentLength > 0 && res.Body != nil {
 		body, _ := ioutil.ReadAll(res.Body)                // Read the body
 		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
-		if int64(len(body)) != res.ContentLength {
+		bodyLen := int64(len(body))
+		if bodyLen != res.ContentLength {
 			dump, _ := httputil.DumpResponse(res, true)
-			log.Warnf("Retryable error. Content length mismatch.\n%s %s\n%v",
-				req.Method, req.URL.String(), string(dump))
+			log.Warnf("Retryable error. Content length mismatch (%d vs %d).\n%s %s\n%v",
+				res.ContentLength, bodyLen, req.Method, req.URL.String(), string(dump))
 			return true
 		}
 	}
