@@ -15,16 +15,15 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/czos/goamz/aws"
 )
 
@@ -139,21 +138,20 @@ func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
 	}
 	sign(ec2.Auth, "GET", endpoint.Path, params, endpoint.Host)
 	endpoint.RawQuery = multimap(params).Encode()
-	log.Debugf("GET %v", endpoint.String())
+	if debug {
+		log.Printf("get { %v } -> {\n", endpoint.String())
+	}
 	r, err := ec2.httpClient.Get(endpoint.String())
 	if err != nil {
 		return err
 	}
 	defer r.Body.Close()
 
-	dump := []byte{}
-	if tracingEnabled() {
-		dump, _ = httputil.DumpResponse(r, true)
-	} else {
-		dump, _ = httputil.DumpResponse(r, false)
+	if debug {
+		dump, _ := httputil.DumpResponse(r, true)
+		log.Printf("response:\n")
+		log.Printf("%v\n}\n", string(dump))
 	}
-	log.Debugf("%v\n", string(dump))
-
 	if r.StatusCode != 200 {
 		return buildError(r)
 	}
@@ -1901,12 +1899,4 @@ func (ec2 *EC2) DescribeAvailabilityZones(filter *Filter) (resp *DescribeAvailab
 		return nil, err
 	}
 	return
-}
-
-func tracingEnabled() bool {
-	t, err := strconv.ParseBool(os.Getenv("TRACE"))
-	if err != nil {
-		return false
-	}
-	return t
 }

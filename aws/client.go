@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
+	"strconv"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -105,28 +107,33 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 
 	// deadline for retrying
 	retryingDeadline := time.Now().Add(t.RetryingTimeout)
-
-	// retry till we are past the deadline
-	for try := 0; retryingDeadline.Sub(time.Now()) > 0; try += 1 {
+	retries := 0
+	for { // Watch the infinite loop here
 		// Each retry should use a copy of the body.
 		// This fixes a bug where subsequent retries would be using a reader
 		// that was already read.
 		if resetBody {
 			req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
+		logRequest(req)
 		res, err = t.transport.RoundTrip(req)
 
 		if !t.ShouldRetry(req, res, err) {
+			logResponse(res)
 			break
 		}
+
 		if res != nil {
 			res.Body.Close()
 		}
-		if t.Wait != nil {
-			t.Wait(try, t.MinRetryWait, t.MaxRetryWait)
-		}
-	}
 
+		if retryingDeadline.Sub(time.Now()) > 0 && t.Wait != nil {
+			t.Wait(retries, t.MinRetryWait, t.MaxRetryWait)
+			retries += 1
+			continue
+		}
+		break
+	}
 	return
 }
 
@@ -136,7 +143,7 @@ func ExpBackoff(try int, minWait time.Duration, maxWait time.Duration) {
 		wait = maxWait
 	}
 
-	log.Warnf("Waiting %v before retrying #%d", wait, try+1)
+	log.Warnf("Waiting %v before retry #%d\n", wait, try+1)
 	time.Sleep(wait)
 }
 
@@ -152,7 +159,7 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 	if neterr, ok := err.(net.Error); ok {
 		if neterr.Temporary() {
 			log.Warnf(
-				"Retryable network error\n%s %s\n%s", req.Method, req.URL.String(), err)
+				"Retryable network error on (%s %s)\n%s", req.Method, req.URL.String(), err)
 			return true
 		}
 	}
@@ -162,7 +169,7 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 		if res.StatusCode >= 500 && res.StatusCode < 600 {
 			dump, _ := httputil.DumpResponse(res, false)
 			log.Warnf(
-				"Retryable error\n%s %s\n%v", req.Method, req.URL.String(), string(dump))
+				"Retryable error on (%s %s)\n%v", req.Method, req.URL.String(), string(dump))
 			return true
 		}
 	}
@@ -182,4 +189,26 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 		}
 	}
 	return false
+}
+
+func logRequest(req *http.Request) {
+	log.Debugf("%s %v", req.Method, req.URL.String())
+}
+
+func logResponse(res *http.Response) {
+	dump := []byte{}
+	if tracingEnabled() {
+		dump, _ = httputil.DumpResponse(res, true)
+	} else {
+		dump, _ = httputil.DumpResponse(res, false)
+	}
+	log.Debugf("%v", string(dump))
+}
+
+func tracingEnabled() bool {
+	t, err := strconv.ParseBool(os.Getenv("TRACE"))
+	if err != nil {
+		return false
+	}
+	return t
 }
