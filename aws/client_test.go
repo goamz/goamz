@@ -2,13 +2,14 @@ package aws_test
 
 import (
 	"fmt"
-	"github.com/czos/goamz/aws"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/czos/goamz/aws"
 )
 
 // Retrieve the response from handler using aws.RetryingClient
@@ -106,6 +107,7 @@ func TestClient_retries(t *testing.T) {
 }
 
 func TestClient_fails(t *testing.T) {
+	start := time.Now()
 	tries := 0
 	// Fail 3 times and return the last error.
 	_, err := serveAndGet(func(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +117,8 @@ func TestClient_fails(t *testing.T) {
 	if err == nil {
 		t.Fatal(err)
 	}
-	if tries != 3 {
+	end := time.Now()
+	if end.Sub(start).Seconds() < 60 { // checking the default value
 		t.Fatal("Didn't retry enough")
 	}
 }

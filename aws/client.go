@@ -6,11 +6,16 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"os"
+	"strconv"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type RetryableFunc func(*http.Request, *http.Response, error) bool
-type WaitFunc func(try int)
+type WaitFunc func(try int, minWait time.Duration, maxWait time.Duration)
 type DeadlineFunc func() time.Time
 
 type ResilientTransport struct {
@@ -23,15 +28,29 @@ type ResilientTransport struct {
 	// its own earlier timeout. For instance, TCP timeouts are
 	// often around 3 minutes.
 	DialTimeout time.Duration
-
-	// MaxTries, if non-zero, specifies the number of times we will retry on
-	// failure. Retries are only attempted for temporary network errors or known
-	// safe failures.
-	MaxTries    int
 	Deadline    DeadlineFunc
 	ShouldRetry RetryableFunc
 	Wait        WaitFunc
 	transport   *http.Transport
+
+	// Retries are only attempted for temporary network errors or known
+	// safe failures.
+
+	// MinRetryWait is the minimum time to wait between retries
+	MinRetryWait time.Duration
+
+	// MaxRetryWait is the maximum time to wait between retries
+	MaxRetryWait time.Duration
+
+	// Total cumulative time before giving up on retries. Note
+	// this is only an estimate. Actual timeout
+	// may be upto RetryingTimeout + MaxRetryWait
+	// The value for this should usually be less that 15 minutes
+	// as the signatures in the request becomes invalid
+	// after 15 minutes. From AWS doc: http://goo.gl/TNqMCr
+	// A request must reach AWS within 15 minutes of the time stamp
+	// in the request. Otherwise, AWS denies the request.
+	RetryingTimeout time.Duration
 }
 
 // Convenience method for creating an http client
@@ -58,10 +77,12 @@ var retryingTransport = &ResilientTransport{
 	Deadline: func() time.Time {
 		return time.Now().Add(10 * time.Second)
 	},
-	DialTimeout: 10 * time.Second,
-	MaxTries:    3,
-	ShouldRetry: awsRetry,
-	Wait:        ExpBackoff,
+	DialTimeout:     10 * time.Second,
+	ShouldRetry:     AwsRetry,
+	Wait:            ExpBackoff,
+	MaxRetryWait:    10 * time.Second,
+	MinRetryWait:    100 * time.Millisecond,
+	RetryingTimeout: 60 * time.Second, // give up retrying after 60 seconds
 }
 
 // Exported default client
@@ -84,32 +105,46 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 		buf.ReadFrom(req.Body)
 	}
 
-	for try := 0; try < t.MaxTries; try += 1 {
+	// deadline for retrying
+	retryingDeadline := time.Now().Add(t.RetryingTimeout)
+	retries := 0
+	for { // Watch the infinite loop here
 		// Each retry should use a copy of the body.
 		// This fixes a bug where subsequent retries would be using a reader
 		// that was already read.
 		if resetBody {
 			req.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 		}
+		logRequest(req)
 		res, err = t.transport.RoundTrip(req)
 
 		if !t.ShouldRetry(req, res, err) {
+			logResponse(res)
 			break
 		}
+
 		if res != nil {
 			res.Body.Close()
 		}
-		if t.Wait != nil {
-			t.Wait(try)
-		}
-	}
 
+		if retryingDeadline.Sub(time.Now()) > 0 && t.Wait != nil {
+			t.Wait(retries, t.MinRetryWait, t.MaxRetryWait)
+			retries += 1
+			continue
+		}
+		break
+	}
 	return
 }
 
-func ExpBackoff(try int) {
-	time.Sleep(100 * time.Millisecond *
-		time.Duration(math.Exp2(float64(try))))
+func ExpBackoff(try int, minWait time.Duration, maxWait time.Duration) {
+	wait := time.Duration(math.Pow(2, float64(try))) * minWait
+	if wait < minWait || wait > maxWait {
+		wait = maxWait
+	}
+
+	log.Warnf("Waiting %v before retry #%d\n", wait, try+1)
+	time.Sleep(wait)
 }
 
 func LinearBackoff(try int) {
@@ -119,10 +154,12 @@ func LinearBackoff(try int) {
 // Decide if we should retry a request.
 // In general, the criteria for retrying a request is described here
 // http://docs.aws.amazon.com/general/latest/gr/api-retries.html
-func awsRetry(req *http.Request, res *http.Response, err error) bool {
+func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 	// Retry if there's a temporary network error.
 	if neterr, ok := err.(net.Error); ok {
 		if neterr.Temporary() {
+			log.Warnf(
+				"Retryable network error on (%s %s)\n%s", req.Method, req.URL.String(), err)
 			return true
 		}
 	}
@@ -130,6 +167,9 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 	// Retry if we get a 5xx series error.
 	if res != nil {
 		if res.StatusCode >= 500 && res.StatusCode < 600 {
+			dump, _ := httputil.DumpResponse(res, false)
+			log.Warnf(
+				"Retryable error on (%s %s)\n%v", req.Method, req.URL.String(), string(dump))
 			return true
 		}
 	}
@@ -142,9 +182,33 @@ func awsRetry(req *http.Request, res *http.Response, err error) bool {
 		body, _ := ioutil.ReadAll(res.Body)                // Read the body
 		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
 		if int64(len(body)) != res.ContentLength {
+			dump, _ := httputil.DumpResponse(res, true)
+			log.Warnf("Retryable error. Content length mismatch.\n%s %s\n%v",
+				req.Method, req.URL.String(), string(dump))
 			return true
 		}
 	}
-
 	return false
+}
+
+func logRequest(req *http.Request) {
+	log.Debugf("%s %v", req.Method, req.URL.String())
+}
+
+func logResponse(res *http.Response) {
+	dump := []byte{}
+	if tracingEnabled() {
+		dump, _ = httputil.DumpResponse(res, true)
+	} else {
+		dump, _ = httputil.DumpResponse(res, false)
+	}
+	log.Debugf("%v", string(dump))
+}
+
+func tracingEnabled() bool {
+	t, err := strconv.ParseBool(os.Getenv("TRACE"))
+	if err != nil {
+		return false
+	}
+	return t
 }
