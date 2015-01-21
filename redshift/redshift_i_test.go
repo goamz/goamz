@@ -34,7 +34,7 @@ func (s *AmazonClientSuite) SetUpSuite(c *gocheck.C) {
 		c.Skip("AmazonClientSuite tests not enabled")
 	}
 	s.srv.SetUp(c)
-	s.redshift = redshift.NewWithClient(s.srv.auth, aws.USEast, testutil.DefaultClient)
+	s.redshift = redshift.NewWithClient(s.srv.auth, aws.USEast, aws.RetryingClient)
 }
 
 // ClientTests defines integration tests designed to test the client.
@@ -50,4 +50,14 @@ func (s *ClientTests) TestDescribeClusters(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 
 	c.Assert(resp.RequestId, gocheck.Matches, ".+")
+}
+
+func (s *ClientTests) TestErrorResponse(c *gocheck.C) {
+	resp, err := s.redshift.DeleteClusterSubnetGroup("abc")
+	c.Assert(resp, gocheck.IsNil)
+
+	rserr, ok := err.(*redshift.Error)
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(rserr.StatusCode, gocheck.Equals, 400)
+	c.Assert(rserr.Type, gocheck.Equals, "Sender")
 }

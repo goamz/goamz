@@ -27,7 +27,7 @@ func (s *S) SetUpSuite(c *gocheck.C) {
 	s.redshift = redshift.NewWithClient(
 		auth,
 		aws.Region{RedshiftEndpoint: testServer.URL},
-		testutil.DefaultClient,
+		aws.RetryingClient,
 	)
 }
 

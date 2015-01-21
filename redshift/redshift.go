@@ -4,13 +4,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/czos/goamz/aws"
 )
 
@@ -87,23 +85,12 @@ func (rs *Redshift) query(params map[string]string, resp interface{}) error {
 	signer := aws.NewV4Signer(rs.Auth, "redshift", rs.Region)
 	signer.Sign(req)
 
-	log.SetLevel(log.DebugLevel)
-
 	// make the request
-	log.Debugf("GET %v", endpoint.String())
 	r, err := rs.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer r.Body.Close()
-
-	dump := []byte{}
-	if tracingEnabled() {
-		dump, _ = httputil.DumpResponse(r, true)
-	} else {
-		dump, _ = httputil.DumpResponse(r, false)
-	}
-	log.Debugf("%v\n", string(dump))
 
 	if r.StatusCode != 200 {
 		return buildError(r)

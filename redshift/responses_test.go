@@ -7,6 +7,16 @@ var ErrorDump = `
 </Error><RequestID>0503f4e9-bbd6-483c-b54f-c4ae9f3b30f4</RequestID></Response>
 `
 
+var ErrorDump2 = `
+<ErrorResponse xmlns="http://redshift.amazonaws.com/doc/2012-12-01/">
+  <Error>
+    <Type>Sender</Type>
+    <Code>ClusterSubnetGroupNotFoundFault</Code>
+    <Message>Cluster subnet group 'abc' does not exist.</Message>
+  </Error>
+  <RequestId>5174923a-a1a4-11e4-bcf3-c96cf44bfe94</RequestId>
+</ErrorResponse>
+`
 var DescribeClustersExample1 = `
 <DescribeClustersResponse xmlns="http://redshift.amazonaws.com/doc/2012-12-01/">
   <DescribeClustersResult>
