@@ -117,7 +117,7 @@ type SendMessageResponse struct {
 }
 
 type ReceiveMessageResponse struct {
-	Messages         []Message `xml:"ReceiveMessageResult>Message"`
+	Messages         []*Message `xml:"ReceiveMessageResult>Message"`
 	ResponseMetadata ResponseMetadata
 }
 
@@ -172,14 +172,14 @@ type Error struct {
 	RequestId  string
 }
 
-func (err *Error) Error() string {
+func (err Error) Error() string {
 	if err.Code == "" {
 		return err.Message
 	}
 	return fmt.Sprintf("%s (%s)", err.Message, err.Code)
 }
 
-func (err *Error) String() string {
+func (err Error) String() string {
 	return err.Message
 }
 
@@ -399,7 +399,7 @@ type SendMessageBatchResponse struct {
 
 /* SendMessageBatch
  */
-func (q *Queue) SendMessageBatch(msgList []Message) (resp *SendMessageBatchResponse, err error) {
+func (q *Queue) SendMessageBatch(msgList []*Message) (resp *SendMessageBatchResponse, err error) {
 	resp = &SendMessageBatchResponse{}
 	params := makeParams("SendMessageBatch")
 
@@ -440,35 +440,15 @@ type DeleteMessageBatchResponse struct {
 }
 
 /* DeleteMessageBatch */
-func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchResponse, err error) {
+func (q *Queue) DeleteMessageBatch(msgList []*Message) (resp *DeleteMessageBatchResponse, err error) {
 	resp = &DeleteMessageBatchResponse{}
 	params := makeParams("DeleteMessageBatch")
-
-	lutMsg := make(map[string]Message)
-
-	for idx := range msgList {
-		params[fmt.Sprintf("DeleteMessageBatchRequestEntry.%d.Id", idx+1)] = msgList[idx].MessageId
-		params[fmt.Sprintf("DeleteMessageBatchRequestEntry.%d.ReceiptHandle", idx+1)] = msgList[idx].ReceiptHandle
-
-		lutMsg[string(msgList[idx].MessageId)] = msgList[idx]
+	for idx, msg := range msgList {
+		params[fmt.Sprintf("DeleteMessageBatchRequestEntry.%d.Id", idx+1)] = msg.MessageId
+		params[fmt.Sprintf("DeleteMessageBatchRequestEntry.%d.ReceiptHandle", idx+1)] = msg.ReceiptHandle
 	}
 
 	err = q.SQS.query(q.Url, params, resp)
-
-	messageWithErrors := make([]Message, 0, len(msgList))
-
-	for idx := range resp.DeleteMessageBatchResult {
-		if resp.DeleteMessageBatchResult[idx].SenderFault {
-			msg, ok := lutMsg[resp.DeleteMessageBatchResult[idx].Id]
-			if ok {
-				messageWithErrors = append(messageWithErrors, msg)
-			}
-		}
-	}
-
-	if len(messageWithErrors) > 0 {
-		log.Printf("%d Message have not been sent", len(messageWithErrors))
-	}
 
 	return
 }
@@ -556,12 +536,13 @@ func buildError(r *http.Response) error {
 	} else {
 		err = errors.Error
 	}
+
 	err.RequestId = errors.RequestId
 	err.StatusCode = r.StatusCode
 	if err.Message == "" {
 		err.Message = r.Status
 	}
-	return &err
+	return err
 }
 
 func makeParams(action string) map[string]string {
