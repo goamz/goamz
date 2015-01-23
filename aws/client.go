@@ -193,23 +193,27 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 }
 
 func logRequest(req *http.Request) {
-	log.Debugf("%s %v", req.Method, req.URL.String())
+	level := traceLevel()
+	if level >= 1 {
+		log.Debugf("%s %v", req.Method, req.URL.String())
+	}
 }
 
 func logResponse(res *http.Response) {
-	dump := []byte{}
-	if tracingEnabled() {
-		dump, _ = httputil.DumpResponse(res, true)
-	} else {
-		dump, _ = httputil.DumpResponse(res, false)
+	level := traceLevel()
+	if level == 1 {
+		dump, _ := httputil.DumpResponse(res, false)
+		log.Debugf("%v", string(dump))
+	} else if level == 2 {
+		dump, _ := httputil.DumpResponse(res, true)
+		log.Debugf("%v", string(dump))
 	}
-	log.Debugf("%v", string(dump))
 }
 
-func tracingEnabled() bool {
-	t, err := strconv.ParseBool(os.Getenv("TRACE"))
+func traceLevel() int64 { // TODO: replace with glog
+	t, err := strconv.ParseInt(os.Getenv("TRACE"), 10, 0)
 	if err != nil {
-		return false
+		return 0
 	}
 	return t
 }
