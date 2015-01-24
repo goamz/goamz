@@ -81,8 +81,7 @@ func (rs *Redshift) query(params map[string]string, resp interface{}) error {
 	}
 	req.Header.Add("X-Amz-Date", time.Now().UTC().Format(aws.ISO8601BasicFormat))
 	if rs.Auth.Token() != "" {
-		req.Header.Add("X-Amz-Security-Token",
-			time.Now().UTC().Format(aws.ISO8601BasicFormat))
+		req.Header.Add("X-Amz-Security-Token", rs.Auth.Token())
 	}
 
 	// sign the request
