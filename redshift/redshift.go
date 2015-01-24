@@ -80,6 +80,9 @@ func (rs *Redshift) query(params map[string]string, resp interface{}) error {
 		return err
 	}
 	req.Header.Add("X-Amz-Date", time.Now().UTC().Format(aws.ISO8601BasicFormat))
+	if rs.Auth.Token() != "" {
+		req.Header.Add("X-Amz-Security-Token", rs.Auth.Token())
+	}
 
 	// sign the request
 	signer := aws.NewV4Signer(rs.Auth, "redshift", rs.Region)
@@ -425,10 +428,6 @@ func (rs *Redshift) CreateCluster(
 		params["ClusterSubnetGroupName"] = options.ClusterSubnetGroupName
 	}
 
-	if options.ClusterType != "" {
-		params["ClusterType"] = options.ClusterType
-	}
-
 	if options.ClusterVersion != "" {
 		params["ClusterVersion"] = options.ClusterVersion
 	}
@@ -458,7 +457,14 @@ func (rs *Redshift) CreateCluster(
 		params["KmsKeyId"] = options.KmsKeyId
 	}
 
-	params["NumberOfNodes"] = strconv.Itoa(options.NumberOfNodes)
+	if options.ClusterType != "" {
+		params["ClusterType"] = options.ClusterType
+	}
+
+	if options.NumberOfNodes > 1 {
+		params["NumberOfNodes"] = strconv.Itoa(options.NumberOfNodes)
+	}
+
 	params["Port"] = strconv.Itoa(options.Port)
 
 	if options.PreferredMaintenanceWindow != "" {
