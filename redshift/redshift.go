@@ -80,6 +80,10 @@ func (rs *Redshift) query(params map[string]string, resp interface{}) error {
 		return err
 	}
 	req.Header.Add("X-Amz-Date", time.Now().UTC().Format(aws.ISO8601BasicFormat))
+	if rs.Auth.Token() != "" {
+		req.Header.Add("X-Amz-Security-Token",
+			time.Now().UTC().Format(aws.ISO8601BasicFormat))
+	}
 
 	// sign the request
 	signer := aws.NewV4Signer(rs.Auth, "redshift", rs.Region)
