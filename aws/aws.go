@@ -19,6 +19,8 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/vaughan0/go-ini"
 )
 
 // Defines the valid signers
@@ -296,6 +298,13 @@ func GetAuth(accessKey string, secretKey, token string, expiration time.Time) (a
 		return Auth{accessKey, secretKey, token, expiration}, nil
 	}
 
+	// Next try to get auth from the shared credentials file
+	auth, err = SharedAuth()
+	if err == nil {
+		// Found auth, return
+		return
+	}
+
 	// Next try to get auth from the environment
 	auth, err = EnvAuth()
 	if err == nil {
@@ -343,6 +352,50 @@ func EnvAuth() (auth Auth, err error) {
 	}
 
 	auth.token = os.Getenv("AWS_SESSION_TOKEN")
+	return
+}
+
+// SharedAuth creates an Auth based on shared credentials stored in
+// $HOME/.aws/credentials. The AWS_PROFILE environment variables is used to
+// select the profile.
+func SharedAuth() (auth Auth, err error) {
+	var profileName = os.Getenv("AWS_PROFILE")
+
+	if profileName == "" {
+		profileName = "default"
+	}
+
+	var credentialsFile = os.Getenv("AWS_CREDENTIAL_FILE")
+	if credentialsFile == "" {
+		var homeDir = os.Getenv("HOME")
+		if homeDir == "" {
+			err = errors.New("Could not get HOME")
+			return
+		}
+		credentialsFile = homeDir + "/.aws/credentials"
+	}
+
+	file, err := ini.LoadFile(credentialsFile)
+	if err != nil {
+		err = errors.New("Couldn't parse AWS credentials file")
+		return
+	}
+
+	var profile = file[profileName]
+	if profile == nil {
+		err = errors.New("Couldn't find profile in AWS credentials file")
+		return
+	}
+
+	auth.AccessKey = profile["aws_access_key_id"]
+	auth.SecretKey = profile["aws_secret_access_key"]
+
+	if auth.AccessKey == "" {
+		err = errors.New("AWS_ACCESS_KEY_ID not found in environment in credentials file")
+	}
+	if auth.SecretKey == "" {
+		err = errors.New("AWS_SECRET_ACCESS_KEY not found in credentials file")
+	}
 	return
 }
 
