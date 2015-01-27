@@ -725,12 +725,19 @@ func (s *S) TestDescribeSecurityGroupsExample(c *C) {
 	c.Assert(g0.Id, Equals, "sg-67ad940e")
 	c.Assert(g0.Description, Equals, "Web Servers")
 	c.Assert(g0.IPPerms, HasLen, 1)
+	c.Assert(g0.IPPermsEgress, HasLen, 1)
 
 	g0ipp := g0.IPPerms[0]
 	c.Assert(g0ipp.Protocol, Equals, "tcp")
 	c.Assert(g0ipp.FromPort, Equals, 80)
 	c.Assert(g0ipp.ToPort, Equals, 80)
 	c.Assert(g0ipp.SourceIPs, DeepEquals, []string{"0.0.0.0/0"})
+
+	g0ippe := g0.IPPermsEgress[0]
+	c.Assert(g0ippe.Protocol, Equals, "tcp")
+	c.Assert(g0ippe.FromPort, Equals, 80)
+	c.Assert(g0ippe.ToPort, Equals, 80)
+	c.Assert(g0ippe.SourceIPs, DeepEquals, []string{"0.0.0.0/0"})
 
 	g1 := resp.Groups[1]
 	c.Assert(g1.OwnerId, Equals, "999988887777")

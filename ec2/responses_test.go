@@ -662,6 +662,19 @@ var DescribeSecurityGroupsExample = `
            </ipRanges>
         </item>
       </ipPermissions>
+      <ipPermissionsEgress>
+        <item>
+          <ipProtocol>tcp</ipProtocol>
+          <fromPort>80</fromPort>
+          <toPort>80</toPort>
+          <groups/>
+          <ipRanges>
+             <item>
+               <cidrIp>0.0.0.0/0</cidrIp>
+             </item>
+            </ipRanges>
+          </item>
+        </ipPermissionsEgress>
     </item>
     <item>
       <ownerId>999988887777</ownerId>
@@ -906,7 +919,7 @@ var ReplaceRouteTableAssociationExample = `
 `
 var DescribeReservedInstancesExample = `
 <DescribeReservedInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2014-06-15/">
-   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
    <reservedInstancesSet>
       <item>
          <reservedInstancesId>e5a2ff3b-7d14-494f-90af-0b5d0EXAMPLE</reservedInstancesId>
@@ -917,12 +930,12 @@ var DescribeReservedInstancesExample = `
          <usagePrice>0.034</usagePrice>
          <instanceCount>3</instanceCount>
          <productDescription>Linux/UNIX</productDescription>
-         <state>active</state> 
+         <state>active</state>
          <instanceTenancy>default</instanceTenancy>
          <currencyCode>USD</currencyCode>
          <offeringType>Light Utilization</offeringType>
          <recurringCharges/>
       </item>
-   </reservedInstancesSet> 
+   </reservedInstancesSet>
 </DescribeReservedInstancesResponse>
 `

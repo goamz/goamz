@@ -15,7 +15,6 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -24,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 const debug = false
@@ -1669,9 +1670,10 @@ type SecurityGroupsResp struct {
 // See http://goo.gl/CIdyP for more details.
 type SecurityGroupInfo struct {
 	SecurityGroup
-	OwnerId     string   `xml:"ownerId"`
-	Description string   `xml:"groupDescription"`
-	IPPerms     []IPPerm `xml:"ipPermissions>item"`
+	OwnerId       string   `xml:"ownerId"`
+	Description   string   `xml:"groupDescription"`
+	IPPerms       []IPPerm `xml:"ipPermissions>item"`
+	IPPermsEgress []IPPerm `xml:"ipPermissionsEgress>item"`
 }
 
 // IPPerm represents an allowance within an EC2 security group.
@@ -1782,6 +1784,21 @@ func (ec2 *EC2) AuthorizeSecurityGroup(group SecurityGroup, perms []IPPerm) (res
 // See http://goo.gl/ZgdxA for more details.
 func (ec2 *EC2) RevokeSecurityGroup(group SecurityGroup, perms []IPPerm) (resp *SimpleResp, err error) {
 	return ec2.authOrRevoke("RevokeSecurityGroupIngress", group, perms)
+}
+
+// AuthorizeSecurityGroupEgress creates an allowance for instances within the
+// given security group to access servers matching the provided rules.
+//
+// See http://goo.gl/R91LXY for more details.
+func (ec2 *EC2) AuthorizeSecurityGroupEgress(group SecurityGroup, perms []IPPerm) (resp *SimpleResp, err error) {
+	return ec2.authOrRevoke("AuthorizeSecurityGroupEgress", group, perms)
+}
+
+// RevokeSecurityGroupEgress revokes egress permissions from a group
+//
+// see http://goo.gl/Zv4wh8
+func (ec2 *EC2) RevokeSecurityGroupEgress(group SecurityGroup, perms []IPPerm) (resp *SimpleResp, err error) {
+	return ec2.authOrRevoke("RevokeSecurityGroupEgress", group, perms)
 }
 
 func (ec2 *EC2) authOrRevoke(op string, group SecurityGroup, perms []IPPerm) (resp *SimpleResp, err error) {
