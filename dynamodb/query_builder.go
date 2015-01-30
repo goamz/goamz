@@ -2,7 +2,6 @@ package dynamodb
 
 import (
 	"encoding/json"
-	"log"
 	"sort"
 )
 
