@@ -30,10 +30,25 @@ var table_suite = &TableSuite{
 		AttributeDefinitions: []dynamodb.AttributeDefinitionT{
 			dynamodb.AttributeDefinitionT{"TestHashKey", "S"},
 			dynamodb.AttributeDefinitionT{"TestRangeKey", "N"},
+			dynamodb.AttributeDefinitionT{"TestSecKey", "N"},
 		},
 		KeySchema: []dynamodb.KeySchemaT{
 			dynamodb.KeySchemaT{"TestHashKey", "HASH"},
 			dynamodb.KeySchemaT{"TestRangeKey", "RANGE"},
+		},
+		GlobalSecondaryIndexes: []dynamodb.GlobalSecondaryIndexT{
+			dynamodb.GlobalSecondaryIndexT{
+				IndexName: "gsiTest",
+				KeySchema: []dynamodb.KeySchemaT{
+					dynamodb.KeySchemaT{"TestHashKey", "HASH"},
+					dynamodb.KeySchemaT{"TestSecKey", "RANGE"},
+				},
+				Projection: dynamodb.ProjectionT{"ALL"},
+				ProvisionedThroughput: dynamodb.ProvisionedThroughputT{
+					ReadCapacityUnits:  1,
+					WriteCapacityUnits: 1,
+				},
+			},
 		},
 		ProvisionedThroughput: dynamodb.ProvisionedThroughputT{
 			ReadCapacityUnits:  1,
