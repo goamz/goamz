@@ -233,7 +233,7 @@ type Cluster struct {
 	AvailabilityZone                 string                       `xml:"AvailabilityZone"`
 	ClusterCreateTime                string                       `xml:"ClusterCreateTime"`
 	ClusterIdentifier                string                       `xml:"ClusterIdentifier"`
-	ClusterNodes                     []ClusterNode                `xml:"ClusterNodes>ClusterNode"`
+	ClusterNodes                     []ClusterNode                `xml:"ClusterNodes>member"`
 	ClusterParameterGroups           []ClusterParameterGroup      `xml:"ClusterParameterGroups>ClusterParameterGroup"`
 	ClusterPublicKey                 string                       `xml:"ClusterPublicKey"`
 	ClusterRevisionNumber            string                       `xml:"ClusterRevisionNumber"`
@@ -256,9 +256,9 @@ type Cluster struct {
 	PreferredMaintenanceWindow       string                       `xml:"PreferredMaintenanceWindow"`
 	PubliclyAccessible               bool                         `xml:"PubliclyAccessible"`
 	RestoreStatus                    RestoreStatus                `xml:"RestoreStatus"`
-	Tags                             []Tag                        `xml:"Tags"`
+	Tags                             []Tag                        `xml:"Tags>Tag"`
 	VpcId                            string                       `xml:"VpcId"`
-	VpcSecurityGroups                []VpcSecurityGroupMembership `xml:"VpcSecurityGroups"`
+	VpcSecurityGroups                []VpcSecurityGroupMembership `xml:"VpcSecurityGroups>VpcSecurityGroup"`
 }
 
 type ClusterNode struct {
