@@ -132,8 +132,33 @@ func (q *Query) AddCreateRequestTable(description TableDescriptionT) {
 		})
 	}
 
+	globalSecondaryIndexes := []interface{}{}
+	intmax := func(x, y int64) int64 {
+		if x > y {
+			return x
+		}
+		return y
+	}
+	for _, ind := range description.GlobalSecondaryIndexes {
+		rec := msi{
+			"IndexName":  ind.IndexName,
+			"KeySchema":  ind.KeySchema,
+			"Projection": ind.Projection,
+		}
+		// need at least one unit, and since go's max() is float based.
+		rec["ProvisionedThroughput"] = msi{
+			"ReadCapacityUnits":  intmax(1, ind.ProvisionedThroughput.ReadCapacityUnits),
+			"WriteCapacityUnits": intmax(1, ind.ProvisionedThroughput.WriteCapacityUnits),
+		}
+		globalSecondaryIndexes = append(globalSecondaryIndexes, rec)
+	}
+
 	if len(localSecondaryIndexes) > 0 {
 		b["LocalSecondaryIndexes"] = localSecondaryIndexes
+	}
+
+	if len(globalSecondaryIndexes) > 0 {
+		b["GlobalSecondaryIndexes"] = globalSecondaryIndexes
 	}
 }
 
