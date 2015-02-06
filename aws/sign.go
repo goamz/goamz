@@ -238,7 +238,16 @@ func (s *V4Signer) canonicalQueryString(u *url.URL) string {
 		}
 	}
 	sort.Strings(a)
-	return strings.Join(a, "&")
+	qs := strings.Join(a, "&")
+
+	// AWS V4 signing requires that the space characters
+	// are encoded as %20 instead of +. On the other hand
+	// golangs url.QueryEscape as well as url.Values.Encode()
+	// both encode the space as a + character. See:
+	// http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
+	// https://github.com/golang/go/issues/4013
+	// https://groups.google.com/forum/#!topic/golang-nuts/BB443qEjPIk
+	return strings.Replace(qs, "+", "%20", -1)
 }
 
 func (s *V4Signer) canonicalHeaders(h http.Header) string {
