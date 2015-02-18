@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -271,16 +272,23 @@ func (elb *ELB) ConfigureHealthCheck(lbName string, healthCheck *HealthCheck) (*
 func (elb *ELB) query(params map[string]string, resp interface{}) error {
 	params["Version"] = "2012-06-01"
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
-	endpoint, err := url.Parse(elb.Region.ELBEndpoint)
+	data := strings.NewReader(multimap(params).Encode())
+	hreq, err := http.NewRequest("POST", elb.Region.ELBEndpoint+"/", data)
 	if err != nil {
 		return err
 	}
-	if endpoint.Path == "" {
-		endpoint.Path = "/"
+
+	hreq.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	token := elb.Auth.Token()
+	if token != "" {
+		hreq.Header.Set("X-Amz-Security-Token", token)
 	}
-	sign(elb.Auth, "GET", endpoint.Path, params, endpoint.Host)
-	endpoint.RawQuery = multimap(params).Encode()
-	r, err := http.Get(endpoint.String())
+
+	signer := aws.NewV4Signer(elb.Auth, "elasticloadbalancing", elb.Region)
+	signer.Sign(hreq)
+
+	r, err := http.DefaultClient.Do(hreq)
+
 	if err != nil {
 		return err
 	}
