@@ -46,6 +46,7 @@ func (iam *IAM) query(params map[string]string, resp interface{}) error {
 	if r.StatusCode > 200 {
 		return buildError(r)
 	}
+
 	return xml.NewDecoder(r.Body).Decode(resp)
 }
 
@@ -558,6 +559,47 @@ func (iam *IAM) UploadServerCertificate(options *UploadServerCertificateParams) 
 	if err := iam.postQuery(params, resp); err != nil {
 		return nil, err
 	}
+	return resp, nil
+}
+
+// ListServerCertificates lists all available certificates for the AWS account specified
+//
+// Required Params: None
+//
+// Optional Params: Marker, and, PathPrefix
+//
+// See http://goo.gl/bwn0Nb for specifics
+
+type ListServerCertificatesParams struct {
+	Marker     string
+	PathPrefix string
+}
+
+type ListServerCertificatesResp struct {
+	ServerCertificates []ServerCertificateMetadata `xml:"ListServerCertificatesResult>ServerCertificateMetadataList>member>ServerCertificateMetadata"`
+	RequestId          string                      `xml:"ResponseMetadata>RequestId"`
+	IsTruncated        bool                        `xml:"ListServerCertificatesResult>IsTruncated"`
+}
+
+func (iam *IAM) ListServerCertificates(options *ListServerCertificatesParams) (
+	*ListServerCertificatesResp, error) {
+	params := map[string]string{
+		"Action": "ListServerCertificates",
+	}
+
+	if options.Marker != "" {
+		params["Marker"] = options.Marker
+	}
+
+	if options.PathPrefix != "" {
+		params["PathPrefix"] = options.PathPrefix
+	}
+
+	resp := new(ListServerCertificatesResp)
+	if err := iam.query(params, resp); err != nil {
+		return nil, err
+	}
+
 	return resp, nil
 }
 

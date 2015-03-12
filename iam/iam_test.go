@@ -386,7 +386,57 @@ jobTJQ2VHjb5IVxiO6HRSd27di3njyrzUuJCyHSDTqwLJmTThpd6OTIUTL3Tc4m2
 	}
 	c.Assert(resp.ServerCertificateMetadata, DeepEquals, expected)
 	c.Assert(resp.RequestId, Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+}
 
+func (s *S) TestListServerCertificates(c *C) {
+	testServer.Response(200, nil, ListServerCertificatesExample)
+	params := &iam.ListServerCertificatesParams{
+		Marker:     "my-fake-marker",
+		PathPrefix: "/some/fake/path",
+	}
+
+	resp, err := s.iam.ListServerCertificates(params)
+	req := testServer.WaitRequest()
+
+	c.Assert(err, IsNil)
+	c.Assert(req.Method, Equals, "GET")
+	c.Assert(req.FormValue("Action"), Equals, "ListServerCertificates")
+	c.Assert(req.FormValue("Marker"), Equals, "my-fake-marker")
+	c.Assert(req.FormValue("PathPrefix"), Equals, "/some/fake/path")
+	c.Assert(req.FormValue("Version"), Equals, "2010-05-08")
+
+	uploadDate, _ := time.Parse(time.RFC3339, "2010-05-08T01:02:03.004Z")
+	expirationDate, _ := time.Parse(time.RFC3339, "2012-05-08T01:02:03.004Z")
+	expected := []iam.ServerCertificateMetadata{
+		{
+			Arn: "arn:aws:iam::123456789012:server-certificate/company/servercerts/ProdServerCert",
+			ServerCertificateName: "ProdServerCert",
+			ServerCertificateId:   "ASCACKCEVSQ6C2EXAMPLE1",
+			Path:                  "/some/fake/path",
+			UploadDate:            uploadDate,
+			Expiration:            expirationDate,
+		},
+		{
+			Arn: "arn:aws:iam::123456789012:server-certificate/company/servercerts/BetaServerCert",
+			ServerCertificateName: "BetaServerCert",
+			ServerCertificateId:   "ASCACKCEVSQ6C2EXAMPLE2",
+			Path:                  "/some/fake/path",
+			UploadDate:            uploadDate,
+			Expiration:            expirationDate,
+		},
+		{
+			Arn: "arn:aws:iam::123456789012:server-certificate/company/servercerts/TestServerCert",
+			ServerCertificateName: "TestServerCert",
+			ServerCertificateId:   "ASCACKCEVSQ6C2EXAMPLE3",
+			Path:                  "/some/fake/path",
+			UploadDate:            uploadDate,
+			Expiration:            expirationDate,
+		},
+	}
+
+	c.Assert(resp.RequestId, Equals, "7a62c49f-347e-4fc4-9331-6e8eTHISDIFFERENTTEST")
+	c.Assert(resp.IsTruncated, Equals, false)
+	c.Assert(resp.ServerCertificates, DeepEquals, expected)
 }
 
 func (s *S) TestDeleteServerCertificate(c *C) {
