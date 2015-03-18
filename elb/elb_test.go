@@ -317,3 +317,37 @@ func (s *S) TestConfigureHealthCheckBadRequest(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(err, ErrorMatches, ".*foolb.*(LoadBalancerNotFound).*")
 }
+
+func (s *S) TestAddTags(c *C) {
+	testServer.PrepareResponse(200, nil, AddTagsSuccessResponse)
+	tagsToAdd := map[string]string{
+		"my-key":             "my-value",
+		"my-super-silly-tag": "its-another-valid-value",
+	}
+
+	resp, err := s.elb.AddTags("my-elb", tagsToAdd)
+	c.Assert(err, IsNil)
+
+	values := testServer.WaitRequest().URL.Query()
+	c.Assert(values.Get("Version"), Equals, "2012-06-01")
+	c.Assert(values.Get("Action"), Equals, "AddTags")
+	c.Assert(values.Get("Timestamp"), Not(Equals), "")
+	c.Assert(values.Get("LoadBalancerNames.member.1"), Equals, "my-elb")
+	c.Assert(values.Get("Tags.member.1.Key"), Equals, "my-super-silly-tag")
+	c.Assert(values.Get("Tags.member.1.Value"), Equals, "its-another-valid-value")
+	c.Assert(values.Get("Tags.member.2.Key"), Equals, "my-key")
+	c.Assert(values.Get("Tags.member.2.Value"), Equals, "my-value")
+
+	c.Assert(resp.RequestId, Equals, "360e81f7-1100-11e4-b6ed-0f30SOME-SAUCY-EXAMPLE")
+}
+
+func (s *S) TestAddBadTags(c *C) {
+	testServer.PrepareResponse(400, nil, AddTagsBadRequest)
+	tagsToAdd := map[string]string{
+		"my-first-key": "an invalid value",
+	}
+
+	resp, err := s.elb.AddTags("my-bad-elb", tagsToAdd)
+	c.Assert(resp, IsNil)
+	c.Assert(err, ErrorMatches, ".*(InvalidParameterValue).*")
+}

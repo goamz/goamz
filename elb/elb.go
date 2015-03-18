@@ -4,11 +4,13 @@ package elb
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 type ELB struct {
@@ -266,6 +268,39 @@ func (elb *ELB) ConfigureHealthCheck(lbName string, healthCheck *HealthCheck) (*
 		return nil, err
 	}
 	return resp, nil
+}
+
+// Add tags to the named ELB
+//
+// Note that AWS only accepts one ELB name at a time (even though it is sent as a list)
+//
+// See http://goo.gl/6JW4Wf for the rest of the details
+func (elb *ELB) AddTags(elbName string, tags map[string]string) (*SimpleResp, error) {
+	var sortedKeys []string
+	params := make(map[string]string)
+	response := &SimpleResp{}
+
+	for tagKey := range tags {
+		sortedKeys = append(sortedKeys, tagKey)
+	}
+
+	sort.Strings(sortedKeys)
+
+	for _, key := range sortedKeys {
+		number := len(tags)
+		params[fmt.Sprintf("Tags.member.%d.Key", number)] = key
+		params[fmt.Sprintf("Tags.member.%d.Value", number)] = tags[key]
+		delete(tags, key)
+	}
+
+	params["Action"] = "AddTags"
+	params["LoadBalancerNames.member.1"] = elbName
+
+	if err := elb.query(params, response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 func (elb *ELB) query(params map[string]string, resp interface{}) error {
