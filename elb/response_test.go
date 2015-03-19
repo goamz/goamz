@@ -203,3 +203,23 @@ var ConfigureHealthCheckBadRequest = `
     <RequestId>2d9fe4a5-5697-11e2-9415-e325c02171d7</RequestId>
 </ErrorResponse>
 `
+
+var AddTagsSuccessResponse = `
+<AddTagsResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06- 01/">
+  <AddTagsResult/>
+  <ResponseMetadata>
+    <RequestId>360e81f7-1100-11e4-b6ed-0f30SOME-SAUCY-EXAMPLE</RequestId>
+  </ResponseMetadata>
+</AddTagsResponse>
+`
+
+var AddTagsBadRequest = `
+<ErrorResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
+    <Error>
+        <Type>Sender</Type>
+        <Code>InvalidParameterValue</Code>
+        <Message>An invalid or out-of-range value was supplied for the input parameter.</Message>
+    </Error>
+    <RequestId>terrible-request-id</RequestId>
+</ErrorResponse>
+`
