@@ -213,7 +213,7 @@ var AddTagsSuccessResponse = `
 </AddTagsResponse>
 `
 
-var AddTagsBadRequest = `
+var TagsBadRequest = `
 <ErrorResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
     <Error>
         <Type>Sender</Type>
@@ -222,4 +222,13 @@ var AddTagsBadRequest = `
     </Error>
     <RequestId>terrible-request-id</RequestId>
 </ErrorResponse>
+`
+
+var RemoveTagsSuccessResponse = `
+<RemoveTagsResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
+  <RemoveTagsResult/>
+  <ResponseMetadata>
+    <RequestId>83c88b9d-12b7-11e3-8b82-87b12DIFFEXAMPLE</RequestId>
+  </ResponseMetadata>
+</RemoveTagsResponse>
 `

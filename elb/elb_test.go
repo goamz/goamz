@@ -342,12 +342,36 @@ func (s *S) TestAddTags(c *C) {
 }
 
 func (s *S) TestAddBadTags(c *C) {
-	testServer.PrepareResponse(400, nil, AddTagsBadRequest)
+	testServer.PrepareResponse(400, nil, TagsBadRequest)
 	tagsToAdd := map[string]string{
 		"my-first-key": "an invalid value",
 	}
 
 	resp, err := s.elb.AddTags("my-bad-elb", tagsToAdd)
+	c.Assert(resp, IsNil)
+	c.Assert(err, ErrorMatches, ".*(InvalidParameterValue).*")
+}
+
+func (s *S) TestRemoveTags(c *C) {
+	testServer.PrepareResponse(200, nil, RemoveTagsSuccessResponse)
+	tagKeysToRemove := []string{"a-key-one", "a-key-two"}
+
+	resp, err := s.elb.RemoveTags("my-test-elb-1", tagKeysToRemove)
+	c.Assert(err, IsNil)
+
+	values := testServer.WaitRequest().URL.Query()
+	c.Assert(values.Get("Version"), Equals, "2012-06-01")
+	c.Assert(values.Get("Action"), Equals, "RemoveTags")
+	c.Assert(values.Get("Timestamp"), Not(Equals), "")
+	c.Assert(values.Get("LoadBalancerNames.member.1"), Equals, "my-test-elb-1")
+	c.Assert([]string{values.Get("Tags.member.1.Key"), values.Get("Tags.member.2.Key")}, DeepEquals, tagKeysToRemove)
+	c.Assert(resp.RequestId, Equals, "83c88b9d-12b7-11e3-8b82-87b12DIFFEXAMPLE")
+}
+
+func (s *S) TestRemoveTagsFailure(c *C) {
+	testServer.PrepareResponse(400, nil, TagsBadRequest)
+
+	resp, err := s.elb.RemoveTags("my-test-elb", []string{"non-existant-tag"})
 	c.Assert(resp, IsNil)
 	c.Assert(err, ErrorMatches, ".*(InvalidParameterValue).*")
 }

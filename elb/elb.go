@@ -303,6 +303,30 @@ func (elb *ELB) AddTags(elbName string, tags map[string]string) (*SimpleResp, er
 	return response, nil
 }
 
+// Remove tags from the named ELB
+//
+// Note that AWS only accepts one ELB name at a time (even though it is sent as a list)
+//
+// see http://goo.gl/ochFqo for more details
+
+func (elb *ELB) RemoveTags(elbName string, tagKeys []string) (*SimpleResp, error) {
+	response := &SimpleResp{}
+	params := make(map[string]string)
+
+	params["Action"] = "RemoveTags"
+	params["LoadBalancerNames.member.1"] = elbName
+
+	for i, tagKey := range tagKeys {
+		params[fmt.Sprintf("Tags.member.%d.Key", i+1)] = tagKey
+	}
+
+	if err := elb.query(params, response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
 func (elb *ELB) query(params map[string]string, resp interface{}) error {
 	params["Version"] = "2012-06-01"
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
