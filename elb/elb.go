@@ -273,12 +273,12 @@ func (elb *ELB) query(params map[string]string, resp interface{}) error {
 	params["Version"] = "2012-06-01"
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	data := strings.NewReader(multimap(params).Encode())
-	hreq, err := http.NewRequest("POST", elb.Region.ELBEndpoint+"/", data)
+	hreq, err := http.NewRequest("GET", elb.Region.ELBEndpoint+"/", data)
 	if err != nil {
 		return err
 	}
 
-	hreq.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	hreq.URL.RawQuery = multimap(params).Encode()
 	token := elb.Auth.Token()
 	if token != "" {
 		hreq.Header.Set("X-Amz-Security-Token", token)
