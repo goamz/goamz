@@ -1336,6 +1336,8 @@ type CreateVolume struct {
 	SnapshotId string
 	VolumeType string
 	IOPS       int64
+	Encrypted  bool
+	KmsKeyId   string
 }
 
 // Response to an AttachVolume request
@@ -1359,6 +1361,7 @@ type CreateVolumeResp struct {
 	CreateTime string `xml:"createTime"`
 	VolumeType string `xml:"volumeType"`
 	IOPS       int64  `xml:"iops"`
+	Encrypted  bool   `xml:"encrypted"`
 }
 
 // Volume is a single volume.
@@ -1371,6 +1374,7 @@ type Volume struct {
 	Attachments []VolumeAttachment `xml:"attachmentSet>item"`
 	VolumeType  string             `xml:"volumeType"`
 	IOPS        int64              `xml:"iops"`
+	Encrypted   bool               `xml:"encrypted"`
 	Tags        []Tag              `xml:"tagSet>item"`
 }
 
@@ -1421,6 +1425,13 @@ func (ec2 *EC2) CreateVolume(options *CreateVolume) (resp *CreateVolumeResp, err
 
 	if options.IOPS > 0 {
 		params["Iops"] = strconv.FormatInt(options.IOPS, 10)
+	}
+
+	if options.Encrypted {
+		params["Encrypted"] = "true"
+		params["KmsKeyId"] = options.KmsKeyId
+	} else {
+		params["Encrypted"] = "false"
 	}
 
 	resp = &CreateVolumeResp{}
