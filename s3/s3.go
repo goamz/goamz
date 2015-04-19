@@ -122,9 +122,16 @@ var DefaultAttemptStrategy = aws.AttemptStrategy{
 	Delay: 200 * time.Millisecond,
 }
 
-// New creates a new S3.
-func New(auth aws.Auth, region aws.Region) *S3 {
-	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy}
+// New creates a new S3.  Optional client argument allows for custom http.clients to be used.
+func New(auth aws.Auth, region aws.Region, client ...*http.Client) *S3 {
+
+	var httpclient *http.Client
+
+	if len(client) > 0 {
+		httpclient = client[0]
+	}
+
+	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy, client: httpclient}
 }
 
 // Bucket returns a Bucket with the given name.
