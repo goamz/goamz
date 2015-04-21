@@ -127,7 +127,7 @@ type xmlErrors struct {
 var timeNow = time.Now
 
 func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
-	params["Version"] = "2014-02-01"
+	params["Version"] = "2014-10-01"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(ec2.Region.EC2Endpoint)
 	if err != nil {
@@ -1336,6 +1336,8 @@ type CreateVolume struct {
 	SnapshotId string
 	VolumeType string
 	IOPS       int64
+	Encrypted  bool
+	KmsKeyId   string
 }
 
 // Response to an AttachVolume request
@@ -1359,6 +1361,7 @@ type CreateVolumeResp struct {
 	CreateTime string `xml:"createTime"`
 	VolumeType string `xml:"volumeType"`
 	IOPS       int64  `xml:"iops"`
+	Encrypted  bool   `xml:"encrypted"`
 }
 
 // Volume is a single volume.
@@ -1371,6 +1374,7 @@ type Volume struct {
 	Attachments []VolumeAttachment `xml:"attachmentSet>item"`
 	VolumeType  string             `xml:"volumeType"`
 	IOPS        int64              `xml:"iops"`
+	Encrypted   bool               `xml:"encrypted"`
 	Tags        []Tag              `xml:"tagSet>item"`
 }
 
@@ -1423,6 +1427,17 @@ func (ec2 *EC2) CreateVolume(options *CreateVolume) (resp *CreateVolumeResp, err
 		params["Iops"] = strconv.FormatInt(options.IOPS, 10)
 	}
 
+	if options.Encrypted {
+		params["Encrypted"] = "true"
+
+		// if the KmsKeyId is empty, use default master key
+		if options.KmsKeyId != "" {
+			params["KmsKeyId"] = options.KmsKeyId
+		}
+	} else {
+		params["Encrypted"] = "false"
+	}
+
 	resp = &CreateVolumeResp{}
 	err = ec2.query(params, resp)
 	if err != nil {
@@ -1467,7 +1482,7 @@ func (ec2 *EC2) Volumes(volIds []string, filter *Filter) (resp *VolumesResp, err
 	if err != nil {
 		return nil, err
 	}
-	return
+	return resp, nil
 }
 
 // ----------------------------------------------------------------------------
