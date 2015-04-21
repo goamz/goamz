@@ -127,7 +127,7 @@ type xmlErrors struct {
 var timeNow = time.Now
 
 func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
-	params["Version"] = "2014-02-01"
+	params["Version"] = "2014-10-01"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(ec2.Region.EC2Endpoint)
 	if err != nil {
@@ -1429,7 +1429,11 @@ func (ec2 *EC2) CreateVolume(options *CreateVolume) (resp *CreateVolumeResp, err
 
 	if options.Encrypted {
 		params["Encrypted"] = "true"
-		params["KmsKeyId"] = options.KmsKeyId
+
+		// if the KmsKeyId is empty, use default master key
+		if options.KmsKeyId != "" {
+			params["KmsKeyId"] = options.KmsKeyId
+		}
 	} else {
 		params["Encrypted"] = "false"
 	}
@@ -1478,7 +1482,7 @@ func (ec2 *EC2) Volumes(volIds []string, filter *Filter) (resp *VolumesResp, err
 	if err != nil {
 		return nil, err
 	}
-	return
+	return resp, nil
 }
 
 // ----------------------------------------------------------------------------
