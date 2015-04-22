@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"math"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"strconv"
+	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -119,7 +121,9 @@ func (t *ResilientTransport) tries(req *http.Request) (res *http.Response, err e
 		res, err = t.transport.RoundTrip(req)
 
 		if !t.ShouldRetry(req, res, err) {
-			logResponse(res)
+			if res != nil {
+				logResponse(res)
+			}
 			break
 		}
 
@@ -155,30 +159,52 @@ func LinearBackoff(try int) {
 // In general, the criteria for retrying a request is described here
 // http://docs.aws.amazon.com/general/latest/gr/api-retries.html
 func AwsRetry(req *http.Request, res *http.Response, err error) bool {
-	// Retry if there's a temporary network error.
-	if neterr, ok := err.(net.Error); ok {
-		if neterr.Temporary() {
+	if err != nil {
+		if err == io.EOF {
 			log.Warnf(
-				"Retryable network error on (%s %s)\n%s", req.Method, req.URL.String(), err)
+				"Retryable network IO error on (%s %s)\n%s",
+				req.Method,
+				req.URL.String(),
+				err)
 			return true
+		} else if neterr, ok := err.(net.Error); ok && neterr.Temporary() {
+			log.Warnf(
+				"Retryable network error on (%s %s)\n%s",
+				req.Method,
+				req.URL.String(),
+				err)
+			return true
+		} else if operr, ok := neterr.(*net.OpError); ok {
+			e := operr.Err.Error()
+			if e == syscall.ECONNRESET.Error() || e == syscall.ECONNABORTED.Error() {
+				log.Warnf(
+					"Retryable network error on (%s %s)\n%s",
+					req.Method,
+					req.URL.String(),
+					err)
+				return true
+			}
 		}
+		return false // non-retryable error
+	}
+
+	if res == nil {
+		return false // no error, no response - retryable?
 	}
 
 	// Retry if we get a 5xx series error.
-	if res != nil {
-		if res.StatusCode >= 500 && res.StatusCode < 600 {
-			dump, _ := httputil.DumpResponse(res, false)
-			log.Warnf(
-				"Retryable error on (%s %s)\n%v", req.Method, req.URL.String(), string(dump))
-			return true
-		}
+	if res.StatusCode >= 500 && res.StatusCode < 600 {
+		dump, _ := httputil.DumpResponse(res, false)
+		log.Warnf(
+			"Retryable error on (%s %s)\n%v", req.Method, req.URL.String(), string(dump))
+		return true
 	}
 
 	// Check the body to see if it matches ContentLength
 	// XXX This is a temporary hack to work around an issue where
 	// it appears deadline is triggering a timeout without returning a
 	// timeout error.
-	if res != nil && res.ContentLength > 0 && res.Body != nil {
+	if res.ContentLength > 0 && res.Body != nil {
 		body, _ := ioutil.ReadAll(res.Body)                // Read the body
 		res.Body = ioutil.NopCloser(bytes.NewReader(body)) // Restore the reader
 		bodyLen := int64(len(body))
@@ -189,7 +215,7 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 			return true
 		}
 	}
-	return false
+	return false // everything is fine. no need to retry
 }
 
 func logRequest(req *http.Request) {
