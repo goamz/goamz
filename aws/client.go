@@ -66,7 +66,8 @@ func NewClient(rt *ResilientTransport) *http.Client {
 			err = c.SetDeadline(rt.Deadline())
 			return c, err
 		},
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:               http.ProxyFromEnvironment,
+		MaxIdleConnsPerHost: -1,
 	}
 	// TODO: Would be nice is ResilientTransport allowed clients to initialize
 	// with http.Transport attributes.
