@@ -3,17 +3,19 @@ package dynamodb
 import simplejson "github.com/bitly/go-simplejson"
 import (
 	"errors"
-	"github.com/goamz/goamz/aws"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 type Server struct {
 	Auth   aws.Auth
 	Region aws.Region
+	Client *http.Client // if nil, http.DefaultClient is used
 }
 
 /*
@@ -91,7 +93,11 @@ func (s *Server) queryServer(target string, query *Query) ([]byte, error) {
 	signer := aws.NewV4Signer(s.Auth, "dynamodb", s.Region)
 	signer.Sign(hreq)
 
-	resp, err := http.DefaultClient.Do(hreq)
+	client := http.DefaultClient
+	if s.Client != nil {
+		client = s.Client
+	}
+	resp, err := client.Do(hreq)
 
 	if err != nil {
 		log.Printf("Error calling Amazon")
