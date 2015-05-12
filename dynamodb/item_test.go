@@ -388,3 +388,59 @@ func (s *ItemSuite) TestUpdateItemWithSet(c *C) {
 		}
 	}
 }
+
+func (s *ItemSuite) TestUpdateItem_new(c *C) {
+	attrs := []dynamodb.Attribute{
+		*dynamodb.NewStringAttribute("intval", "1"),
+	}
+	var rk string
+	if s.WithRange {
+		rk = "1"
+	}
+	pk := &dynamodb.Key{HashKey: "UpdateKeyVal", RangeKey: rk}
+
+	num := func(a, b string) dynamodb.Attribute {
+		return *dynamodb.NewNumericAttribute(a, b)
+	}
+
+	checkVal := func(i string) {
+		if item, err := s.table.GetItem(pk); err != nil {
+			c.Error(err)
+		} else {
+			c.Check(item["intval"], DeepEquals, dynamodb.NewNumericAttribute("intval", i))
+		}
+	}
+
+	if ok, err := s.table.PutItem("UpdateKeyVal", rk, attrs); !ok {
+		c.Error(err)
+	}
+	checkVal("1")
+
+	// Simple Increment
+	s.table.UpdateItem(pk).UpdateExpression("SET intval = intval + :incr", num(":incr", "5")).Execute()
+	checkVal("6")
+
+	conditionalUpdate := func(check string) {
+		s.table.UpdateItem(pk).
+			ConditionExpression("intval = :check").
+			UpdateExpression("SET intval = intval + :incr").
+			ExpressionAttributes(num(":check", check), num(":incr", "4")).
+			Execute()
+	}
+	// Conditional increment should be a no-op.
+	conditionalUpdate("42")
+	checkVal("6")
+
+	// conditional increment should succeed this time
+	conditionalUpdate("6")
+	checkVal("10")
+
+	// Update with new values getting values
+	result, err := s.table.UpdateItem(pk).
+		ReturnValues(dynamodb.UPDATED_NEW).
+		UpdateExpression("SET intval = intval + :incr", num(":incr", "2")).
+		Execute()
+	c.Check(err, IsNil)
+	c.Check(result.Attributes["intval"], DeepEquals, num("intval", "12"))
+	checkVal("12")
+}

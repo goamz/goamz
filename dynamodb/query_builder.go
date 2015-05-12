@@ -253,6 +253,32 @@ func (q *Query) AddExpected(attributes []Attribute) {
 	q.buffer["Expected"] = expected
 }
 
+// Add the ReturnValues parameter, used in UpdateItem queries.
+func (q *Query) AddReturnValues(returnValues ReturnValues) {
+	q.buffer["ReturnValues"] = string(returnValues)
+}
+
+// Add the UpdateExpression parameter, used in UpdateItem queries.
+func (q *Query) AddUpdateExpression(expression string) {
+	q.buffer["UpdateExpression"] = expression
+}
+
+// Add the ConditionExpression parameter, used in UpdateItem queries.
+func (q *Query) AddConditionExpression(expression string) {
+	q.buffer["ConditionExpression"] = expression
+}
+
+func (q *Query) AddExpressionAttributes(attributes []Attribute) {
+	existing, ok := q.buffer["ExpressionAttributes"].(msi)
+	if !ok {
+		existing = msi{}
+		q.buffer["ExpressionAttributes"] = existing
+	}
+	for key, val := range attributeList(attributes) {
+		existing[key] = val
+	}
+}
+
 func attributeList(attributes []Attribute) msi {
 	b := msi{}
 	for _, a := range attributes {
