@@ -182,6 +182,10 @@ func (q *Query) AddIndex(value string) {
 	q.buffer["IndexName"] = value
 }
 
+func (q *Query) ScanIndexDescending() {
+	q.buffer["ScanIndexForward"] = "false"
+}
+
 /*
    "ScanFilter":{
        "AttributeName1":{"AttributeValueList":[{"S":"AttributeValue"}],"ComparisonOperator":"EQ"}
