@@ -34,6 +34,23 @@ func (t *Table) LimitedQueryOnIndex(attributeComparisons []AttributeComparison, 
 	return runQuery(q, t)
 }
 
+func (t *Table) LimitedQueryDescending(attributeComparisons []AttributeComparison, limit int64) ([]map[string]*Attribute, error) {
+	q := NewQuery(t)
+	q.AddKeyConditions(attributeComparisons)
+	q.AddLimit(limit)
+	q.ScanIndexDescending()
+	return runQuery(q, t)
+}
+
+func (t *Table) LimitedQueryOnIndexDescending(attributeComparisons []AttributeComparison, indexName string, limit int64) ([]map[string]*Attribute, error) {
+	q := NewQuery(t)
+	q.AddKeyConditions(attributeComparisons)
+	q.AddIndex(indexName)
+	q.AddLimit(limit)
+	q.ScanIndexDescending()
+	return runQuery(q, t)
+}
+
 func (t *Table) CountQuery(attributeComparisons []AttributeComparison) (int64, error) {
 	q := NewQuery(t)
 	q.AddKeyConditions(attributeComparisons)
