@@ -16,7 +16,6 @@ func (t *Table) QueryOnIndex(attributeComparisons []AttributeComparison, indexNa
 	q := NewQuery(t)
 	q.AddKeyConditions(attributeComparisons)
 	q.AddIndex(indexName)
-	q.ScanIndexDescending()
 	return runQuery(q, t)
 }
 
@@ -24,6 +23,7 @@ func (t *Table) QueryOnIndexDescending(attributeComparisons []AttributeCompariso
 	q := NewQuery(t)
 	q.AddKeyConditions(attributeComparisons)
 	q.AddIndex(indexName)
+	q.ScanIndexDescending()
 	return runQuery(q, t)
 }
 
