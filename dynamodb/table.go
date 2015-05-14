@@ -208,6 +208,25 @@ func (s *Server) DescribeTable(name string) (*TableDescriptionT, error) {
 	return &r.Table, nil
 }
 
+func (s *Server) UpdateTable(tableDescription TableDescriptionT) (string, error) {
+	query := NewEmptyQuery()
+	query.AddUpdateRequestTable(tableDescription)
+
+	jsonResponse, err := s.queryServer(target("UpdateTable"), query)
+
+	if err != nil {
+		return "unknown", err
+	}
+
+	json, err := simplejson.NewJson(jsonResponse)
+
+	if err != nil {
+		return "unknown", err
+	}
+
+	return json.Get("TableDescription").Get("TableStatus").MustString(), nil
+}
+
 func keyParam(k *PrimaryKey, hashKey string, rangeKey string) string {
 	value := fmt.Sprintf("{\"HashKeyElement\":{%s}", keyValue(k.KeyAttribute.Type, hashKey))
 
