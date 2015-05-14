@@ -167,6 +167,27 @@ func (q *Query) AddDeleteRequestTable(description TableDescriptionT) {
 	b["TableName"] = description.TableName
 }
 
+func (q *Query) AddUpdateRequestTable(description TableDescriptionT) {
+	b := q.buffer
+
+	attDefs := []interface{}{}
+	for _, attr := range description.AttributeDefinitions {
+		attDefs = append(attDefs, msi{
+			"AttributeName": attr.Name,
+			"AttributeType": attr.Type,
+		})
+	}
+	if len(attDefs) > 0 {
+		b["AttributeDefinitions"] = attDefs
+	}
+	b["TableName"] = description.TableName
+	b["ProvisionedThroughput"] = msi{
+		"ReadCapacityUnits":  int(description.ProvisionedThroughput.ReadCapacityUnits),
+		"WriteCapacityUnits": int(description.ProvisionedThroughput.WriteCapacityUnits),
+	}
+
+}
+
 func (q *Query) AddKeyConditions(comparisons []AttributeComparison) {
 	q.buffer["KeyConditions"] = buildComparisons(comparisons)
 }
