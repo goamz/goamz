@@ -64,7 +64,7 @@ func NewFrom(accessKey, secretKey, region string) (*SQS, error) {
 	case "cn.north", "cn.north.1":
 		aws_region = aws.CNNorth
 	default:
-		return nil, errors.New(fmt.Sprintf("Unknow/Unsupported region %s", region))
+		return nil, errors.New(fmt.Sprintf("Unknown/Unsupported region %s", region))
 	}
 
 	aws_sqs := New(auth, aws_region)
