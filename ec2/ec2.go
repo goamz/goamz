@@ -2025,6 +2025,24 @@ func (ec2 *EC2) DisassociateAddress(publicIp, associationId string) (resp *Disas
 	return resp, nil
 }
 
+// The CopyImage request parameters.
+//
+// See http://goo.gl/hQwPCK for more details.
+type CopySnapshot struct {
+	SourceRegion      string
+	DestinationRegion string
+	SourceSnapshotId  string
+	Description       string
+}
+
+// Response to a CopyImage request.
+//
+// See http://goo.gl/hQwPCK for more details.
+type CopySnapshotResp struct {
+	RequestId  string `xml:"requestId"`
+	SnapshotId string `xml:"snapshotId"`
+}
+
 // Copy Snapshot from one region to another or to same region.
 //
 // See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CopySnapshot.html for more details.
