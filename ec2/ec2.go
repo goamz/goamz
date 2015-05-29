@@ -1065,7 +1065,7 @@ type ModifyInstanceResp struct {
 func (ec2 *EC2) ModifyInstance(instId string, options *ModifyInstance) (resp *ModifyInstanceResp, err error) {
 	params := makeParams("ModifyInstanceAttribute")
 	params["InstanceId"] = instId
-	addBlockDeviceParams(params, options.BlockDevices)
+	addBlockDeviceParams("", params, options.BlockDevices)
 
 	if options.InstanceType != "" {
 		params["InstanceType.Value"] = options.InstanceType
