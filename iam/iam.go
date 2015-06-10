@@ -43,7 +43,7 @@ func (iam *IAM) query(params map[string]string, resp interface{}) error {
 		return err
 	}
 	defer r.Body.Close()
-	if r.StatusCode > 200 {
+	if r.StatusCode > http.StatusOK {
 		return buildError(r)
 	}
 
@@ -72,7 +72,7 @@ func (iam *IAM) postQuery(params map[string]string, resp interface{}) error {
 		return err
 	}
 	defer r.Body.Close()
-	if r.StatusCode > 200 {
+	if r.StatusCode > http.StatusOK {
 		return buildError(r)
 	}
 	return xml.NewDecoder(r.Body).Decode(resp)

@@ -181,7 +181,7 @@ func (r *Route53) query(method string, path string, body io.Reader, result inter
 		defer req.Body.Close()
 	}
 
-	if res.StatusCode != 201 && res.StatusCode != 200 {
+	if res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusOK {
 		err = r.Service.BuildError(res)
 		return err
 	}

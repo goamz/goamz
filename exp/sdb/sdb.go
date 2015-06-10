@@ -397,7 +397,7 @@ func (sdb *SDB) query(domain *Domain, item *Item, params url.Values, headers htt
 	}
 
 	// status code is always 200 when successful (since we're always doing a GET)
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 

@@ -513,10 +513,10 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 		if err != nil {
 			return err
 		}
-		signer := aws.NewV4Signer(s.Auth, "sqs", s.Region)
-		signer.Sign(req)
-		client := http.Client{}
-		r, err = client.Do(req)
+		if err = aws.SignV4(req, s.Auth, "sqs", s.Region.Name); err != nil {
+			return err
+		}
+		r, err = http.DefaultClient.Do(req)
 	} else {
 		sign(s.Auth, "GET", path, params, url_.Host)
 		url_.RawQuery = multimap(params).Encode()
@@ -538,7 +538,7 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 		log.Printf("DUMP:\n", string(dump))
 	}
 
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)
