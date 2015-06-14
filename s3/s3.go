@@ -1104,7 +1104,11 @@ func shouldRetry(err error) bool {
 		case "InternalError", "NoSuchUpload", "NoSuchBucket":
 			return true
 		}
+	// let's handle tls handshake timeout issues and similar temporary errors
+	case net.Error:
+		return e.Temporary()
 	}
+
 	return false
 }
 
