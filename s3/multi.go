@@ -171,11 +171,11 @@ func (m *Multi) putPart(n int, r io.ReadSeeker, partSize int64, md5b64 string) (
 			params:  params,
 			payload: r,
 		}
-		err = m.Bucket.S3.prepare(req)
+		hreq, err := m.Bucket.S3.prepare(req)
 		if err != nil {
 			return Part{}, err
 		}
-		resp, err := m.Bucket.S3.run(req, nil)
+		resp, err := m.Bucket.S3.run(hreq, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
 		}

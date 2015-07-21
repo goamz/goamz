@@ -55,7 +55,7 @@ func test_get_metric_statistics() {
        os.Exit(1)
     }
 
-    cw, err := cloudwatch.NewCloudWatch(auth, region.CloudWatchServicepoint)
+    cw, err := cloudwatch.NewCloudWatch(auth, region)
     request := &cloudwatch.GetMetricStatisticsRequest {
                 Dimensions: []cloudwatch.Dimension{*dimension},
                 EndTime: now,
@@ -96,7 +96,7 @@ func test_list_metrics() {
        fmt.Printf("Error: %+v\n", err)
        os.Exit(1)
     }
-    cw, err := cloudwatch.NewCloudWatch(auth, region.CloudWatchServicepoint)
+    cw, err := cloudwatch.NewCloudWatch(auth, region)
     request := &cloudwatch.ListMetricsRequest{Namespace: "AWS/EC2"}
 
     response, err := cw.ListMetrics(request)

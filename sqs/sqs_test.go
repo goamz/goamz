@@ -32,7 +32,6 @@ func (s *S) TestCreateQueue(c *C) {
 	c.Assert(req.Method, Equals, "GET")
 	c.Assert(req.URL.Path, Equals, "/")
 	c.Assert(req.Header["Date"], Not(Equals), "")
-	fmt.Printf("%+v\n", req)
 	c.Assert(req.Form["Action"], DeepEquals, []string{"CreateQueue"})
 	c.Assert(req.Form["Attribute.1.Name"], DeepEquals, []string{"VisibilityTimeout"})
 	c.Assert(req.Form["Attribute.1.Value"], DeepEquals, []string{"30"})

@@ -51,10 +51,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"DATE:Mon, 09 Sep 2011 23:36:00 GMT", "ZOO:zoobar", "zoo:foobar", "zoo:zoobar"},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nzoo:foobar,zoobar,zoobar\n\ndate;host;zoo\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n3c52f0eaae2b61329c0a332e3fa15842a37bc5812cf4d80eb64784308850e313",
-			signature:        "54afcaaf45b331f81cd2edb974f7b824ff4dd594cbbaa945ed636b48477368ed",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;zoo, Signature=54afcaaf45b331f81cd2edb974f7b824ff4dd594cbbaa945ed636b48477368ed",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nzoo:foobar,zoobar,zoobar\n\ndate;host;x-amz-content-sha256;zoo\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nb47a355a1f4aed01ddaae2a0992cf11758413038797b8768c7668c04292994f0",
+			signature:        "b48d915443fc61838f63037d445e630c55e7d36efa07ce417e28313b06162bb2",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256;zoo, Signature=b48d915443fc61838f63037d445e630c55e7d36efa07ce417e28313b06162bb2",
 		},
 
 		// get-header-value-order
@@ -66,10 +66,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"DATE:Mon, 09 Sep 2011 23:36:00 GMT", "p:z", "p:a", "p:p", "p:a"},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\np:a,a,p,z\n\ndate;host;p\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n94c0389fefe0988cbbedc8606f0ca0b485b48da010d09fc844b45b697c8924fe",
-			signature:        "d2973954263943b11624a11d1c963ca81fb274169c7868b2858c04f083199e3d",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;p, Signature=d2973954263943b11624a11d1c963ca81fb274169c7868b2858c04f083199e3d",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\np:a,a,p,z\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;p;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n76823ce9cd3e250ee87dbc7142653ecabf6d80a9a91f3199dc7c2ed22eeb668b",
+			signature:        "0a5450064fe28a63773c01290500cc67b2e52ffb8efd29af6d15df191e313e8b",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;p;x-amz-content-sha256, Signature=0a5450064fe28a63773c01290500cc67b2e52ffb8efd29af6d15df191e313e8b",
 		},
 
 		// get-header-value-trim
@@ -81,10 +81,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"DATE:Mon, 09 Sep 2011 23:36:00 GMT", "p: phfft "},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\np:phfft\n\ndate;host;p\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ndddd1902add08da1ac94782b05f9278c08dc7468db178a84f8950d93b30b1f35",
-			signature:        "debf546796015d6f6ded8626f5ce98597c33b47b9164cf6b17b4642036fcb592",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;p, Signature=debf546796015d6f6ded8626f5ce98597c33b47b9164cf6b17b4642036fcb592",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\np:phfft\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;p;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n5fc8bd66e043705a5414321c921183106f96b3ab394b106383ea62f7de105cb5",
+			signature:        "c7876fcc7fa5fdfd0d087d47c110c945d1bd1528828507b9c2c7cff6f3e8d838",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;p;x-amz-content-sha256, Signature=c7876fcc7fa5fdfd0d087d47c110c945d1bd1528828507b9c2c7cff6f3e8d838",
 		},
 
 		// get-relative-relative
@@ -96,10 +96,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/foo/bar/../..",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n366b91fb121d72a00f46bbe8d395f53a102b06dfb7e79636515208ed3fa606b1",
-			signature:        "b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
+			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nedf3a954ef9b74cf366ad17b25bc502050eb85bcd3d86b24431cb9aea8761c84",
+			signature:        "6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
 		},
 
 		// get-relative
@@ -111,10 +111,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/foo/..",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n366b91fb121d72a00f46bbe8d395f53a102b06dfb7e79636515208ed3fa606b1",
-			signature:        "b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
+			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nedf3a954ef9b74cf366ad17b25bc502050eb85bcd3d86b24431cb9aea8761c84",
+			signature:        "6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
 		},
 
 		// get-slash-dot-slash
@@ -126,10 +126,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/./",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n366b91fb121d72a00f46bbe8d395f53a102b06dfb7e79636515208ed3fa606b1",
-			signature:        "b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
+			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nedf3a954ef9b74cf366ad17b25bc502050eb85bcd3d86b24431cb9aea8761c84",
+			signature:        "6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
 		},
 
 		// get-slash-pointless-dot
@@ -141,10 +141,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/./foo",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/foo\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n8021a97572ee460f87ca67f4e8c0db763216d84715f5424a843a5312a3321e2d",
-			signature:        "910e4d6c9abafaf87898e1eb4c929135782ea25bb0279703146455745391e63a",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=910e4d6c9abafaf87898e1eb4c929135782ea25bb0279703146455745391e63a",
+			canonicalRequest: "GET\n/foo\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nc0dd19b115fdcd7b17e21b9845d31c5caead32a194b4dd2d720280770c182db3",
+			signature:        "b79af6d6802186bdd3c7a22ec726b88ee0ff8bd15cb3ae7fa81d3e1decf2a3f2",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=b79af6d6802186bdd3c7a22ec726b88ee0ff8bd15cb3ae7fa81d3e1decf2a3f2",
 		},
 
 		// get-slash
@@ -156,10 +156,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "//",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n366b91fb121d72a00f46bbe8d395f53a102b06dfb7e79636515208ed3fa606b1",
-			signature:        "b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
+			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nedf3a954ef9b74cf366ad17b25bc502050eb85bcd3d86b24431cb9aea8761c84",
+			signature:        "6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
 		},
 
 		// get-slashes
@@ -171,10 +171,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "//foo//",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/foo/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n6bb4476ee8745730c9cb79f33a0c70baa6d8af29c0077fa12e4e8f1dd17e7098",
-			signature:        "b00392262853cfe3201e47ccf945601079e9b8a7f51ee4c3d9ee4f187aa9bf19",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b00392262853cfe3201e47ccf945601079e9b8a7f51ee4c3d9ee4f187aa9bf19",
+			canonicalRequest: "GET\n/foo/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n4a7592c23ce09aa58e45d8cb1dc827287cdcf621e98e784f3d86715bb4c4e24e",
+			signature:        "cac8d6fc96a93d075848795a33138fa0dfb81a9b9a1387486b67c5803659107b",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=cac8d6fc96a93d075848795a33138fa0dfb81a9b9a1387486b67c5803659107b",
 		},
 
 		// get-space
@@ -186,10 +186,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/%20/foo",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/%20/foo\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n69c45fb9fe3fd76442b5086e50b2e9fec8298358da957b293ef26e506fdfb54b",
-			signature:        "f309cfbd10197a230c42dd17dbf5cca8a0722564cb40a872d25623cfa758e374",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=f309cfbd10197a230c42dd17dbf5cca8a0722564cb40a872d25623cfa758e374",
+			canonicalRequest: "GET\n/%20/foo\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nf8efe2a424f379ce780bcf0b1bbd93a2377fac1cd9b34283473c5d287fb98daa",
+			signature:        "280de7094bfa4f41dee69c9af17de9c4652699c284495c6769426170fe9b0407",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=280de7094bfa4f41dee69c9af17de9c4652699c284495c6769426170fe9b0407",
 		},
 
 		// get-unreserved
@@ -201,10 +201,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ndf63ee3247c0356c696a3b21f8d8490b01fa9cd5bc6550ef5ef5f4636b7b8901",
-			signature:        "830cc36d03f0f84e6ee4953fbe701c1c8b71a0372c63af9255aa364dd183281e",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=830cc36d03f0f84e6ee4953fbe701c1c8b71a0372c63af9255aa364dd183281e",
+			canonicalRequest: "GET\n/-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n28e6e45f8b295710940c557546b115694d7f5bfe7bc65a3922c1d980f8dcb14a",
+			signature:        "fc33535e9ffe760da308afc673033bb2f89254ef7abe2faaf5bf7c37a64cdf91",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=fc33535e9ffe760da308afc673033bb2f89254ef7abe2faaf5bf7c37a64cdf91",
 		},
 
 		// get-utf8
@@ -216,10 +216,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/%E1%88%B4",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/%E1%88%B4\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n27ba31df5dbc6e063d8f87d62eb07143f7f271c5330a917840586ac1c85b6f6b",
-			signature:        "8d6634c189aa8c75c2e51e106b6b5121bed103fdb351f7d7d4381c738823af74",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=8d6634c189aa8c75c2e51e106b6b5121bed103fdb351f7d7d4381c738823af74",
+			canonicalRequest: "GET\n/%E1%88%B4\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n02fde5f405aa0ca5dc7851735b4ec75d0dfb6082b92f12c13abcd8f268eea660",
+			signature:        "b366e667085aa65f8b3d7be4826dce4507b2d5edd78dde12105fc44014cf65e4",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=b366e667085aa65f8b3d7be4826dce4507b2d5edd78dde12105fc44014cf65e4",
 		},
 
 		// get-vanilla-empty-query-key
@@ -231,10 +231,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?foo=bar",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\nfoo=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n0846c2945b0832deb7a463c66af5c4f8bd54ec28c438e67a214445b157c9ddf8",
-			signature:        "56c054473fd260c13e4e7393eb203662195f5d4a1fada5314b8b52b23f985e9f",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=56c054473fd260c13e4e7393eb203662195f5d4a1fada5314b8b52b23f985e9f",
+			canonicalRequest: "GET\n/\nfoo=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n763e50808f6a9e1ba0bf89728d3f34aafb9d3719350e474dbe810bf8e7b270a3",
+			signature:        "c3af9ab0d58331f70981239ab27cab9169ce2a87e5b5157b829648b084987e73",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=c3af9ab0d58331f70981239ab27cab9169ce2a87e5b5157b829648b084987e73",
 		},
 
 		// get-vanilla-query-order-key-case
@@ -246,10 +246,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?foo=Zoo&foo=aha",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\nfoo=Zoo&foo=aha\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ne25f777ba161a0f1baf778a87faf057187cf5987f17953320e3ca399feb5f00d",
-			signature:        "be7148d34ebccdc6423b19085378aa0bee970bdc61d144bd1a8c48c33079ab09",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=be7148d34ebccdc6423b19085378aa0bee970bdc61d144bd1a8c48c33079ab09",
+			canonicalRequest: "GET\n/\nfoo=Zoo&foo=aha\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nd651e96c251a3375a9248bacb97e05013ed9c36ebe8bb39f24be8dd522f58948",
+			signature:        "9f4456ed08b128fe09d5490f93591f1c4eaf3882a04b163920908f72c1ed7243",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=9f4456ed08b128fe09d5490f93591f1c4eaf3882a04b163920908f72c1ed7243",
 		},
 
 		// get-vanilla-query-order-key
@@ -261,10 +261,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?a=foo&b=foo",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\na=foo&b=foo\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n2f23d14fe13caebf6dfda346285c6d9c14f49eaca8f5ec55c627dd7404f7a727",
-			signature:        "0dc122f3b28b831ab48ba65cb47300de53fbe91b577fe113edac383730254a3b",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=0dc122f3b28b831ab48ba65cb47300de53fbe91b577fe113edac383730254a3b",
+			canonicalRequest: "GET\n/\na=foo&b=foo\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n1da40574a1309ebbd7b2c4523059d1b6acd99ac198fc6ae5e0f5f90e85726e75",
+			signature:        "800aed7d844fd17d0b98bbfcabfb0f4fc79fc9d2aae345baf75d696df36241d7",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=800aed7d844fd17d0b98bbfcabfb0f4fc79fc9d2aae345baf75d696df36241d7",
 		},
 
 		// get-vanilla-query-order-value
@@ -276,10 +276,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?foo=b&foo=a",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\nfoo=a&foo=b\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n33dffc220e89131f8f6157a35c40903daa658608d9129ff9489e5cf5bbd9b11b",
-			signature:        "feb926e49e382bec75c9d7dcb2a1b6dc8aa50ca43c25d2bc51143768c0875acc",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=feb926e49e382bec75c9d7dcb2a1b6dc8aa50ca43c25d2bc51143768c0875acc",
+			canonicalRequest: "GET\n/\nfoo=a&foo=b\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n781593a5fd3c02af91b2956df4c1f56305bc2289cb88179df74f905e9108854b",
+			signature:        "0784708ecdb06ffca4f0e2cffb2825849f1fa5c947bd91da312403d3ac060ba8",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=0784708ecdb06ffca4f0e2cffb2825849f1fa5c947bd91da312403d3ac060ba8",
 		},
 
 		// get-vanilla-query-unreserved
@@ -291,10 +291,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nd2578f3156d4c9d180713d1ff20601d8a3eed0dd35447d24603d7d67414bd6b5",
-			signature:        "f1498ddb4d6dae767d97c466fb92f1b59a2c71ca29ac954692663f9db03426fb",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=f1498ddb4d6dae767d97c466fb92f1b59a2c71ca29ac954692663f9db03426fb",
+			canonicalRequest: "GET\n/\n-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=-._~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\neddf477a78e0d7fd1617d20021167184e11634e9b3cccb472fae4881555c7585",
+			signature:        "032038308853317f8898d90c3678a1e269e68e30e50fb97c6654eaeff9480799",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=032038308853317f8898d90c3678a1e269e68e30e50fb97c6654eaeff9480799",
 		},
 
 		// get-vanilla-query
@@ -306,10 +306,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n366b91fb121d72a00f46bbe8d395f53a102b06dfb7e79636515208ed3fa606b1",
-			signature:        "b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
+			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nedf3a954ef9b74cf366ad17b25bc502050eb85bcd3d86b24431cb9aea8761c84",
+			signature:        "6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
 		},
 
 		// get-vanilla-ut8-query
@@ -321,10 +321,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?ሴ=bar",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n%E1%88%B4=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nde5065ff39c131e6c2e2bd19cd9345a794bf3b561eab20b8d97b2093fc2a979e",
-			signature:        "6fb359e9a05394cc7074e0feb42573a2601abc0c869a953e8c5c12e4e01f1a8c",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=6fb359e9a05394cc7074e0feb42573a2601abc0c869a953e8c5c12e4e01f1a8c",
+			canonicalRequest: "GET\n/\n%E1%88%B4=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ne06a77d8fca5b57869e3a5b84b6147b8a38bb8caecbe7e14c2b5d2a0f98df7ec",
+			signature:        "05991e997a8d3bab48124e73396fe4826fb47b714072423d765a2a3bdd4a2a7c",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=05991e997a8d3bab48124e73396fe4826fb47b714072423d765a2a3bdd4a2a7c",
 		},
 
 		// get-vanilla
@@ -336,10 +336,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n366b91fb121d72a00f46bbe8d395f53a102b06dfb7e79636515208ed3fa606b1",
-			signature:        "b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470",
+			canonicalRequest: "GET\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nedf3a954ef9b74cf366ad17b25bc502050eb85bcd3d86b24431cb9aea8761c84",
+			signature:        "6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=6ad5d9fd6d93c5855f08c4675163da70623fcca6f49f9c96a3890c1c32877a2e",
 		},
 
 		// post-header-key-case
@@ -351,10 +351,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"DATE:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n05da62cee468d24ae84faff3c39f1b85540de60243c1bcaace39c0a2acc7b2c4",
-			signature:        "22902d79e148b64e7571c3565769328423fe276eae4b26f83afceda9e767f726",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=22902d79e148b64e7571c3565769328423fe276eae4b26f83afceda9e767f726",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ne99db283d41c8d76b65f2bde6003746997018685efaf38028979f3b4c01b9fdd",
+			signature:        "1f2d4161c5845a97c13548fd1f6421c1a5930730a177e00c3684579c68a99d1e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=1f2d4161c5845a97c13548fd1f6421c1a5930730a177e00c3684579c68a99d1e",
 		},
 
 		// post-header-key-sort
@@ -366,10 +366,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"DATE:Mon, 09 Sep 2011 23:36:00 GMT", "ZOO:zoobar"},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nzoo:zoobar\n\ndate;host;zoo\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n34e1bddeb99e76ee01d63b5e28656111e210529efeec6cdfd46a48e4c734545d",
-			signature:        "b7a95a52518abbca0964a999a880429ab734f35ebbf1235bd79a5de87756dc4a",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;zoo, Signature=b7a95a52518abbca0964a999a880429ab734f35ebbf1235bd79a5de87756dc4a",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nzoo:zoobar\n\ndate;host;x-amz-content-sha256;zoo\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nfec201022f7e94b0c824b3485230ca29fd026618dc8d759923aa48bc581762ed",
+			signature:        "7daf56768cfc0d366c47044fbf00fda5e7b80043cf55c316317ef29a83e2555c",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256;zoo, Signature=7daf56768cfc0d366c47044fbf00fda5e7b80043cf55c316317ef29a83e2555c",
 		},
 
 		// post-header-value-case
@@ -381,10 +381,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"DATE:Mon, 09 Sep 2011 23:36:00 GMT", "zoo:ZOOBAR"},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nzoo:ZOOBAR\n\ndate;host;zoo\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n3aae6d8274b8c03e2cc96fc7d6bda4b9bd7a0a184309344470b2c96953e124aa",
-			signature:        "273313af9d0c265c531e11db70bbd653f3ba074c1009239e8559d3987039cad7",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;zoo, Signature=273313af9d0c265c531e11db70bbd653f3ba074c1009239e8559d3987039cad7",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\nzoo:ZOOBAR\n\ndate;host;x-amz-content-sha256;zoo\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nfe62c1b0b49383f0a25e528d62a5fba9fce82a01db9a9e37dc5f2fd70fe55e08",
+			signature:        "9fd3fe58fa020bd61f0899abcb638d335bd91fe85a0bd26a8ee272164a1a122e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256;zoo, Signature=9fd3fe58fa020bd61f0899abcb638d335bd91fe85a0bd26a8ee272164a1a122e",
 		},
 
 		// post-vanilla-empty-query-value
@@ -396,10 +396,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?foo=bar",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "POST\n/\nfoo=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ncd4f39132d8e60bb388831d734230460872b564871c47f5de62e62d1a68dbe1e",
-			signature:        "b6e3b79003ce0743a491606ba1035a804593b0efb1e20a11cba83f8c25a57a92",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b6e3b79003ce0743a491606ba1035a804593b0efb1e20a11cba83f8c25a57a92",
+			canonicalRequest: "POST\n/\nfoo=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n48d51a068e0fe8aff12e1f1278aad9d750ce3633480760373c9d2d1556ce2ac3",
+			signature:        "8e7cde9089c5c8675dc1306869fd1f2089d84f5008c86332bcb4def9245b15a4",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=8e7cde9089c5c8675dc1306869fd1f2089d84f5008c86332bcb4def9245b15a4",
 		},
 
 		// post-vanilla-query
@@ -411,10 +411,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/?foo=bar",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "POST\n/\nfoo=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ncd4f39132d8e60bb388831d734230460872b564871c47f5de62e62d1a68dbe1e",
-			signature:        "b6e3b79003ce0743a491606ba1035a804593b0efb1e20a11cba83f8c25a57a92",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b6e3b79003ce0743a491606ba1035a804593b0efb1e20a11cba83f8c25a57a92",
+			canonicalRequest: "POST\n/\nfoo=bar\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n48d51a068e0fe8aff12e1f1278aad9d750ce3633480760373c9d2d1556ce2ac3",
+			signature:        "8e7cde9089c5c8675dc1306869fd1f2089d84f5008c86332bcb4def9245b15a4",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=8e7cde9089c5c8675dc1306869fd1f2089d84f5008c86332bcb4def9245b15a4",
 		},
 
 		// post-vanilla
@@ -426,10 +426,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				url:     "/",
 				headers: []string{"Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 			},
-			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ndate;host\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n05da62cee468d24ae84faff3c39f1b85540de60243c1bcaace39c0a2acc7b2c4",
-			signature:        "22902d79e148b64e7571c3565769328423fe276eae4b26f83afceda9e767f726",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=22902d79e148b64e7571c3565769328423fe276eae4b26f83afceda9e767f726",
+			canonicalRequest: "POST\n/\n\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\ndate;host;x-amz-content-sha256\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ne99db283d41c8d76b65f2bde6003746997018685efaf38028979f3b4c01b9fdd",
+			signature:        "1f2d4161c5845a97c13548fd1f6421c1a5930730a177e00c3684579c68a99d1e",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;x-amz-content-sha256, Signature=1f2d4161c5845a97c13548fd1f6421c1a5930730a177e00c3684579c68a99d1e",
 		},
 
 		// post-x-www-form-urlencoded-parameters
@@ -442,10 +442,10 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				headers: []string{"Content-Type:application/x-www-form-urlencoded; charset=utf8", "Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 				body:    "foo=bar",
 			},
-			canonicalRequest: "POST\n/\n\ncontent-type:application/x-www-form-urlencoded; charset=utf8\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ncontent-type;date;host\n3ba8907e7a252327488df390ed517c45b96dead033600219bdca7107d1d3f88a",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\nc4115f9e54b5cecf192b1eaa23b8e88ed8dc5391bd4fde7b3fff3d9c9fe0af1f",
-			signature:        "b105eb10c6d318d2294de9d49dd8b031b55e3c3fe139f2e637da70511e9e7b71",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=content-type;date;host, Signature=b105eb10c6d318d2294de9d49dd8b031b55e3c3fe139f2e637da70511e9e7b71",
+			canonicalRequest: "POST\n/\n\ncontent-type:application/x-www-form-urlencoded; charset=utf8\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:3ba8907e7a252327488df390ed517c45b96dead033600219bdca7107d1d3f88a\n\ncontent-type;date;host;x-amz-content-sha256\n3ba8907e7a252327488df390ed517c45b96dead033600219bdca7107d1d3f88a",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\ndfae45948f3fdc5780d014f391042d4e220f577961bb96b84f7bbf8e1a91fe5e",
+			signature:        "3bfa5e222990f3f1f14e746a68568a647a210c0705a869e9c19b40d8c86ca309",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=content-type;date;host;x-amz-content-sha256, Signature=3bfa5e222990f3f1f14e746a68568a647a210c0705a869e9c19b40d8c86ca309",
 		},
 
 		// post-x-www-form-urlencoded
@@ -458,16 +458,16 @@ func (s *V4SignerSuite) SetUpSuite(c *C) {
 				headers: []string{"Content-Type:application/x-www-form-urlencoded", "Date:Mon, 09 Sep 2011 23:36:00 GMT"},
 				body:    "foo=bar",
 			},
-			canonicalRequest: "POST\n/\n\ncontent-type:application/x-www-form-urlencoded\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\n\ncontent-type;date;host\n3ba8907e7a252327488df390ed517c45b96dead033600219bdca7107d1d3f88a",
-			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n4c5c6e4b52fb5fb947a8733982a8a5a61b14f04345cbfe6e739236c76dd48f74",
-			signature:        "5a15b22cf462f047318703b92e6f4f38884e4a7ab7b1d6426ca46a8bd1c26cbc",
-			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=content-type;date;host, Signature=5a15b22cf462f047318703b92e6f4f38884e4a7ab7b1d6426ca46a8bd1c26cbc",
+			canonicalRequest: "POST\n/\n\ncontent-type:application/x-www-form-urlencoded\ndate:Mon, 09 Sep 2011 23:36:00 GMT\nhost:host.foo.com\nx-amz-content-sha256:3ba8907e7a252327488df390ed517c45b96dead033600219bdca7107d1d3f88a\n\ncontent-type;date;host;x-amz-content-sha256\n3ba8907e7a252327488df390ed517c45b96dead033600219bdca7107d1d3f88a",
+			stringToSign:     "AWS4-HMAC-SHA256\n20110909T233600Z\n20110909/us-east-1/host/aws4_request\n8434678b03c6f956b391ec4423570bc1f0be17aa53b81118dbba82873a64b700",
+			signature:        "771ad8937d4a60e1b926fd12b91c01d904afeada0acf79c019b4c2827c902670",
+			authorization:    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=content-type;date;host;x-amz-content-sha256, Signature=771ad8937d4a60e1b926fd12b91c01d904afeada0acf79c019b4c2827c902670",
 		},
 	)
 }
 
 func (s *V4SignerSuite) TestCases(c *C) {
-	signer := aws.NewV4Signer(s.auth, "host", s.region)
+	signer := aws.NewV4Signer(s.auth, "host", s.region.Name)
 
 	for _, testCase := range s.cases {
 
@@ -481,7 +481,7 @@ func (s *V4SignerSuite) TestCases(c *C) {
 
 		t := signer.RequestTime(req)
 
-		canonicalRequest := signer.CanonicalRequest(req)
+		canonicalRequest, _ := signer.CanonicalRequest(req)
 		c.Check(canonicalRequest, Equals, testCase.canonicalRequest, Commentf("Testcase: %s", testCase.label))
 
 		stringToSign := signer.StringToSign(t, canonicalRequest)
@@ -506,7 +506,7 @@ func ExampleV4Signer() {
 	}
 
 	// Create a signer with the auth, name of the service, and aws region
-	signer := aws.NewV4Signer(auth, "dynamodb", aws.USEast)
+	signer := aws.NewV4Signer(auth, "dynamodb", aws.USEast.Name)
 
 	// Create a request
 	req, err := http.NewRequest("POST", aws.USEast.DynamoDBEndpoint, strings.NewReader("sample_request"))

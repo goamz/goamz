@@ -152,7 +152,7 @@ func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
 		log.Printf("response:\n")
 		log.Printf("%v\n}\n", string(dump))
 	}
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)

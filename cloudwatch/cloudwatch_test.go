@@ -24,7 +24,9 @@ var testServer = testutil.NewHTTPServer()
 func (s *S) SetUpSuite(c *C) {
 	testServer.Start()
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
-	s.cw, _ = cloudwatch.NewCloudWatch(auth, aws.ServiceInfo{testServer.URL, aws.V2Signature})
+	region := aws.USEast
+	region.CloudWatchEndpoint = testServer.URL
+	s.cw, _ = cloudwatch.NewCloudWatch(auth, region)
 }
 
 func (s *S) TearDownTest(c *C) {

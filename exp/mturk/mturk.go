@@ -452,7 +452,7 @@ func (mt *MTurk) query(params map[string]string, operation string, resp interfac
 	}
 	//dump, _ := httputil.DumpResponse(r, true)
 	//println("DUMP:\n", string(dump))
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return errors.New(fmt.Sprintf("%d: unexpected status code", r.StatusCode))
 	}
 	dec := xml.NewDecoder(r.Body)
