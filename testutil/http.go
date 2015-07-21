@@ -9,13 +9,15 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"io"
 )
 
 type HTTPServer struct {
 	URL      string
 	Timeout  time.Duration
 	started  bool
-	request  chan *http.Request
+	request  chan *Request
 	response chan ResponseFunc
 }
 
@@ -42,7 +44,7 @@ func (s *HTTPServer) Start() {
 		return
 	}
 	s.started = true
-	s.request = make(chan *http.Request, 1024)
+	s.request = make(chan *Request, 1024)
 	s.response = make(chan ResponseFunc, 1024)
 	u, err := url.Parse(s.URL)
 	if err != nil {
@@ -78,22 +80,66 @@ func (s *HTTPServer) Flush() {
 	}
 }
 
-func body(req *http.Request) string {
-	data, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		panic(err)
-	}
-	return string(data)
+// Request is a cut down version of http.Request used for testing.
+type Request struct {
+	Method        string
+	URL           *url.URL
+	Header        http.Header
+	Form          url.Values
+	PostForm      url.Values
+	ContentLength int64
+	Body          io.ReadCloser
 }
 
-func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// FormValue as per http.Request.FormValue.
+func (r *Request) FormValue(key string) string {
+	if vs := r.Form[key]; len(vs) > 0 {
+		return vs[0]
+	}
+	return ""
+}
+
+// NewRequest creates a basic copy of the details in req which is safe
+// to use after ServeHTTP. Without this race conditions occur with the
+// access of fields in req, specifically Body which is cleaned up the
+// Serve.
+// A new type was used as we don't do a full deep copy hence needed
+// to ensure that all the required fields where implemented.
+func NewRequest(req *http.Request) *Request {
 	req.ParseMultipartForm(1e6)
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		panic(err)
 	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(data))
-	s.request <- req
+
+	h := make(http.Header)
+	for k, vs := range req.Header {
+		h[k] = vs
+	}
+
+	f := make(url.Values)
+	for k, vs := range req.Form {
+		f[k] = vs
+	}
+
+	pf := make(url.Values)
+	for k, vs := range req.Form {
+		pf[k] = vs
+	}
+
+	return &Request{
+		Method:        req.Method,
+		URL:           req.URL,
+		Header:        h,
+		Form:          f,
+		PostForm:      pf,
+		ContentLength: req.ContentLength,
+		Body:          ioutil.NopCloser(bytes.NewReader(data)),
+	}
+}
+
+func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	s.request <- NewRequest(req)
 	var resp Response
 	select {
 	case respFunc := <-s.response:
@@ -118,8 +164,8 @@ func (s *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // WaitRequests returns the next n requests made to the http server from
 // the queue. If not enough requests were previously made, it waits until
 // the timeout value for them to be made.
-func (s *HTTPServer) WaitRequests(n int) []*http.Request {
-	reqs := make([]*http.Request, 0, n)
+func (s *HTTPServer) WaitRequests(n int) []*Request {
+	reqs := make([]*Request, 0, n)
 	for i := 0; i < n; i++ {
 		select {
 		case req := <-s.request:
@@ -128,13 +174,14 @@ func (s *HTTPServer) WaitRequests(n int) []*http.Request {
 			panic("Timeout waiting for request")
 		}
 	}
+
 	return reqs
 }
 
 // WaitRequest returns the next request made to the http server from
 // the queue. If no requests were previously made, it waits until the
 // timeout value for one to be made.
-func (s *HTTPServer) WaitRequest() *http.Request {
+func (s *HTTPServer) WaitRequest() *Request {
 	return s.WaitRequests(1)[0]
 }
 

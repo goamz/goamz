@@ -310,7 +310,11 @@ func (s *S) TestDelMultiObjects(c *C) {
 
 	req := testServer.WaitRequest()
 	c.Assert(req.Method, Equals, "POST")
-	c.Assert(req.URL.RawQuery, Equals, "delete=")
+	vals := req.URL.Query()
+	d, ok := vals["delete"]
+	c.Assert(ok, Equals, true)
+	c.Assert(len(d), Equals, 1)
+	c.Assert(d[0], Equals, "")
 	c.Assert(req.Header["Date"], Not(Equals), "")
 	c.Assert(req.Header["Content-MD5"], Not(Equals), "")
 	c.Assert(req.Header["Content-Type"], Not(Equals), "")

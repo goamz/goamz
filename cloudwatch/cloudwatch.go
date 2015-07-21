@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/feyeleanor/sets"
 	"github.com/goamz/goamz/aws"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -177,8 +178,8 @@ var validComparisonOperators = sets.SSet(
 )
 
 // Create a new CloudWatch object for a given namespace
-func NewCloudWatch(auth aws.Auth, region aws.ServiceInfo) (*CloudWatch, error) {
-	service, err := aws.NewService(auth, region)
+func NewCloudWatch(auth aws.Auth, region aws.Region) (*CloudWatch, error) {
+	service, err := aws.NewService(auth, region.CloudWatchEndpoint, region, "monitoring")
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +198,7 @@ func (c *CloudWatch) query(method, path string, params map[string]string, resp i
 	}
 	defer r.Body.Close()
 
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return c.Service.BuildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)

@@ -23,20 +23,6 @@ import (
 	"github.com/vaughan0/go-ini"
 )
 
-// Defines the valid signers
-const (
-	V2Signature      = iota
-	V4Signature      = iota
-	Route53Signature = iota
-)
-
-// Defines the service endpoint and correct Signer implementation to use
-// to sign requests for this endpoint
-type ServiceInfo struct {
-	Endpoint string
-	Signer   uint
-}
-
 // Region defines the URLs where AWS services may be accessed.
 //
 // See http://goo.gl/d8BP1 for more details.
@@ -54,12 +40,13 @@ type Region struct {
 	IAMEndpoint            string
 	ELBEndpoint            string
 	DynamoDBEndpoint       string
-	CloudWatchServicepoint ServiceInfo
+	CloudWatchEndpoint     string
 	AutoScalingEndpoint    string
-	RDSEndpoint            ServiceInfo
+	RDSEndpoint            string
 	STSEndpoint            string
 	CloudFormationEndpoint string
 	ECSEndpoint            string
+	Sign                   SignerFunc
 }
 
 var Regions = map[string]Region{
@@ -74,14 +61,6 @@ var Regions = map[string]Region{
 	USGovWest.Name:    USGovWest,
 	SAEast.Name:       SAEast,
 	CNNorth.Name:      CNNorth,
-}
-
-// Designates a signer interface suitable for signing AWS requests, params
-// should be appropriately encoded for the request before signing.
-//
-// A signer should be initialized with Auth and the appropriate endpoint.
-type Signer interface {
-	Sign(method, path string, params map[string]string)
 }
 
 // An AWS Service interface with the API to query the AWS service
@@ -99,8 +78,10 @@ type AWSService interface {
 // Implements a Server Query/Post API to easily query AWS services and build
 // errors when desired
 type Service struct {
-	service ServiceInfo
-	signer  Signer
+	auth        Auth
+	endpoint    string
+	serviceName string
+	region      Region
 }
 
 // Create a base set of params for an action
@@ -110,41 +91,29 @@ func MakeParams(action string) map[string]string {
 	return params
 }
 
-// Create a new AWS server to handle making requests
-func NewService(auth Auth, service ServiceInfo) (s *Service, err error) {
-	var signer Signer
-	switch service.Signer {
-	case V2Signature:
-		signer, err = NewV2Signer(auth, service)
-	// case V4Signature:
-	// 	signer, err = NewV4Signer(auth, service, Regions["eu-west-1"])
-	default:
-		err = fmt.Errorf("Unsupported signer for service")
-	}
-	if err != nil {
-		return
-	}
-	s = &Service{service: service, signer: signer}
-	return
+// Create a new AWS service to handle making requests
+func NewService(auth Auth, endpoint string, region Region, serviceName string) (*Service, error) {
+	return &Service{auth: auth, endpoint: endpoint, region: region, serviceName: serviceName}, nil
 }
 
-func (s *Service) Query(method, path string, params map[string]string) (resp *http.Response, err error) {
+func (s *Service) Query(method, path string, params map[string]string) (*http.Response, error) {
 	params["Timestamp"] = time.Now().UTC().Format(time.RFC3339)
-	u, err := url.Parse(s.service.Endpoint)
+
+	req, err := NewRequest(method, s.endpoint, path, params)
 	if err != nil {
 		return nil, err
 	}
-	u.Path = path
-
-	s.signer.Sign(method, path, params)
-	if method == "GET" {
-		u.RawQuery = multimap(params).Encode()
-		resp, err = http.Get(u.String())
-	} else if method == "POST" {
-		resp, err = http.PostForm(u.String(), multimap(params))
+	if s.region.Sign == nil {
+		// Default to V2 signature to maintain compatibility
+		err = SignV2(req, s.auth, s.serviceName)
+	} else {
+		err = s.region.Sign(req, s.auth, s.serviceName)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	return
+	return http.DefaultClient.Do(req)
 }
 
 func (s *Service) BuildError(r *http.Response) error {
@@ -259,7 +228,7 @@ func GetMetaData(path string) (contents []byte, err error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("Code %d returned for url %s", resp.StatusCode, url)
 		return
 	}
@@ -428,4 +397,16 @@ func Encode(s string) string {
 		}
 	}
 	return string(e[:ei])
+}
+
+// NewRequest builds a valid request for the given endpoint, method, path and params
+func NewRequest(method, endpoint, path string, params map[string]string) (*http.Request, error) {
+	req, err := http.NewRequest(method, endpoint+path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.URL.RawQuery = multimap(params).Encode()
+
+	return req, nil
 }
