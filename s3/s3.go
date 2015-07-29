@@ -32,7 +32,7 @@ import (
 	"time"
 )
 
-const debug = false
+var Debug = false
 
 // The S3 type encapsulates operations with an S3 region.
 type S3 struct {
@@ -962,11 +962,6 @@ func (s3 *S3) prepare(req *request) (*http.Request, error) {
 		Host:       u.Host,
 	}
 
-	if debug {
-		dump, _ := httputil.DumpRequest(hreq, true)
-		log.Printf("} -> %s\n", dump)
-	}
-
 	if v, ok := headers["Content-Length"]; ok {
 		hreq.ContentLength, _ = strconv.ParseInt(v[0], 10, 64)
 		delete(headers, "Content-Length")
@@ -976,12 +971,23 @@ func (s3 *S3) prepare(req *request) (*http.Request, error) {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
 
-	if s3.Region.Sign == nil {
-		if err = aws.SignV2(hreq, s3.Auth, "s3"); err != nil {
-			return nil, err
+	if Debug {
+		dump, _ := httputil.DumpRequest(hreq, true)
+		log.Printf("hreq } -> %s\n", dump)
+	}
+
+	// Always use AWS V4 Signature to avoid using the older custom V2 signer
+	sign := aws.SignV4Region(s3.Region.Name)
+	if err = sign(hreq, s3.Auth, "s3"); err != nil {
+		if Debug {
+			log.Printf("sign error: %v\n", err)
 		}
-	} else if err = s3.Region.Sign(hreq, s3.Auth, "s3"); err != nil {
 		return nil, err
+	}
+
+	if Debug {
+		dump, _ := httputil.DumpRequest(hreq, true)
+		log.Printf("hreq (signed) } -> %s\n", dump)
 	}
 
 	return hreq, err
@@ -1025,9 +1031,9 @@ func (s3 *S3) run(req *http.Request, resp interface{}) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if debug {
+	if Debug {
 		dump, _ := httputil.DumpResponse(hresp, true)
-		log.Printf("} -> %s\n", dump)
+		log.Printf("hresp } -> %s\n", dump)
 	}
 	if hresp.StatusCode != http.StatusOK && hresp.StatusCode != http.StatusNoContent && hresp.StatusCode != http.StatusPartialContent {
 		defer hresp.Body.Close()
@@ -1036,7 +1042,7 @@ func (s3 *S3) run(req *http.Request, resp interface{}) (*http.Response, error) {
 	if resp != nil {
 		err = xml.NewDecoder(hresp.Body).Decode(resp)
 		hresp.Body.Close()
-		if debug {
+		if Debug {
 			log.Printf("goamz.s3> decoded xml into %#v", resp)
 		}
 	}
@@ -1058,7 +1064,7 @@ func (e *Error) Error() string {
 }
 
 func buildError(r *http.Response) error {
-	if debug {
+	if Debug {
 		log.Printf("got error (status code %v)", r.StatusCode)
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -1077,7 +1083,7 @@ func buildError(r *http.Response) error {
 	if err.Message == "" {
 		err.Message = r.Status
 	}
-	if debug {
+	if Debug {
 		log.Printf("err: %#v\n", err)
 	}
 	return &err
