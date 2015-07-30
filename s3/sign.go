@@ -107,7 +107,7 @@ func sign(auth aws.Auth, method, canonicalPath string, params, headers map[strin
 	} else {
 		headers["Authorization"] = []string{"AWS " + auth.AccessKey + ":" + string(signature)}
 	}
-	if debug {
+	if Debug {
 		log.Printf("Signature payload: %q", payload)
 		log.Printf("Signature: %q", signature)
 	}
