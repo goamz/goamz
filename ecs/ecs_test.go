@@ -532,12 +532,38 @@ func (s *S) TestRegisterTaskDefinition(c *C) {
 			Image:     "busybox",
 			Memory:    10,
 			Name:      "sleep",
+			MountPoints: []MountPoint{
+				{
+					ContainerPath: "/tmp/myfile",
+					ReadOnly:      false,
+					SourceVolume:  "/srv/myfile",
+				},
+				{
+					ContainerPath: "/tmp/myfile2",
+					ReadOnly:      true,
+					SourceVolume:  "/srv/myfile2",
+				},
+			},
+			VolumesFrom: []VolumeFrom{
+				{
+					ReadOnly:        true,
+					SourceContainer: "foo",
+				},
+			},
 		},
 	}
 
 	req := &RegisterTaskDefinitionReq{
 		Family:               "sleep360",
 		ContainerDefinitions: CDefinitions,
+		Volumes: []Volume{
+			{
+				Name: "/srv/myfile",
+				Host: HostVolumeProperties{
+					SourcePath: "/srv/myfile",
+				},
+			},
+		},
 	}
 	resp, err := s.ecs.RegisterTaskDefinition(req)
 	c.Assert(err, IsNil)
@@ -555,13 +581,32 @@ func (s *S) TestRegisterTaskDefinition(c *C) {
 	c.Assert(values.Get("containerDefinitions.member.1.image"), Equals, "busybox")
 	c.Assert(values.Get("containerDefinitions.member.1.memory"), Equals, "10")
 	c.Assert(values.Get("containerDefinitions.member.1.name"), Equals, "sleep")
+	c.Assert(values.Get("containerDefinitions.member.1.mountPoints.member.1.containerPath"), Equals, "/tmp/myfile")
+	c.Assert(values.Get("containerDefinitions.member.1.mountPoints.member.1.readOnly"), Equals, "false")
+	c.Assert(values.Get("containerDefinitions.member.1.mountPoints.member.1.sourceVolume"), Equals, "/srv/myfile")
+	c.Assert(values.Get("containerDefinitions.member.1.mountPoints.member.2.containerPath"), Equals, "/tmp/myfile2")
+	c.Assert(values.Get("containerDefinitions.member.1.mountPoints.member.2.readOnly"), Equals, "true")
+	c.Assert(values.Get("containerDefinitions.member.1.mountPoints.member.2.sourceVolume"), Equals, "/srv/myfile2")
+	c.Assert(values.Get("containerDefinitions.member.1.volumesFrom.member.1.readOnly"), Equals, "true")
+	c.Assert(values.Get("containerDefinitions.member.1.volumesFrom.member.1.sourceContainer"), Equals, "foo")
+
 	c.Assert(values.Get("family"), Equals, "sleep360")
+	c.Assert(values.Get("volumes.member.1.name"), Equals, "/srv/myfile")
+	c.Assert(values.Get("volumes.member.1.host.sourcePath"), Equals, "/srv/myfile")
 
 	expected := TaskDefinition{
 		Family:               "sleep360",
 		Revision:             2,
 		TaskDefinitionArn:    "arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2",
 		ContainerDefinitions: CDefinitions,
+		Volumes: []Volume{
+			{
+				Name: "/srv/myfile",
+				Host: HostVolumeProperties{
+					SourcePath: "/srv/myfile",
+				},
+			},
+		},
 	}
 
 	c.Assert(resp.TaskDefinition, DeepEquals, expected)
