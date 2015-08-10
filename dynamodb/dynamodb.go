@@ -119,3 +119,7 @@ func (s *Server) queryServer(target string, query *Query) ([]byte, error) {
 func target(name string) string {
 	return "DynamoDB_20120810." + name
 }
+
+func streamsTarget(name string) string {
+	return "DynamoDBStreams_20120810." + name
+}
