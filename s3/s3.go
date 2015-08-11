@@ -1101,7 +1101,7 @@ func shouldRetry(err error) bool {
 		}
 	case *Error:
 		switch e.Code {
-		case "InternalError", "NoSuchUpload", "NoSuchBucket":
+		case "InternalError", "NoSuchUpload", "NoSuchBucket", "RequestTimeout":
 			return true
 		}
 	// let's handle tls handshake timeout issues and similar temporary errors
