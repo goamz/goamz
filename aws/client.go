@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"crypto/tls"
 	"io"
 	"io/ioutil"
 	"math"
@@ -68,6 +69,7 @@ func NewClient(rt *ResilientTransport) *http.Client {
 		},
 		Proxy:               http.ProxyFromEnvironment,
 		MaxIdleConnsPerHost: -1,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
 	// TODO: Would be nice is ResilientTransport allowed clients to initialize
 	// with http.Transport attributes.
