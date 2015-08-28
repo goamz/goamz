@@ -26,7 +26,7 @@ func (s *S) SetUpSuite(c *C) {
 	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
 	s.ec2 = ec2.NewWithClient(
 		auth,
-		aws.Region{EC2Endpoint: testServer.URL},
+		aws.Region{EC2Endpoint: aws.ServiceInfo{Endpoint: testServer.URL, Signer: aws.V2Signature}},
 		testutil.DefaultClient,
 	)
 }
@@ -1134,8 +1134,8 @@ func (s *S) TestSignatureWithEndpointPath(c *C) {
 
 	testServer.Response(200, nil, RebootInstancesExample)
 
-	// https://bugs.launchpad.net/goamz/+bug/1022749
-	ec2 := ec2.NewWithClient(s.ec2.Auth, aws.Region{EC2Endpoint: testServer.URL + "/services/Cloud"}, testutil.DefaultClient)
+	region := aws.Region{EC2Endpoint: aws.ServiceInfo{Endpoint: testServer.URL + "/services/Cloud", Signer: aws.V2Signature}}
+	ec2 := ec2.NewWithClient(s.ec2.Auth, region, testutil.DefaultClient)
 
 	_, err := ec2.RebootInstances("i-10a64379")
 	c.Assert(err, IsNil)
