@@ -69,8 +69,7 @@ type describeStreamResponse struct {
 	StreamDescription StreamDescriptionT
 }
 
-var ErrMissingNextShardIterator = errors.New("Missing next shard iterator")
-var ErrMissingRecords = errors.New("Missing records")
+var ErrNoRecords = errors.New("No records")
 
 func (s *Server) ListStreams(startArn string) ([]StreamListItemT, error) {
 	return s.LimitedListTableStreams(startArn, "", 0)
@@ -206,26 +205,25 @@ func (s *Server) LimitedGetRecords(shardIterator string, limit int64) (string, [
 		return "", nil, err
 	}
 
+	nextShardIt := ""
 	nextShardItJson, ok := jsonParsed.CheckGet("NextShardIterator")
-	if !ok {
-		return "", nil, ErrMissingNextShardIterator
-	}
-
-	nextShardIt, err := nextShardItJson.String()
-	if err != nil {
-		message := fmt.Sprintf("Unexpected response %s", jsonResponse)
-		return "", nil, errors.New(message)
+	if ok {
+		nextShardIt, err = nextShardItJson.String()
+		if err != nil {
+			message := fmt.Sprintf("Unexpected response %s", jsonResponse)
+			return "", nil, errors.New(message)
+		}
 	}
 
 	recordsJson, ok := jsonParsed.CheckGet("Records")
 	if !ok {
-		return "", nil, ErrMissingRecords
+		return nextShardIt, nil, ErrNoRecords
 	}
 
 	recordsArray, err := recordsJson.Array()
 	if err != nil {
 		message := fmt.Sprintf("Unexpected response %s", jsonResponse)
-		return "", nil, errors.New(message)
+		return nextShardIt, nil, errors.New(message)
 	}
 
 	var records []*RecordT
