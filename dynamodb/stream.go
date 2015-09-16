@@ -69,6 +69,9 @@ type describeStreamResponse struct {
 	StreamDescription StreamDescriptionT
 }
 
+var ErrMissingNextShardIterator = errors.New("Missing next shard iterator")
+var ErrMissingRecords = errors.New("Missing records")
+
 func (s *Server) ListStreams(startArn string) ([]StreamListItemT, error) {
 	return s.LimitedListTableStreams(startArn, "", 0)
 }
@@ -205,7 +208,7 @@ func (s *Server) LimitedGetRecords(shardIterator string, limit int64) (string, [
 
 	nextShardItJson, ok := jsonParsed.CheckGet("NextShardIterator")
 	if !ok {
-		return "", nil, ErrNotFound
+		return "", nil, ErrMissingNextShardIterator
 	}
 
 	nextShardIt, err := nextShardItJson.String()
@@ -216,7 +219,7 @@ func (s *Server) LimitedGetRecords(shardIterator string, limit int64) (string, [
 
 	recordsJson, ok := jsonParsed.CheckGet("Records")
 	if !ok {
-		return "", nil, ErrNotFound
+		return "", nil, ErrMissingRecords
 	}
 
 	recordsArray, err := recordsJson.Array()
