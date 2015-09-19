@@ -1068,3 +1068,17 @@ var DeleteVpcExample = `
    <return>true</return>
 </DeleteVpcResponse>
 `
+
+var CreateRouteExample = `
+<CreateRouteResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+    <requestId>b4998629-3000-437f-b382-cc96fEXAMPLE</requestId>
+    <return>true</return>
+</CreateRouteResponse>
+`
+
+var DeleteRouteExample = `
+<DeleteRouteResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+    <return>true</return>
+</DeleteRouteResponse>
+`

@@ -287,3 +287,74 @@ func (ec2 *EC2) DescribeVpcs(vpcIds []string, filter *Filter) (resp *DescribeVpc
 
 	return
 }
+
+// DeleteRouteResp represents a response from a DeleteRoute request
+//
+// See http://goo.gl/Uqyt3w for more details.
+type DeleteRouteResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"` // True if the request succeeds
+}
+
+// DeleteRoute deletes the specified route from the specified route table.
+//
+// See http://goo.gl/Uqyt3w for more details.
+func (ec2 *EC2) DeleteRoute(routeTableId, destinationCidrBlock string) (resp *DeleteRouteResp, err error) {
+	params := makeParams("DeleteRoute")
+	params["RouteTableId"] = routeTableId
+	params["DestinationCidrBlock"] = destinationCidrBlock
+	resp = &DeleteRouteResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// CreateRouteResp represents a response from a CreateRoute request
+//
+// See http://goo.gl/c6Bg7e for more details.
+type CreateRouteResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"` // True if the request succeeds
+}
+
+// CreateRoute structure contains the options for a CreateRoute API call.
+type CreateRoute struct {
+	DestinationCidrBlock   string
+	GatewayId              string
+	InstanceId             string
+	NetworkInterfaceId     string
+	VpcPeeringConnectionId string
+}
+
+// CreateRoute creates a route in a route table within a VPC.
+// You must specify one of the following targets: Internet gateway or virtual
+// private gateway, NAT instance, VPC peering connection, or network interface.
+//
+// See http://goo.gl/c6Bg7e for more details.
+func (ec2 *EC2) CreateRoute(routeTableId string, options *CreateRoute) (resp *CreateRouteResp, err error) {
+	params := makeParams("CreateRoute")
+	params["RouteTableId"] = routeTableId
+	if options.DestinationCidrBlock != "" {
+		params["DestinationCidrBlock"] = options.DestinationCidrBlock
+	}
+	if options.GatewayId != "" {
+		params["GatewayId"] = options.GatewayId
+	}
+	if options.InstanceId != "" {
+		params["InstanceId"] = options.InstanceId
+	}
+	if options.NetworkInterfaceId != "" {
+		params["NetworkInterfaceId"] = options.NetworkInterfaceId
+	}
+	if options.VpcPeeringConnectionId != "" {
+		params["VpcPeeringConnectionId"] = options.VpcPeeringConnectionId
+	}
+	resp = &CreateRouteResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
