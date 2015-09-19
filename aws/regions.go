@@ -2,7 +2,7 @@ package aws
 
 var USGovWest = Region{
 	"us-gov-west-1",
-	"https://ec2.us-gov-west-1.amazonaws.com",
+	ServiceInfo{"https://ec2.us-gov-west-1.amazonaws.com", V2Signature},
 	"https://s3-fips-us-gov-west-1.amazonaws.com",
 	"",
 	true,
@@ -24,7 +24,7 @@ var USGovWest = Region{
 
 var USEast = Region{
 	"us-east-1",
-	"https://ec2.us-east-1.amazonaws.com",
+	ServiceInfo{"https://ec2.us-east-1.amazonaws.com", V2Signature},
 	"https://s3.amazonaws.com",
 	"",
 	false,
@@ -46,7 +46,7 @@ var USEast = Region{
 
 var USWest = Region{
 	"us-west-1",
-	"https://ec2.us-west-1.amazonaws.com",
+	ServiceInfo{"https://ec2.us-west-1.amazonaws.com", V2Signature},
 	"https://s3-us-west-1.amazonaws.com",
 	"",
 	true,
@@ -68,7 +68,7 @@ var USWest = Region{
 
 var USWest2 = Region{
 	"us-west-2",
-	"https://ec2.us-west-2.amazonaws.com",
+	ServiceInfo{"https://ec2.us-west-2.amazonaws.com", V2Signature},
 	"https://s3-us-west-2.amazonaws.com",
 	"",
 	true,
@@ -90,7 +90,7 @@ var USWest2 = Region{
 
 var EUWest = Region{
 	"eu-west-1",
-	"https://ec2.eu-west-1.amazonaws.com",
+	ServiceInfo{"https://ec2.eu-west-1.amazonaws.com", V2Signature},
 	"https://s3-eu-west-1.amazonaws.com",
 	"",
 	true,
@@ -112,7 +112,7 @@ var EUWest = Region{
 
 var EUCentral = Region{
 	"eu-central-1",
-	"https://ec2.eu-central-1.amazonaws.com",
+	ServiceInfo{"https://ec2.eu-central-1.amazonaws.com", V2Signature},
 	"https://s3-eu-central-1.amazonaws.com",
 	"",
 	true,
@@ -134,7 +134,7 @@ var EUCentral = Region{
 
 var APSoutheast = Region{
 	"ap-southeast-1",
-	"https://ec2.ap-southeast-1.amazonaws.com",
+	ServiceInfo{"https://ec2.ap-southeast-1.amazonaws.com", V2Signature},
 	"https://s3-ap-southeast-1.amazonaws.com",
 	"",
 	true,
@@ -156,7 +156,7 @@ var APSoutheast = Region{
 
 var APSoutheast2 = Region{
 	"ap-southeast-2",
-	"https://ec2.ap-southeast-2.amazonaws.com",
+	ServiceInfo{"https://ec2.ap-southeast-2.amazonaws.com", V2Signature},
 	"https://s3-ap-southeast-2.amazonaws.com",
 	"",
 	true,
@@ -178,7 +178,7 @@ var APSoutheast2 = Region{
 
 var APNortheast = Region{
 	"ap-northeast-1",
-	"https://ec2.ap-northeast-1.amazonaws.com",
+	ServiceInfo{"https://ec2.ap-northeast-1.amazonaws.com", V2Signature},
 	"https://s3-ap-northeast-1.amazonaws.com",
 	"",
 	true,
@@ -200,7 +200,7 @@ var APNortheast = Region{
 
 var SAEast = Region{
 	"sa-east-1",
-	"https://ec2.sa-east-1.amazonaws.com",
+	ServiceInfo{"https://ec2.sa-east-1.amazonaws.com", V2Signature},
 	"https://s3-sa-east-1.amazonaws.com",
 	"",
 	true,
@@ -222,7 +222,7 @@ var SAEast = Region{
 
 var CNNorth = Region{
 	"cn-north-1",
-	"https://ec2.cn-north-1.amazonaws.com.cn",
+	ServiceInfo{"https://ec2.cn-north-1.amazonaws.com.cn", V2Signature},
 	"https://s3.cn-north-1.amazonaws.com.cn",
 	"",
 	true,
