@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"sort"
 	"strconv"
@@ -343,9 +342,11 @@ func (p completeParts) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 type completeResponse struct {
 	// The element name: should be either CompleteMultipartUploadResult or Error.
 	XMLName xml.Name
-	// If the element was error, then it should have Code and Message fields.
-	Code    string
-	Message string
+	// If the element was error, then it should have the following:
+	Code      string
+	Message   string
+	RequestId string
+	HostId    string
 }
 
 // Complete assembles the given previously uploaded parts into the
@@ -385,11 +386,17 @@ func (m *Multi) Complete(parts []Part) error {
 
 		resp := &completeResponse{}
 		err := m.Bucket.S3.query(req, resp)
-		if err == nil && resp.XMLName.Local == "Error" {
-			err = errors.New(fmt.Sprintf("S3 error Code %s message '%s'", resp.Code, resp.Message))
-		}
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
+		}
+		if err == nil && resp.XMLName.Local == "Error" {
+			err = &Error{
+				StatusCode: 200,
+				Code:       resp.Code,
+				Message:    resp.Message,
+				RequestId:  resp.RequestId,
+				HostId:     resp.HostId,
+			}
 		}
 		return err
 	}
