@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"strconv"
@@ -339,8 +340,20 @@ func (p completeParts) Len() int           { return len(p) }
 func (p completeParts) Less(i, j int) bool { return p[i].PartNumber < p[j].PartNumber }
 func (p completeParts) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
+type completeResponse struct {
+	// The element name: should be either CompleteMultipartUploadResult or Error.
+	XMLName xml.Name
+	// If the element was error, then it should have Code and Message fields.
+	Code    string
+	Message string
+}
+
 // Complete assembles the given previously uploaded parts into the
 // final object. This operation may take several minutes.
+//
+// The complete call to AMZ may still fail after returning HTTP 200,
+// so even though it's unusued, the body of the reply must be demarshalled
+// and checked to see whether or not the complete succeeded.
 //
 // See http://goo.gl/2Z7Tw for details.
 func (m *Multi) Complete(parts []Part) error {
@@ -370,7 +383,11 @@ func (m *Multi) Complete(parts []Part) error {
 			},
 		}
 
-		err := m.Bucket.S3.query(req, nil)
+		resp := &completeResponse{}
+		err := m.Bucket.S3.query(req, resp)
+		if err == nil && resp.XMLName.Local == "Error" {
+			err = errors.New(fmt.Sprintf("S3 error Code %s message '%s'", resp.Code, resp.Message))
+		}
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
 		}
