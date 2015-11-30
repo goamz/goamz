@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/s3"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,6 +19,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goamz/goamz/s3"
 )
 
 const debug = false
@@ -51,6 +52,8 @@ type Config struct {
 	// all other regions.
 	// http://docs.amazonwebservices.com/AmazonS3/latest/API/ErrorResponses.html
 	Send409Conflict bool
+	// Set the host string on which to serve s3test server.
+	Host string
 }
 
 func (c *Config) send409Conflict() bool {
@@ -97,7 +100,11 @@ type resource interface {
 }
 
 func NewServer(config *Config) (*Server, error) {
-	l, err := net.Listen("tcp", "localhost:0")
+	if config.Host == "" {
+		config.Host = "localhost:0"
+	}
+
+	l, err := net.Listen("tcp", config.Host)
 	if err != nil {
 		return nil, fmt.Errorf("cannot listen on localhost: %v", err)
 	}
