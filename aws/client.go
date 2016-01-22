@@ -11,6 +11,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -162,6 +163,7 @@ func LinearBackoff(try int) {
 // In general, the criteria for retrying a request is described here
 // http://docs.aws.amazon.com/general/latest/gr/api-retries.html
 func AwsRetry(req *http.Request, res *http.Response, err error) bool {
+	noSuchHostErr := "no such host"
 	if err != nil {
 		if err == io.EOF {
 			log.Warnf(
@@ -178,8 +180,18 @@ func AwsRetry(req *http.Request, res *http.Response, err error) bool {
 				err)
 			return true
 		} else if operr, ok := neterr.(*net.OpError); ok {
+			dnsErrStr := ""
+			if dnsErr, ok := operr.Err.(*net.DNSError); ok {
+				// extract error string from DNSErr. Examples of DNSError
+				// "lookup login.microsoftonline.com on 10.0.2.4:53: no such host"
+				// "lookup management.azure.com on 10.0.2.4:53: no such host",
+				// breaks down to DNSErr:{Err:"no such host", Name:"management.azure.com",
+				// Server:"10.0.2.4:53", IsTimeout:false}
+				dnsErrStr = strings.TrimSpace(strings.ToLower(dnsErr.Err))
+			}
 			e := operr.Err.Error()
-			if e == syscall.ECONNRESET.Error() || e == syscall.ECONNABORTED.Error() {
+			if e == syscall.ECONNRESET.Error() || e == syscall.ECONNABORTED.Error() ||
+				dnsErrStr == noSuchHostErr {
 				log.Warnf(
 					"Retryable network error on (%s %s)\n%s",
 					req.Method,
