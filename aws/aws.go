@@ -65,6 +65,7 @@ type Region struct {
 
 var Regions = map[string]Region{
 	APNortheast.Name:  APNortheast,
+	APNortheast2.Name:  APNortheast2,
 	APSoutheast.Name:  APSoutheast,
 	APSoutheast2.Name: APSoutheast2,
 	EUCentral.Name:    EUCentral,
