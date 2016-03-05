@@ -968,6 +968,30 @@ func (ec2 *EC2) DeleteKeyPair(name string) (resp *SimpleResp, err error) {
 	return
 }
 
+type ImportKeyPairOptions struct {
+	KeyName           string
+	PublicKeyMaterial string
+}
+
+type ImportKeyPairResp struct {
+	RequestId      string `xml:"requestId"`
+	KeyName        string `xml:"keyName"`
+	KeyFingerprint string `xml:"keyFingerprint"`
+}
+
+// ImportKeyPair import a key pair.
+//
+// See http://goo.gl/xpTccS
+func (ec2 *EC2) ImportKeyPair(options *ImportKeyPairOptions) (resp *ImportKeyPairResp, err error) {
+	params := makeParams("ImportKeyPair")
+	params["KeyName"] = options.KeyName
+	params["PublicKeyMaterial"] = options.PublicKeyMaterial
+
+	resp = &ImportKeyPairResp{}
+	err = ec2.query(params, resp)
+	return
+}
+
 // ResourceTag represents key-value metadata used to classify and organize
 // EC2 instances.
 //
