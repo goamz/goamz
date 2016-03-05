@@ -358,3 +358,42 @@ func (ec2 *EC2) CreateRoute(routeTableId string, options *CreateRoute) (resp *Cr
 	}
 	return
 }
+
+// Subnet describes a subnet
+//
+// See http://goo.gl/bifW4R
+type Subnet struct {
+	AvailabilityZone        string `xml:"availabilityZone"`
+	AvailableIpAddressCount int    `xml:"availableIpAddressCount"`
+	CidrBlock               string `xml:"cidrBlock"`
+	DefaultForAZ            bool   `xml:"defaultForAz"`
+	MapPublicIpOnLaunch     bool   `xml:"mapPublicIpOnLaunch"`
+	State                   string `xml:"state"`
+	SubnetId                string `xml:"subnetId"`
+	Tags                    []Tag  `xml:"tagSet>item"`
+	VpcId                   string `xml:"vpcId"`
+}
+
+// DescribeSubnetsResp represents a response from a DescribeSubnets request
+//
+// See https://goo.gl/1s0UQd for more details.
+type DescribeSubnetsResp struct {
+	RequestId string   `xml:"requestId"`
+	Subnets   []Subnet `xml:"subnetSet>item"`
+}
+
+// DescribeSubnets describes one or more Subnets.
+//
+// See https://goo.gl/1s0UQd for more details.
+func (ec2 *EC2) DescribeSubnets(subnetIds []string, filter *Filter) (resp *DescribeSubnetsResp, err error) {
+	params := makeParams("DescribeSubnets")
+	addParamsList(params, "SubnetId", subnetIds)
+	filter.addParams(params)
+	resp = &DescribeSubnetsResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
