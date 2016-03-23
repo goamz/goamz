@@ -4,7 +4,6 @@ TARG=launchpad.net/goamz/sqs
 
 GOFILES=\
 		sqs.go\
-		sign.go\
 
 include $(GOROOT)/src/Make.pkg
 
