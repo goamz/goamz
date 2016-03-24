@@ -227,15 +227,12 @@ func (s *V4Signer) canonicalURI(u *url.URL) string {
 func (s *V4Signer) canonicalQueryString(u *url.URL) string {
 	var a []string
 	for k, vs := range u.Query() {
-		k = url.QueryEscape(k)
-		// Amazon requires us to use %XY encoding, but golang encodes space to +.
-		k = strings.Replace(k, "+", "%20", -1)
+		k = Encode(k)
 		for _, v := range vs {
 			if v == "" {
 				a = append(a, k+"=")
 			} else {
-				v = url.QueryEscape(v)
-				v = strings.Replace(v, "+", "%20", -1)
+				v = Encode(v)
 				a = append(a, k+"="+v)
 			}
 		}
