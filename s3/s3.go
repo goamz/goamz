@@ -977,6 +977,7 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		Method:     req.method,
 		ProtoMajor: 1,
 		ProtoMinor: 1,
+		Close:      true,
 		Header:     req.headers,
 	}
 
