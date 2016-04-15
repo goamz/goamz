@@ -39,7 +39,11 @@ type LocalServerSuite struct {
 
 var (
 	// run tests twice, once in us-east-1 mode, once not.
-	_ = Suite(&LocalServerSuite{})
+	_ = Suite(&LocalServerSuite{
+		srv: LocalServer{
+			config: &s3test.Config{},
+		},
+	})
 	_ = Suite(&LocalServerSuite{
 		srv: LocalServer{
 			config: &s3test.Config{

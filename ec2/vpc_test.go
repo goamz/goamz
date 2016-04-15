@@ -125,3 +125,100 @@ func (s *S) TestDeleteRouteTable(c *C) {
 	c.Assert(resp.RequestId, Equals, "49dbff89-35bd-4eac-99ed-be587EXAMPLE")
 	c.Assert(resp.Return, Equals, true)
 }
+
+func (s *S) TestDescribeVpcs(c *C) {
+	testServer.Response(200, nil, DescribeVpcsExample)
+
+	filter := ec2.NewFilter()
+	filter.Add("key1", "value1")
+	filter.Add("key2", "value2", "value3")
+
+	resp, err := s.ec2.DescribeVpcs([]string{"id1", "id2"}, filter)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["Action"], DeepEquals, []string{"DescribeVpcs"})
+	c.Assert(req.Form["VpcId.1"], DeepEquals, []string{"id1"})
+	c.Assert(req.Form["VpcId.2"], DeepEquals, []string{"id2"})
+	c.Assert(req.Form["VpcId.3"], IsNil)
+	c.Assert(req.Form["Filter.1.Name"], DeepEquals, []string{"key1"})
+	c.Assert(req.Form["Filter.1.Value.1"], DeepEquals, []string{"value1"})
+	c.Assert(req.Form["Filter.1.Value.2"], IsNil)
+	c.Assert(req.Form["Filter.2.Name"], DeepEquals, []string{"key2"})
+	c.Assert(req.Form["Filter.2.Value.1"], DeepEquals, []string{"value2"})
+	c.Assert(req.Form["Filter.2.Value.2"], DeepEquals, []string{"value3"})
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.RequestId, Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+	c.Assert(resp.VPCs[0].VpcId, Equals, "vpc-1a2b3c4d")
+	c.Assert(resp.VPCs, HasLen, 1)
+}
+
+func (s *S) TestCreateVpc(c *C) {
+	testServer.Response(200, nil, CreateVpcExample)
+
+	resp, err := s.ec2.CreateVpc("foo", "bar")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["CidrBlock"], DeepEquals, []string{"foo"})
+	c.Assert(req.Form["InstanceTenancy"], DeepEquals, []string{"bar"})
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.RequestId, Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+	c.Assert(resp.VPC.VpcId, Equals, "vpc-1a2b3c4d")
+	c.Assert(resp.VPC.State, Equals, "pending")
+	c.Assert(resp.VPC.CidrBlock, Equals, "10.0.0.0/16")
+	c.Assert(resp.VPC.DHCPOptionsID, Equals, "dopt-1a2b3c4d2")
+	c.Assert(resp.VPC.InstanceTenancy, Equals, "default")
+}
+
+func (s *S) TestDeleteVpc(c *C) {
+	testServer.Response(200, nil, DeleteVpcExample)
+
+	resp, err := s.ec2.DeleteVpc("id1")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["VpcId"], DeepEquals, []string{"id1"})
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.RequestId, Equals, "7a62c49f-347e-4fc4-9331-6e8eEXAMPLE")
+}
+
+func (s *S) TestCreateRoute(c *C) {
+	testServer.Response(200, nil, CreateRouteExample)
+
+	options := ec2.CreateRoute{
+		DestinationCidrBlock:   "12.34.56.78/90",
+		GatewayId:              "foo",
+		InstanceId:             "i-bar",
+		NetworkInterfaceId:     "foobar",
+		VpcPeeringConnectionId: "barfoo",
+	}
+
+	resp, err := s.ec2.CreateRoute("rtb-deadbeef", &options)
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["RouteTableId"], DeepEquals, []string{"rtb-deadbeef"})
+	c.Assert(req.Form["DestinationCidrBlock"], DeepEquals, []string{"12.34.56.78/90"})
+	c.Assert(req.Form["GatewayId"], DeepEquals, []string{"foo"})
+	c.Assert(req.Form["InstanceId"], DeepEquals, []string{"i-bar"})
+	c.Assert(req.Form["NetworkInterfaceId"], DeepEquals, []string{"foobar"})
+	c.Assert(req.Form["VpcPeeringConnectionId"], DeepEquals, []string{"barfoo"})
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.RequestId, Equals, "b4998629-3000-437f-b382-cc96fEXAMPLE")
+	c.Assert(resp.Return, Equals, true)
+}
+
+func (s *S) TestDeleteRoute(c *C) {
+	testServer.Response(200, nil, DeleteRouteExample)
+
+	resp, err := s.ec2.DeleteRoute("rtb-baddcafe", "foobar")
+
+	req := testServer.WaitRequest()
+	c.Assert(req.Form["RouteTableId"], DeepEquals, []string{"rtb-baddcafe"})
+	c.Assert(req.Form["DestinationCidrBlock"], DeepEquals, []string{"foobar"})
+
+	c.Assert(err, IsNil)
+	c.Assert(resp.RequestId, Equals, "59dbff89-35bd-4eac-99ed-be587EXAMPLE")
+	c.Assert(resp.Return, Equals, true)
+}

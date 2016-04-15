@@ -187,3 +187,213 @@ func (ec2 *EC2) DeleteRouteTable(routeTableId string) (resp *DeleteRouteTableRes
 	}
 	return
 }
+
+// VPC describes a VPC.
+//
+// See http://goo.gl/WjX0Es for more details.
+type VPC struct {
+	CidrBlock       string `xml:"cidrBlock"`
+	DHCPOptionsID   string `xml:"dhcpOptionsId"`
+	State           string `xml:"state"`
+	VpcId           string `xml:"vpcId"`
+	InstanceTenancy string `xml:"instanceTenancy"`
+	IsDefault       bool   `xml:"isDefault"`
+	Tags            []Tag  `xml:"tagSet>item"`
+}
+
+// CreateVpcResp represents a response from a CreateVpcResp request
+//
+// See http://goo.gl/QoK11F for more details.
+type CreateVpcResp struct {
+	RequestId string `xml:"requestId"`
+	VPC       VPC    `xml:"vpc"` // Information about the VPC.
+}
+
+// CreateVpc creates a VPC with the specified CIDR block.
+//
+// The smallest VPC you can create uses a /28 netmask (16 IP addresses),
+// and the largest uses a /16 netmask (65,536 IP addresses).
+//
+// By default, each instance you launch in the VPC has the default DHCP options,
+// which includes only a default DNS server that Amazon provides (AmazonProvidedDNS).
+//
+// See http://goo.gl/QoK11F for more details.
+func (ec2 *EC2) CreateVpc(cidrBlock, instanceTenancy string) (resp *CreateVpcResp, err error) {
+	params := makeParams("CreateVpc")
+	params["CidrBlock"] = cidrBlock
+
+	if instanceTenancy != "" {
+		params["InstanceTenancy"] = instanceTenancy
+	}
+
+	resp = &CreateVpcResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+// DeleteVpcResp represents a response from a DeleteVpc request
+//
+// See http://goo.gl/qawyrz for more details.
+type DeleteVpcResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"` // True if the request succeeds
+}
+
+// DeleteVpc deletes the specified VPC.
+//
+// You must detach or delete all gateways and resources that are associated with
+// the VPC before you can delete it. For example, you must terminate all
+// instances running in the VPC, delete all security groups associated with
+// the VPC (except the default one), delete all route tables associated with
+// the VPC (except the default one), and so on.
+//
+// See http://goo.gl/qawyrz for more details.
+func (ec2 *EC2) DeleteVpc(vpcId string) (resp *DeleteVpcResp, err error) {
+	params := makeParams("DeleteVpc")
+	params["VpcId"] = vpcId
+
+	resp = &DeleteVpcResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// DescribeVpcsResp represents a response from a DescribeVpcs request
+//
+// See http://goo.gl/DWQWvZ for more details.
+type DescribeVpcsResp struct {
+	RequestId string `xml:"requestId"`
+	VPCs      []VPC  `xml:"vpcSet>item"` // Information about one or more VPCs.
+}
+
+// DescribeVpcs describes one or more of your VPCs.
+//
+// See http://goo.gl/DWQWvZ for more details.
+func (ec2 *EC2) DescribeVpcs(vpcIds []string, filter *Filter) (resp *DescribeVpcsResp, err error) {
+	params := makeParams("DescribeVpcs")
+	addParamsList(params, "VpcId", vpcIds)
+	filter.addParams(params)
+	resp = &DescribeVpcsResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+// DeleteRouteResp represents a response from a DeleteRoute request
+//
+// See http://goo.gl/Uqyt3w for more details.
+type DeleteRouteResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"` // True if the request succeeds
+}
+
+// DeleteRoute deletes the specified route from the specified route table.
+//
+// See http://goo.gl/Uqyt3w for more details.
+func (ec2 *EC2) DeleteRoute(routeTableId, destinationCidrBlock string) (resp *DeleteRouteResp, err error) {
+	params := makeParams("DeleteRoute")
+	params["RouteTableId"] = routeTableId
+	params["DestinationCidrBlock"] = destinationCidrBlock
+	resp = &DeleteRouteResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// CreateRouteResp represents a response from a CreateRoute request
+//
+// See http://goo.gl/c6Bg7e for more details.
+type CreateRouteResp struct {
+	RequestId string `xml:"requestId"`
+	Return    bool   `xml:"return"` // True if the request succeeds
+}
+
+// CreateRoute structure contains the options for a CreateRoute API call.
+type CreateRoute struct {
+	DestinationCidrBlock   string
+	GatewayId              string
+	InstanceId             string
+	NetworkInterfaceId     string
+	VpcPeeringConnectionId string
+}
+
+// CreateRoute creates a route in a route table within a VPC.
+// You must specify one of the following targets: Internet gateway or virtual
+// private gateway, NAT instance, VPC peering connection, or network interface.
+//
+// See http://goo.gl/c6Bg7e for more details.
+func (ec2 *EC2) CreateRoute(routeTableId string, options *CreateRoute) (resp *CreateRouteResp, err error) {
+	params := makeParams("CreateRoute")
+	params["RouteTableId"] = routeTableId
+	if options.DestinationCidrBlock != "" {
+		params["DestinationCidrBlock"] = options.DestinationCidrBlock
+	}
+	if options.GatewayId != "" {
+		params["GatewayId"] = options.GatewayId
+	}
+	if options.InstanceId != "" {
+		params["InstanceId"] = options.InstanceId
+	}
+	if options.NetworkInterfaceId != "" {
+		params["NetworkInterfaceId"] = options.NetworkInterfaceId
+	}
+	if options.VpcPeeringConnectionId != "" {
+		params["VpcPeeringConnectionId"] = options.VpcPeeringConnectionId
+	}
+	resp = &CreateRouteResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+	return
+}
+
+// Subnet describes a subnet
+//
+// See http://goo.gl/bifW4R
+type Subnet struct {
+	AvailabilityZone        string `xml:"availabilityZone"`
+	AvailableIpAddressCount int    `xml:"availableIpAddressCount"`
+	CidrBlock               string `xml:"cidrBlock"`
+	DefaultForAZ            bool   `xml:"defaultForAz"`
+	MapPublicIpOnLaunch     bool   `xml:"mapPublicIpOnLaunch"`
+	State                   string `xml:"state"`
+	SubnetId                string `xml:"subnetId"`
+	Tags                    []Tag  `xml:"tagSet>item"`
+	VpcId                   string `xml:"vpcId"`
+}
+
+// DescribeSubnetsResp represents a response from a DescribeSubnets request
+//
+// See https://goo.gl/1s0UQd for more details.
+type DescribeSubnetsResp struct {
+	RequestId string   `xml:"requestId"`
+	Subnets   []Subnet `xml:"subnetSet>item"`
+}
+
+// DescribeSubnets describes one or more Subnets.
+//
+// See https://goo.gl/1s0UQd for more details.
+func (ec2 *EC2) DescribeSubnets(subnetIds []string, filter *Filter) (resp *DescribeSubnetsResp, err error) {
+	params := makeParams("DescribeSubnets")
+	addParamsList(params, "SubnetId", subnetIds)
+	filter.addParams(params)
+	resp = &DescribeSubnetsResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}

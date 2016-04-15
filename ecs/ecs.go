@@ -265,6 +265,30 @@ type KeyValuePair struct {
 	Value string `xml:"value"`
 }
 
+// MountPoint encapsulates the MountPoint data type
+type MountPoint struct {
+	ContainerPath string `xml:"containerPath"`
+	ReadOnly      bool   `xml:"readOnly"`
+	SourceVolume  string `xml:"sourceVolume"`
+}
+
+// VolumeFrom encapsulates the VolumeFrom data type
+type VolumeFrom struct {
+	ReadOnly        bool   `xml:"readOnly"`
+	SourceContainer string `xml:"sourceContainer"`
+}
+
+// HostVolumeProperties encapsulates the HostVolumeProperties data type
+type HostVolumeProperties struct {
+	SourcePath string `xml:"sourcePath"`
+}
+
+// Volume encapsulates the Volume data type
+type Volume struct {
+	Host HostVolumeProperties `xml:"host"`
+	Name string               `xml:"name"`
+}
+
 // ContainerDefinition encapsulates the container definition type
 // Container definitions are used in task definitions to describe
 // the different containers that are launched as part of a task
@@ -277,8 +301,10 @@ type ContainerDefinition struct {
 	Image        string         `xml:"image"`
 	Links        []string       `xml:"links>member"`
 	Memory       int32          `xml:"memory"`
+	MountPoints  []MountPoint   `xml:"mountPoints>member"`
 	Name         string         `xml:"name"`
 	PortMappings []PortMapping  `xml:"portMappings>member"`
+	VolumesFrom  []VolumeFrom   `xml:"volumesFrom>member"`
 }
 
 // TaskDefinition encapsulates the task definition type
@@ -287,6 +313,8 @@ type TaskDefinition struct {
 	Family               string                `xml:"family"`
 	Revision             int32                 `xml:"revision"`
 	TaskDefinitionArn    string                `xml:"taskDefinitionArn"`
+	Status               string                `xml:"status"`
+	Volumes              []Volume              `xml:"volumes>member"`
 }
 
 // DeregisterTaskDefinitionReq encapsulates DeregisterTaskDefinition req params
@@ -437,8 +465,9 @@ type Container struct {
 
 // ContainerOverride encapsulates the container override data type
 type ContainerOverride struct {
-	Command []string `xml:"command>member"`
-	Name    string   `xml:"name"`
+	Command     []string       `xml:"command>member"`
+	Environment []KeyValuePair `xml:"environment>member"`
+	Name        string         `xml:"name"`
 }
 
 // TaskOverride encapsulates the task override data type
@@ -741,6 +770,7 @@ func (e *ECS) RegisterContainerInstance(req *RegisterContainerInstanceReq) (
 type RegisterTaskDefinitionReq struct {
 	Family               string
 	ContainerDefinitions []ContainerDefinition
+	Volumes              []Volume
 }
 
 // RegisterTaskDefinitionResp encapsulates RegisterTaskDefinition response
@@ -786,6 +816,20 @@ func (e *ECS) RegisterTaskDefinition(req *RegisterTaskDefinitionReq) (
 			params[fmt.Sprintf("%s.portMappings.member.%d.containerPort", key, k+1)] = strconv.Itoa(int(p.ContainerPort))
 			params[fmt.Sprintf("%s.portMappings.member.%d.hostPort", key, k+1)] = strconv.Itoa(int(p.HostPort))
 		}
+		for k, m := range c.MountPoints {
+			params[fmt.Sprintf("%s.mountPoints.member.%d.containerPath", key, k+1)] = m.ContainerPath
+			params[fmt.Sprintf("%s.mountPoints.member.%d.readOnly", key, k+1)] = strconv.FormatBool(m.ReadOnly)
+			params[fmt.Sprintf("%s.mountPoints.member.%d.sourceVolume", key, k+1)] = m.SourceVolume
+		}
+		for k, v := range c.VolumesFrom {
+			params[fmt.Sprintf("%s.volumesFrom.member.%d.readOnly", key, k+1)] = strconv.FormatBool(v.ReadOnly)
+			params[fmt.Sprintf("%s.volumesFrom.member.%d.sourceContainer", key, k+1)] = v.SourceContainer
+		}
+	}
+
+	for k, v := range req.Volumes {
+		params[fmt.Sprintf("volumes.member.%d.name", k+1)] = v.Name
+		params[fmt.Sprintf("volumes.member.%d.host.sourcePath", k+1)] = v.Host.SourcePath
 	}
 
 	resp = new(RegisterTaskDefinitionResp)
@@ -834,6 +878,10 @@ func (e *ECS) RunTask(req *RunTaskReq) (*RunTaskResp, error) {
 		params[fmt.Sprintf("%s.name", key)] = co.Name
 		for k, cmd := range co.Command {
 			params[fmt.Sprintf("%s.command.member.%d", key, k+1)] = cmd
+		}
+		for k, env := range co.Environment {
+			params[fmt.Sprintf("%s.environment.member.%d.name", key, k+1)] = env.Name
+			params[fmt.Sprintf("%s.environment.member.%d.value", key, k+1)] = env.Value
 		}
 	}
 

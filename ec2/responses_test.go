@@ -174,6 +174,19 @@ var DescribeSpotRequestsExample = `
 </DescribeSpotInstanceRequestsResponse>
 `
 
+// http://goo.gl/DcfFgJ
+var CancelSpotRequestsExample = `
+<CancelSpotInstanceRequestsResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+  <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+  <spotInstanceRequestSet>
+    <item>
+      <spotInstanceRequestId>sir-1a2b3c4d</spotInstanceRequestId>
+      <state>cancelled</state>
+    </item>
+  </spotInstanceRequestSet>
+</CancelSpotInstanceRequestsResponse>
+`
+
 // http://goo.gl/3BKHj
 var TerminateInstancesExample = `
 <TerminateInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2011-12-15/">
@@ -1016,4 +1029,56 @@ var DescribeReservedInstancesExample = `
       </item>
    </reservedInstancesSet>
 </DescribeReservedInstancesResponse>
+`
+
+var DescribeVpcsExample = `
+<DescribeVpcsResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+  <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+  <vpcSet>
+    <item>
+      <vpcId>vpc-1a2b3c4d</vpcId>
+      <state>available</state>
+      <cidrBlock>10.0.0.0/23</cidrBlock>
+      <dhcpOptionsId>dopt-7a8b9c2d</dhcpOptionsId>
+      <instanceTenancy>default</instanceTenancy>
+      <isDefault>false</isDefault>
+      <tagSet/>
+    </item>
+  </vpcSet>
+</DescribeVpcsResponse>
+`
+
+var CreateVpcExample = `
+<CreateVpcResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+   <vpc>
+      <vpcId>vpc-1a2b3c4d</vpcId>
+      <state>pending</state>
+      <cidrBlock>10.0.0.0/16</cidrBlock>
+      <dhcpOptionsId>dopt-1a2b3c4d2</dhcpOptionsId>
+      <instanceTenancy>default</instanceTenancy>
+      <tagSet/>
+   </vpc>
+</CreateVpcResponse>
+`
+
+var DeleteVpcExample = `
+<DeleteVpcResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+   <return>true</return>
+</DeleteVpcResponse>
+`
+
+var CreateRouteExample = `
+<CreateRouteResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+    <requestId>b4998629-3000-437f-b382-cc96fEXAMPLE</requestId>
+    <return>true</return>
+</CreateRouteResponse>
+`
+
+var DeleteRouteExample = `
+<DeleteRouteResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+    <return>true</return>
+</DeleteRouteResponse>
 `

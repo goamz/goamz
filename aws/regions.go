@@ -20,6 +20,7 @@ var USGovWest = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-gov-west-1.amazonaws.com",
 	"https://ecs.us-gov-west-1.amazonaws.com",
+	"https://streams.dynamodb.us-gov-west-1.amazonaws.com",
 	SignV2,
 }
 
@@ -43,6 +44,7 @@ var USEast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-east-1.amazonaws.com",
 	"https://ecs.us-east-1.amazonaws.com",
+	"https://streams.dynamodb.us-east-1.amazonaws.com",
 	SignV2,
 }
 
@@ -66,6 +68,7 @@ var USWest = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-west-1.amazonaws.com",
 	"https://ecs.us-west-1.amazonaws.com",
+	"https://streams.dynamodb.us-west-1.amazonaws.com",
 	SignV2,
 }
 
@@ -89,6 +92,7 @@ var USWest2 = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-west-2.amazonaws.com",
 	"https://ecs.us-west-2.amazonaws.com",
+	"https://streams.dynamodb.us-west-2.amazonaws.com",
 	SignV2,
 }
 
@@ -112,6 +116,7 @@ var EUWest = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.eu-west-1.amazonaws.com",
 	"https://ecs.eu-west-1.amazonaws.com",
+	"https://streams.dynamodb.eu-west-1.amazonaws.com",
 	SignV2,
 }
 
@@ -135,6 +140,7 @@ var EUCentral = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.eu-central-1.amazonaws.com",
 	"https://ecs.eu-central-1.amazonaws.com",
+	"https://streams.dynamodb.eu-central-1.amazonaws.com",
 	SignV4Region("eu-central-1"),
 }
 
@@ -158,6 +164,7 @@ var APSoutheast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-southeast-1.amazonaws.com",
 	"https://ecs.ap-southeast-1.amazonaws.com",
+	"https://streams.dynamodb.ap-southeast-1.amazonaws.com",
 	SignV2,
 }
 
@@ -181,6 +188,7 @@ var APSoutheast2 = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-southeast-2.amazonaws.com",
 	"https://ecs.ap-southeast-2.amazonaws.com",
+	"https://streams.dynamodb.ap-southeast-2.amazonaws.com",
 	SignV2,
 }
 
@@ -204,6 +212,7 @@ var APNortheast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-northeast-1.amazonaws.com",
 	"https://ecs.ap-northeast-1.amazonaws.com",
+	"https://streams.dynamodb.ap-northeast-1.amazonaws.com",
 	SignV2,
 }
 
@@ -227,6 +236,7 @@ var SAEast = Region{
 	"https://sts.amazonaws.com",
 	"https://cloudformation.sa-east-1.amazonaws.com",
 	"https://ecs.sa-east-1.amazonaws.com",
+	"https://streams.dynamodb.sa-east-1.amazonaws.com",
 	SignV4Region("sa-east-1"),
 }
 
@@ -250,5 +260,6 @@ var CNNorth = Region{
 	"https://sts.cn-north-1.amazonaws.com.cn",
 	"https://cloudformation.cn-north-1.amazonaws.com.cn",
 	"https://ecs.cn-north-1.amazonaws.com.cn",
+	"https://streams.dynamodb.cn-north-1.amazonaws.com.cn",
 	SignV4Region("cn-north-1"),
 }

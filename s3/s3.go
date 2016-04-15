@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
 	"log"
@@ -30,6 +29,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 var Debug = false
@@ -342,7 +343,7 @@ func (b *Bucket) Put(path string, data []byte, contType string, perm ACL, option
 }
 
 // PutCopy puts a copy of an object given by the key path into bucket b using b.Path as the target key
-func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source string) (*CopyObjectResult, error) {
+func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source string) (result *CopyObjectResult, err error) {
 	headers := map[string][]string{
 		"x-amz-acl":         {string(perm)},
 		"x-amz-copy-source": {source},
@@ -354,12 +355,17 @@ func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source stri
 		path:    path,
 		headers: headers,
 	}
-	resp := &CopyObjectResult{}
-	err := b.S3.query(req, resp)
-	if err != nil {
-		return resp, err
+	result = &CopyObjectResult{}
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
+		err = b.S3.query(req, result)
+		if !shouldRetry(err) {
+			break
+		}
 	}
-	return resp, nil
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 /*
@@ -1116,10 +1122,14 @@ func shouldRetry(err error) bool {
 		}
 	case *Error:
 		switch e.Code {
-		case "InternalError", "NoSuchUpload", "NoSuchBucket":
+		case "InternalError", "NoSuchUpload", "NoSuchBucket", "RequestTimeout":
 			return true
 		}
+	// let's handle tls handshake timeout issues and similar temporary errors
+	case net.Error:
+		return e.Temporary()
 	}
+
 	return false
 }
 

@@ -472,9 +472,35 @@ var RegisterTaskDefinitionResponse = `
           <cpu>10</cpu>
           <image>busybox</image>
           <memory>10</memory>
+          <mountPoints>
+            <member>
+              <containerPath>/tmp/myfile</containerPath>
+              <readOnly>false</readOnly>
+              <sourceVolume>/srv/myfile</sourceVolume>
+            </member>
+            <member>
+              <containerPath>/tmp/myfile2</containerPath>
+              <readOnly>true</readOnly>
+              <sourceVolume>/srv/myfile2</sourceVolume>
+            </member>
+          </mountPoints>
+          <volumesFrom>
+           <member>
+              <readOnly>true</readOnly>
+              <sourceContainer>foo</sourceContainer>
+            </member>
+          </volumesFrom>
         </member>
       </containerDefinitions>
       <taskDefinitionArn>arn:aws:ecs:us-east-1:aws_account_id:task-definition/sleep360:2</taskDefinitionArn>
+      <volumes>
+        <member>
+          <name>/srv/myfile</name>
+          <host>
+            <sourcePath>/srv/myfile</sourcePath>
+          </host>
+        </member>
+      </volumes>
     </taskDefinition>
   </RegisterTaskDefinitionResult>
   <ResponseMetadata>
