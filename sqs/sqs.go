@@ -231,7 +231,7 @@ func (s *SQS) getQueueUrl(queueName string) (resp *GetQueueUrlResponse, err erro
 	resp = &GetQueueUrlResponse{}
 	params := makeParams("GetQueueUrl")
 	params["QueueName"] = queueName
-	err = s.query("", params, resp)
+	err = s.query("", params, resp, nil)
 	return resp, err
 }
 
@@ -249,7 +249,7 @@ func (s *SQS) newQueue(queueName string, attrs map[string]string) (resp *CreateQ
 		i++
 	}
 
-	err = s.query("", params, resp)
+	err = s.query("", params, resp, nil)
 	return
 }
 
@@ -261,7 +261,7 @@ func (s *SQS) ListQueues(QueueNamePrefix string) (resp *ListQueuesResponse, err 
 		params["QueueNamePrefix"] = QueueNamePrefix
 	}
 
-	err = s.query("", params, resp)
+	err = s.query("", params, resp, nil)
 	return
 }
 
@@ -269,7 +269,7 @@ func (q *Queue) Delete() (resp *DeleteQueueResponse, err error) {
 	resp = &DeleteQueueResponse{}
 	params := makeParams("DeleteQueue")
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -277,7 +277,7 @@ func (q *Queue) Purge() (resp *PurgeQueueResponse, err error) {
 	resp = &PurgeQueueResponse{}
 	params := makeParams("PurgeQueue")
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -288,7 +288,7 @@ func (q *Queue) SendMessageWithDelay(MessageBody string, DelaySeconds int64) (re
 	params["MessageBody"] = MessageBody
 	params["DelaySeconds"] = strconv.Itoa(int(DelaySeconds))
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -298,7 +298,7 @@ func (q *Queue) SendMessage(MessageBody string) (resp *SendMessageResponse, err 
 
 	params["MessageBody"] = MessageBody
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -319,7 +319,7 @@ func (q *Queue) SendMessageWithAttributes(MessageBody string, attrs map[string]s
 		i++
 	}
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -350,7 +350,21 @@ func (q *Queue) ReceiveMessageWithParameters(p map[string]string) (resp *Receive
 		params[k] = v
 	}
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
+	return
+}
+
+func (q *Queue) ReceiveMessageWithParametersCancellable(p map[string]string, cancel chan struct{}) (resp *ReceiveMessageResponse, err error) {
+	resp = &ReceiveMessageResponse{}
+	params := makeParams("ReceiveMessage")
+	params["AttributeName"] = "All"
+	params["MessageAttributeNames"] = "All"
+
+	for k, v := range p {
+		params[k] = v
+	}
+
+	err = q.SQS.query(q.Url, params, resp, cancel)
 	return
 }
 
@@ -360,7 +374,7 @@ func (q *Queue) ChangeMessageVisibility(M *Message, VisibilityTimeout int) (resp
 	params["VisibilityTimeout"] = strconv.Itoa(VisibilityTimeout)
 	params["ReceiptHandle"] = M.ReceiptHandle
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -369,7 +383,7 @@ func (q *Queue) GetQueueAttributes(A string) (resp *GetQueueAttributesResponse, 
 	params := makeParams("GetQueueAttributes")
 	params["AttributeName"] = A
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -382,7 +396,7 @@ func (q *Queue) DeleteMessageUsingReceiptHandle(receiptHandle string) (resp *Del
 	params := makeParams("DeleteMessage")
 	params["ReceiptHandle"] = receiptHandle
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -409,7 +423,7 @@ func (q *Queue) SendMessageBatch(msgList []Message) (resp *SendMessageBatchRespo
 		params[fmt.Sprintf("SendMessageBatchRequestEntry.%d.MessageBody", count)] = msg.Body
 	}
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -425,7 +439,7 @@ func (q *Queue) SendMessageBatchString(msgList []string) (resp *SendMessageBatch
 		params[fmt.Sprintf("SendMessageBatchRequestEntry.%d.MessageBody", count)] = msg
 	}
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 	return
 }
 
@@ -453,7 +467,7 @@ func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchR
 		lutMsg[string(msgList[idx].MessageId)] = msgList[idx]
 	}
 
-	err = q.SQS.query(q.Url, params, resp)
+	err = q.SQS.query(q.Url, params, resp, nil)
 
 	messageWithErrors := make([]Message, 0, len(msgList))
 
@@ -473,7 +487,7 @@ func (q *Queue) DeleteMessageBatch(msgList []Message) (resp *DeleteMessageBatchR
 	return
 }
 
-func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}) (err error) {
+func (s *SQS) query(queueUrl string, params map[string]string, resp interface{}, cancel chan struct{}) (err error) {
 	params["Version"] = API_VERSION
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
 	var url_ *url.URL
@@ -506,6 +520,7 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", url_, strings.Join(sarray, "&")), nil)
+	req.Cancel = cancel
 	if err != nil {
 		return err
 	}
