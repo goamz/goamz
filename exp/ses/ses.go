@@ -143,7 +143,7 @@ func (ses *SES) doPost(action string, data url.Values) error {
 }
 
 func buildError(r *http.Response) *SESError {
-	err := SESError{}
-	xml.NewDecoder(r.Body).Decode(&err)
-	return &err
+	rootElem := errorResponse{}
+	xml.NewDecoder(r.Body).Decode(&rootElem)
+	return &rootElem.Error
 }
