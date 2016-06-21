@@ -59,6 +59,8 @@ func NewFrom(accessKey, secretKey, region string) (*SQS, error) {
 		aws_region = aws.APSoutheast2
 	case "ap.northeast", "ap.northeast.1":
 		aws_region = aws.APNortheast
+	case "ap.northeast.2":
+		aws_region = aws.APNortheast2
 	case "sa.east", "sa.east.1":
 		aws_region = aws.SAEast
 	case "cn.north", "cn.north.1":
