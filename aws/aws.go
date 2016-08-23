@@ -52,6 +52,7 @@ type Region struct {
 
 var Regions = map[string]Region{
 	APNortheast.Name:  APNortheast,
+	APNortheast2.Name: APNortheast2,
 	APSoutheast.Name:  APSoutheast,
 	APSoutheast2.Name: APSoutheast2,
 	EUCentral.Name:    EUCentral,
@@ -359,6 +360,7 @@ func SharedAuth() (auth Auth, err error) {
 
 	auth.AccessKey = profile["aws_access_key_id"]
 	auth.SecretKey = profile["aws_secret_access_key"]
+	auth.token = profile["aws_session_token"]
 
 	if auth.AccessKey == "" {
 		err = errors.New("AWS_ACCESS_KEY_ID not found in environment in credentials file")
