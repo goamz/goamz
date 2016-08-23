@@ -225,20 +225,7 @@ func (s *V4Signer) canonicalURI(u *url.URL) string {
 }
 
 func (s *V4Signer) canonicalQueryString(u *url.URL) string {
-	var a []string
-	for k, vs := range u.Query() {
-		k = Encode(k)
-		for _, v := range vs {
-			if v == "" {
-				a = append(a, k+"=")
-			} else {
-				v = Encode(v)
-				a = append(a, k+"="+v)
-			}
-		}
-	}
-	sort.Strings(a)
-	return strings.Join(a, "&")
+	return strings.Replace(u.Query().Encode(), "+", "%20", -1)
 }
 
 func (s *V4Signer) canonicalHeaders(h http.Header) string {
