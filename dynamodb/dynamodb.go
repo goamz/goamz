@@ -101,8 +101,9 @@ func (s *Server) queryServer(target string, query *Query) ([]byte, error) {
 		hreq.Header.Set("X-Amz-Security-Token", token)
 	}
 
-	signer := aws.NewV4Signer(s.Auth, "dynamodb", s.Region)
-	signer.Sign(hreq)
+	if err = aws.SignV4(hreq, s.Auth, "dynamodb", s.Region.Name); err != nil {
+		return nil, err
+	}
 
 	resp, err := http.DefaultClient.Do(hreq)
 
@@ -121,7 +122,7 @@ func (s *Server) queryServer(target string, query *Query) ([]byte, error) {
 
 	// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ErrorHandling.html
 	// "A response code of 200 indicates the operation was successful."
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		ddbErr := buildError(resp, body)
 		return nil, ddbErr
 	}

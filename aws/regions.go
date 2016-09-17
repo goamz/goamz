@@ -14,13 +14,14 @@ var USGovWest = Region{
 	"https://iam.us-gov.amazonaws.com",
 	"https://elasticloadbalancing.us-gov-west-1.amazonaws.com",
 	"https://dynamodb.us-gov-west-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.us-gov-west-1.amazonaws.com", V2Signature},
+	"https://monitoring.us-gov-west-1.amazonaws.com",
 	"https://autoscaling.us-gov-west-1.amazonaws.com",
-	ServiceInfo{"https://rds.us-gov-west-1.amazonaws.com", V2Signature},
+	"https://rds.us-gov-west-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-gov-west-1.amazonaws.com",
 	"https://ecs.us-gov-west-1.amazonaws.com",
 	"https://streams.dynamodb.us-gov-west-1.amazonaws.com",
+	SignV2,
 }
 
 var USEast = Region{
@@ -37,13 +38,14 @@ var USEast = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.us-east-1.amazonaws.com",
 	"https://dynamodb.us-east-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.us-east-1.amazonaws.com", V2Signature},
+	"https://monitoring.us-east-1.amazonaws.com",
 	"https://autoscaling.us-east-1.amazonaws.com",
-	ServiceInfo{"https://rds.us-east-1.amazonaws.com", V2Signature},
+	"https://rds.us-east-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-east-1.amazonaws.com",
 	"https://ecs.us-east-1.amazonaws.com",
 	"https://streams.dynamodb.us-east-1.amazonaws.com",
+	SignV2,
 }
 
 var USWest = Region{
@@ -60,13 +62,14 @@ var USWest = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.us-west-1.amazonaws.com",
 	"https://dynamodb.us-west-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.us-west-1.amazonaws.com", V2Signature},
+	"https://monitoring.us-west-1.amazonaws.com",
 	"https://autoscaling.us-west-1.amazonaws.com",
-	ServiceInfo{"https://rds.us-west-1.amazonaws.com", V2Signature},
+	"https://rds.us-west-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-west-1.amazonaws.com",
 	"https://ecs.us-west-1.amazonaws.com",
 	"https://streams.dynamodb.us-west-1.amazonaws.com",
+	SignV2,
 }
 
 var USWest2 = Region{
@@ -83,13 +86,14 @@ var USWest2 = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.us-west-2.amazonaws.com",
 	"https://dynamodb.us-west-2.amazonaws.com",
-	ServiceInfo{"https://monitoring.us-west-2.amazonaws.com", V2Signature},
+	"https://monitoring.us-west-2.amazonaws.com",
 	"https://autoscaling.us-west-2.amazonaws.com",
-	ServiceInfo{"https://rds.us-west-2.amazonaws.com", V2Signature},
+	"https://rds.us-west-2.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.us-west-2.amazonaws.com",
 	"https://ecs.us-west-2.amazonaws.com",
 	"https://streams.dynamodb.us-west-2.amazonaws.com",
+	SignV2,
 }
 
 var EUWest = Region{
@@ -106,19 +110,20 @@ var EUWest = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.eu-west-1.amazonaws.com",
 	"https://dynamodb.eu-west-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.eu-west-1.amazonaws.com", V2Signature},
+	"https://monitoring.eu-west-1.amazonaws.com",
 	"https://autoscaling.eu-west-1.amazonaws.com",
-	ServiceInfo{"https://rds.eu-west-1.amazonaws.com", V2Signature},
+	"https://rds.eu-west-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.eu-west-1.amazonaws.com",
 	"https://ecs.eu-west-1.amazonaws.com",
 	"https://streams.dynamodb.eu-west-1.amazonaws.com",
+	SignV2,
 }
 
 var EUCentral = Region{
 	"eu-central-1",
 	"https://ec2.eu-central-1.amazonaws.com",
-	"https://s3-eu-central-1.amazonaws.com",
+	"https://s3.eu-central-1.amazonaws.com", // s3.eu.. not s3-eu.. as thats what the SSL Cert matches
 	"",
 	true,
 	true,
@@ -129,13 +134,14 @@ var EUCentral = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.eu-central-1.amazonaws.com",
 	"https://dynamodb.eu-central-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.eu-central-1.amazonaws.com", V2Signature},
+	"https://monitoring.eu-central-1.amazonaws.com",
 	"https://autoscaling.eu-central-1.amazonaws.com",
-	ServiceInfo{"https://rds.eu-central-1.amazonaws.com", V2Signature},
+	"https://rds.eu-central-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.eu-central-1.amazonaws.com",
 	"https://ecs.eu-central-1.amazonaws.com",
 	"https://streams.dynamodb.eu-central-1.amazonaws.com",
+	SignV4Region("eu-central-1"),
 }
 
 var APSoutheast = Region{
@@ -152,13 +158,14 @@ var APSoutheast = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.ap-southeast-1.amazonaws.com",
 	"https://dynamodb.ap-southeast-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.ap-southeast-1.amazonaws.com", V2Signature},
+	"https://monitoring.ap-southeast-1.amazonaws.com",
 	"https://autoscaling.ap-southeast-1.amazonaws.com",
-	ServiceInfo{"https://rds.ap-southeast-1.amazonaws.com", V2Signature},
+	"https://rds.ap-southeast-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-southeast-1.amazonaws.com",
 	"https://ecs.ap-southeast-1.amazonaws.com",
 	"https://streams.dynamodb.ap-southeast-1.amazonaws.com",
+	SignV2,
 }
 
 var APSoutheast2 = Region{
@@ -175,13 +182,14 @@ var APSoutheast2 = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.ap-southeast-2.amazonaws.com",
 	"https://dynamodb.ap-southeast-2.amazonaws.com",
-	ServiceInfo{"https://monitoring.ap-southeast-2.amazonaws.com", V2Signature},
+	"https://monitoring.ap-southeast-2.amazonaws.com",
 	"https://autoscaling.ap-southeast-2.amazonaws.com",
-	ServiceInfo{"https://rds.ap-southeast-2.amazonaws.com", V2Signature},
+	"https://rds.ap-southeast-2.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-southeast-2.amazonaws.com",
 	"https://ecs.ap-southeast-2.amazonaws.com",
 	"https://streams.dynamodb.ap-southeast-2.amazonaws.com",
+	SignV2,
 }
 
 var APNortheast = Region{
@@ -198,13 +206,14 @@ var APNortheast = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.ap-northeast-1.amazonaws.com",
 	"https://dynamodb.ap-northeast-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.ap-northeast-1.amazonaws.com", V2Signature},
+	"https://monitoring.ap-northeast-1.amazonaws.com",
 	"https://autoscaling.ap-northeast-1.amazonaws.com",
-	ServiceInfo{"https://rds.ap-northeast-1.amazonaws.com", V2Signature},
+	"https://rds.ap-northeast-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-northeast-1.amazonaws.com",
 	"https://ecs.ap-northeast-1.amazonaws.com",
 	"https://streams.dynamodb.ap-northeast-1.amazonaws.com",
+	SignV2,
 }
 
 var APNortheast2 = Region{
@@ -244,13 +253,14 @@ var SAEast = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.sa-east-1.amazonaws.com",
 	"https://dynamodb.sa-east-1.amazonaws.com",
-	ServiceInfo{"https://monitoring.sa-east-1.amazonaws.com", V2Signature},
+	"https://monitoring.sa-east-1.amazonaws.com",
 	"https://autoscaling.sa-east-1.amazonaws.com",
-	ServiceInfo{"https://rds.sa-east-1.amazonaws.com", V2Signature},
+	"https://rds.sa-east-1.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.sa-east-1.amazonaws.com",
 	"https://ecs.sa-east-1.amazonaws.com",
 	"https://streams.dynamodb.sa-east-1.amazonaws.com",
+	SignV4Region("sa-east-1"),
 }
 
 var CNNorth = Region{
@@ -267,11 +277,12 @@ var CNNorth = Region{
 	"https://iam.cn-north-1.amazonaws.com.cn",
 	"https://elasticloadbalancing.cn-north-1.amazonaws.com.cn",
 	"https://dynamodb.cn-north-1.amazonaws.com.cn",
-	ServiceInfo{"https://monitoring.cn-north-1.amazonaws.com.cn", V4Signature},
+	"https://monitoring.cn-north-1.amazonaws.com.cn",
 	"https://autoscaling.cn-north-1.amazonaws.com.cn",
-	ServiceInfo{"https://rds.cn-north-1.amazonaws.com.cn", V4Signature},
+	"https://rds.cn-north-1.amazonaws.com.cn",
 	"https://sts.cn-north-1.amazonaws.com.cn",
 	"https://cloudformation.cn-north-1.amazonaws.com.cn",
 	"https://ecs.cn-north-1.amazonaws.com.cn",
 	"https://streams.dynamodb.cn-north-1.amazonaws.com.cn",
+	SignV4Region("cn-north-1"),
 }

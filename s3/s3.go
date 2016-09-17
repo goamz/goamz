@@ -27,12 +27,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/goamz/goamz/aws"
 )
 
-const debug = false
+var Debug = false
 
 // The S3 type encapsulates operations with an S3 region.
 type S3 struct {
@@ -254,12 +255,12 @@ func (b *Bucket) GetResponseWithHeaders(path string, headers map[string][]string
 		path:    path,
 		headers: headers,
 	}
-	err = b.S3.prepare(req)
+	hreq, err := b.S3.prepare(req)
 	if err != nil {
 		return nil, err
 	}
 	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
-		resp, err := b.S3.run(req, nil)
+		resp, err := b.S3.run(hreq, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
 		}
@@ -278,12 +279,13 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 		bucket: b.Name,
 		path:   path,
 	}
-	err = b.S3.prepare(req)
-	if err != nil {
+
+	var hreq *http.Request
+	if hreq, err = b.S3.prepare(req); err != nil {
 		return
 	}
 	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
-		resp, err := b.S3.run(req, nil)
+		resp, err := b.S3.run(hreq, nil)
 
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
@@ -291,7 +293,7 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 
 		if err != nil {
 			// We can treat a 403 or 404 as non existance
-			if e, ok := err.(*Error); ok && (e.StatusCode == 403 || e.StatusCode == 404) {
+			if e, ok := err.(*Error); ok && (e.StatusCode == http.StatusForbidden || e.StatusCode == http.StatusNotFound) {
 				return false, nil
 			}
 			return false, err
@@ -314,13 +316,13 @@ func (b *Bucket) Head(path string, headers map[string][]string) (*http.Response,
 		path:    path,
 		headers: headers,
 	}
-	err := b.S3.prepare(req)
+	hreq, err := b.S3.prepare(req)
 	if err != nil {
 		return nil, err
 	}
 
 	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
-		resp, err := b.S3.run(req, nil)
+		resp, err := b.S3.run(hreq, nil)
 		if shouldRetry(err) && attempt.HasNext() {
 			continue
 		}
@@ -762,11 +764,7 @@ func (b *Bucket) URL(path string) string {
 		bucket: b.Name,
 		path:   path,
 	}
-	err := b.S3.prepare(req)
-	if err != nil {
-		panic(err)
-	}
-	u, err := req.url()
+	u, err := req.url(b.S3.Region)
 	if err != nil {
 		panic(err)
 	}
@@ -782,19 +780,11 @@ func (b *Bucket) SignedURL(path string, expires time.Time) string {
 		path:   path,
 		params: url.Values{"Expires": {strconv.FormatInt(expires.Unix(), 10)}},
 	}
-	err := b.S3.prepare(req)
+	u, err := req.url(b.S3.Region)
 	if err != nil {
 		panic(err)
 	}
-	u, err := req.url()
-	if err != nil {
-		panic(err)
-	}
-	if b.S3.Auth.Token() != "" {
-		return u.String() + "&x-amz-security-token=" + url.QueryEscape(req.headers["X-Amz-Security-Token"][0])
-	} else {
-		return u.String()
-	}
+	return u.String()
 }
 
 // UploadSignedURL returns a signed URL that allows anyone holding the URL
@@ -807,7 +797,6 @@ func (b *Bucket) UploadSignedURL(path, method, content_type string, expires time
 		method = "PUT"
 	}
 	stringToSign := method + "\n\n" + content_type + "\n" + strconv.FormatInt(expire_date, 10) + "\n/" + b.Name + "/" + path
-	fmt.Println("String to sign:\n", stringToSign)
 	a := b.S3.Auth
 	secretKey := a.SecretKey
 	accessId := a.AccessKey
@@ -866,35 +855,82 @@ func (b *Bucket) PostFormArgs(path string, expires time.Time, redirect string) (
 }
 
 type request struct {
-	method   string
-	bucket   string
-	path     string
-	signpath string
-	params   url.Values
-	headers  http.Header
-	baseurl  string
-	payload  io.Reader
-	prepared bool
+	method      string
+	bucket      string
+	path        string
+	params      url.Values
+	headers     http.Header
+	baseurl     string
+	payload     io.Reader
+	preparedURL *url.URL
+	lock        sync.Mutex
 }
 
-func (req *request) url() (*url.URL, error) {
+// url prepares the request, setting the method etc and returning the resulting URL for the given region.
+func (req *request) url(region aws.Region) (*url.URL, error) {
+	req.lock.Lock()
+	defer req.lock.Unlock()
+
+	if req.preparedURL != nil {
+		// Already prepared.
+		return req.preparedURL, nil
+	}
+
+	if err := req.preparePath(region); err != nil {
+		return nil, err
+	}
+
+	if req.method == "" {
+		req.method = "GET"
+	}
+
 	u, err := url.Parse(req.baseurl)
 	if err != nil {
 		return nil, fmt.Errorf("bad S3 endpoint URL %q: %v", req.baseurl, err)
 	}
 	u.RawQuery = req.params.Encode()
 	u.Path = req.path
+	req.preparedURL = u
+
 	return u, nil
+}
+
+// preparePath prepares the requests path for the given region, must be called while holding the lock.
+func (req *request) preparePath(region aws.Region) error {
+	// Ensure the path starts with a /
+	if !strings.HasPrefix(req.path, "/") {
+		req.path = "/" + req.path
+	}
+
+	if req.bucket == "" {
+		// Standard specified URL
+		return nil
+	}
+
+	// Generated a bucket URL
+	if region.S3BucketEndpoint == "" {
+		// Use the path method to address the bucket.
+		req.baseurl = region.S3Endpoint
+		req.path = "/" + req.bucket + req.path
+	} else {
+		// Just in case, prevent injection.
+		if strings.IndexAny(req.bucket, "/:@") >= 0 {
+			return fmt.Errorf("bad S3 bucket: %q", req.bucket)
+		}
+		req.baseurl = strings.Replace(region.S3BucketEndpoint, "${bucket}", req.bucket, -1)
+	}
+
+	return nil
 }
 
 // query prepares and runs the req request.
 // If resp is not nil, the XML data contained in the response
 // body will be unmarshalled on it.
 func (s3 *S3) query(req *request, resp interface{}) error {
-	err := s3.prepare(req)
+	hreq, err := s3.prepare(req)
 	if err == nil {
 		var httpResponse *http.Response
-		httpResponse, err = s3.run(req, resp)
+		httpResponse, err = s3.run(hreq, resp)
 		if resp == nil && httpResponse != nil {
 			httpResponse.Body.Close()
 		}
@@ -903,92 +939,70 @@ func (s3 *S3) query(req *request, resp interface{}) error {
 }
 
 // prepare sets up req to be delivered to S3.
-func (s3 *S3) prepare(req *request) error {
-	var signpath = req.path
-
-	if !req.prepared {
-		req.prepared = true
-		if req.method == "" {
-			req.method = "GET"
-		}
-		// Copy so they can be mutated without affecting on retries.
-		params := make(url.Values)
-		headers := make(http.Header)
-		for k, v := range req.params {
-			params[k] = v
-		}
-		for k, v := range req.headers {
-			headers[k] = v
-		}
-		req.params = params
-		req.headers = headers
-		if !strings.HasPrefix(req.path, "/") {
-			req.path = "/" + req.path
-		}
-		signpath = req.path
-		if req.bucket != "" {
-			req.baseurl = s3.Region.S3BucketEndpoint
-			if req.baseurl == "" {
-				// Use the path method to address the bucket.
-				req.baseurl = s3.Region.S3Endpoint
-				req.path = "/" + req.bucket + req.path
-			} else {
-				// Just in case, prevent injection.
-				if strings.IndexAny(req.bucket, "/:@") >= 0 {
-					return fmt.Errorf("bad S3 bucket: %q", req.bucket)
-				}
-				req.baseurl = strings.Replace(req.baseurl, "${bucket}", req.bucket, -1)
-			}
-			signpath = "/" + req.bucket + signpath
-		}
-	}
-
-	// Always sign again as it's not clear how far the
-	// server has handled a previous attempt.
-	u, err := url.Parse(req.baseurl)
+func (s3 *S3) prepare(req *request) (*http.Request, error) {
+	u, err := req.url(s3.Region)
 	if err != nil {
-		return fmt.Errorf("bad S3 endpoint URL %q: %v", req.baseurl, err)
+		return nil, err
 	}
-	reqSignpathSpaceFix := (&url.URL{Path: signpath}).String()
-	req.headers["Host"] = []string{u.Host}
-	req.headers["Date"] = []string{time.Now().In(time.UTC).Format(time.RFC1123)}
+
+	// Take a copy of the headers to prevent mutation
+	headers := make(http.Header)
+	for k, v := range req.headers {
+		headers[k] = v
+	}
+
+	headers["Host"] = []string{u.Host}
+	headers["Date"] = []string{time.Now().In(time.UTC).Format(time.RFC1123)}
+
 	if s3.Auth.Token() != "" {
-		req.headers["X-Amz-Security-Token"] = []string{s3.Auth.Token()}
+		headers["X-Amz-Security-Token"] = []string{s3.Auth.Token()}
 	}
-	sign(s3.Auth, req.method, reqSignpathSpaceFix, req.params, req.headers)
-	return nil
+
+	hreq := &http.Request{
+		URL:        u,
+		Method:     req.method,
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     headers,
+		Host:       u.Host,
+	}
+
+	if v, ok := headers["Content-Length"]; ok {
+		hreq.ContentLength, _ = strconv.ParseInt(v[0], 10, 64)
+		delete(headers, "Content-Length")
+	}
+
+	if req.payload != nil {
+		hreq.Body = ioutil.NopCloser(req.payload)
+	}
+
+	if Debug {
+		dump, _ := httputil.DumpRequest(hreq, true)
+		log.Printf("hreq } -> %s\n", dump)
+	}
+
+	// Always use AWS V4 Signature to avoid using the older custom V2 signer
+	sign := aws.SignV4Region(s3.Region.Name)
+	if err = sign(hreq, s3.Auth, "s3"); err != nil {
+		if Debug {
+			log.Printf("sign error: %v\n", err)
+		}
+		return nil, err
+	}
+
+	if Debug {
+		dump, _ := httputil.DumpRequest(hreq, true)
+		log.Printf("hreq (signed) } -> %s\n", dump)
+	}
+
+	return hreq, err
 }
 
 // run sends req and returns the http response from the server.
 // If resp is not nil, the XML data contained in the response
 // body will be unmarshalled on it.
-func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
-	if debug {
-		log.Printf("Running S3 request: %#v", req)
-	}
-
-	u, err := req.url()
-	if err != nil {
-		return nil, err
-	}
-
-	hreq := http.Request{
-		URL:        u,
-		Method:     req.method,
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-		Close:      true,
-		Header:     req.headers,
-	}
-
-	if v, ok := req.headers["Content-Length"]; ok {
-		hreq.ContentLength, _ = strconv.ParseInt(v[0], 10, 64)
-		delete(req.headers, "Content-Length")
-	}
-	if req.payload != nil {
-		hreq.Body = ioutil.NopCloser(req.payload)
-	}
-
+func (s3 *S3) run(req *http.Request, resp interface{}) (*http.Response, error) {
 	if s3.client == nil {
 		s3.client = &http.Client{
 			Transport: &http.Transport{
@@ -1018,22 +1032,23 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		}
 	}
 
-	hresp, err := s3.client.Do(&hreq)
+	hresp, err := s3.client.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
-	if debug {
+	if Debug {
 		dump, _ := httputil.DumpResponse(hresp, true)
-		log.Printf("} -> %s\n", dump)
+		log.Printf("hresp } -> %s\n", dump)
 	}
-	if hresp.StatusCode != 200 && hresp.StatusCode != 204 && hresp.StatusCode != 206 {
+	if hresp.StatusCode != http.StatusOK && hresp.StatusCode != http.StatusNoContent && hresp.StatusCode != http.StatusPartialContent {
 		defer hresp.Body.Close()
 		return nil, buildError(hresp)
 	}
 	if resp != nil {
 		err = xml.NewDecoder(hresp.Body).Decode(resp)
 		hresp.Body.Close()
-		if debug {
+		if Debug {
 			log.Printf("goamz.s3> decoded xml into %#v", resp)
 		}
 	}
@@ -1055,7 +1070,7 @@ func (e *Error) Error() string {
 }
 
 func buildError(r *http.Response) error {
-	if debug {
+	if Debug {
 		log.Printf("got error (status code %v)", r.StatusCode)
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -1074,7 +1089,7 @@ func buildError(r *http.Response) error {
 	if err.Message == "" {
 		err.Message = r.Status
 	}
-	if debug {
+	if Debug {
 		log.Printf("err: %#v\n", err)
 	}
 	return &err

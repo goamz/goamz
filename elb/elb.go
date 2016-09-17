@@ -343,8 +343,9 @@ func (elb *ELB) query(params map[string]string, resp interface{}) error {
 		hreq.Header.Set("X-Amz-Security-Token", token)
 	}
 
-	signer := aws.NewV4Signer(elb.Auth, "elasticloadbalancing", elb.Region)
-	signer.Sign(hreq)
+	if err = aws.SignV4(hreq, elb.Auth, "elasticloadbalancing", elb.Region.Name); err != nil {
+		return err
+	}
 
 	r, err := http.DefaultClient.Do(hreq)
 
@@ -352,7 +353,7 @@ func (elb *ELB) query(params map[string]string, resp interface{}) error {
 		return err
 	}
 	defer r.Body.Close()
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	return xml.NewDecoder(r.Body).Decode(resp)

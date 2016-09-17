@@ -517,15 +517,10 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 	if err != nil {
 		return err
 	}
-	signer := aws.NewV4Signer(s.Auth, "sqs", s.Region)
-	signer.Sign(req)
-	var client http.Client
-	if s.transport == nil {
-		client = http.Client{}
-	} else {
-		client = http.Client{Transport: s.transport}
+	if err = aws.SignV4(req, s.Auth, "sqs", s.Region.Name); err != nil {
+		return err
 	}
-	r, err = client.Do(req)
+	r, err = http.DefaultClient.Do(req)
 
 	if debug {
 		log.Printf("GET %s\n", url_.String())
@@ -542,7 +537,7 @@ func (s *SQS) query(queueUrl string, params map[string]string, resp interface{})
 		log.Printf("DUMP:%s\n", string(dump))
 	}
 
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)

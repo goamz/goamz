@@ -84,8 +84,9 @@ func (e *ECS) query(params map[string]string, resp interface{}) error {
 		hreq.Header.Set("X-Amz-Security-Token", token)
 	}
 
-	signer := aws.NewV4Signer(e.Auth, "ecs", e.Region)
-	signer.Sign(hreq)
+	if err = aws.SignV4(hreq, e.Auth, "ecs", e.Region.Name); err != nil {
+		return err
+	}
 
 	if debug {
 		log.Printf("%v -> {\n", hreq)
@@ -104,7 +105,7 @@ func (e *ECS) query(params map[string]string, resp interface{}) error {
 		log.Printf("response:\n")
 		log.Printf("%v\n}\n", string(dump))
 	}
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)

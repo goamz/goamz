@@ -134,7 +134,7 @@ func (ses *SES) doPost(action string, data url.Values) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode > 204 {
+	if resp.StatusCode > http.StatusNoContent {
 		defer resp.Body.Close()
 		return buildError(resp)
 	}

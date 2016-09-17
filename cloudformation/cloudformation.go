@@ -83,7 +83,7 @@ func (c *CloudFormation) query(params map[string]string, resp interface{}) error
 		hreq.Header.Set("X-Amz-Security-Token", token)
 	}
 
-	signer := aws.NewV4Signer(c.Auth, "cloudformation", c.Region)
+	signer := aws.NewV4Signer(c.Auth, "cloudformation", c.Region.Name)
 	signer.Sign(hreq)
 
 	if debug {
@@ -103,7 +103,7 @@ func (c *CloudFormation) query(params map[string]string, resp interface{}) error
 		log.Printf("response:\n")
 		log.Printf("%v\n}\n", string(dump))
 	}
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)

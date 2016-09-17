@@ -15,28 +15,35 @@ import (
 	"time"
 )
 
+// SignerFunc represents a function that can sign a http.Request with the given Auth details.
+type SignerFunc func(*http.Request, Auth, string) error
+
 type V2Signer struct {
-	auth    Auth
-	service ServiceInfo
-	host    string
+	auth     Auth
+	endpoint string
 }
 
 var b64 = base64.StdEncoding
 
-func NewV2Signer(auth Auth, service ServiceInfo) (*V2Signer, error) {
-	u, err := url.Parse(service.Endpoint)
-	if err != nil {
-		return nil, err
-	}
-	return &V2Signer{auth: auth, service: service, host: u.Host}, nil
+func NewV2Signer(auth Auth, endpoint string) (*V2Signer, error) {
+	return &V2Signer{auth: auth, endpoint: endpoint}, nil
 }
 
 func (s *V2Signer) Sign(method, path string, params map[string]string) {
-	params["AWSAccessKeyId"] = s.auth.AccessKey
-	params["SignatureVersion"] = "2"
-	params["SignatureMethod"] = "HmacSHA256"
-	if s.auth.Token() != "" {
-		params["SecurityToken"] = s.auth.Token()
+	req, _ := NewRequest(s.endpoint, method, path, params)
+	SignV2(req, s.auth, "") // service is not used so just set blank
+}
+
+// SignV2 signs req using the AWS version 2 signature with the given credentials.
+// serviceName is present to so that it can be used as a SignerFunc and is not used
+func SignV2(req *http.Request, auth Auth, serviceName string) (err error) {
+	vals := req.URL.Query()
+
+	vals.Set("AWSAccessKeyId", auth.AccessKey)
+	vals.Set("SignatureVersion", "2")
+	vals.Set("SignatureMethod", "HmacSHA256")
+	if auth.Token() != "" {
+		vals.Set("SecurityToken", auth.Token())
 	}
 
 	// AWS specifies that the parameters in a signed request must
@@ -44,21 +51,31 @@ func (s *V2Signer) Sign(method, path string, params map[string]string) {
 	// from the natural order of the encoded value of key=value.
 	// Percent and Equals affect the sorting order.
 	var keys, sarray []string
-	for k, _ := range params {
+	for k, _ := range vals {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		sarray = append(sarray, Encode(k)+"="+Encode(params[k]))
+		sarray = append(sarray, Encode(k)+"="+Encode(vals.Get(k)))
 	}
+
+	path := req.URL.Path
+	if path == "" {
+		path = "/"
+	}
+
 	joined := strings.Join(sarray, "&")
-	payload := method + "\n" + s.host + "\n" + path + "\n" + joined
-	hash := hmac.New(sha256.New, []byte(s.auth.SecretKey))
+	payload := req.Method + "\n" + req.Host + "\n" + path + "\n" + joined
+	hash := hmac.New(sha256.New, []byte(auth.SecretKey))
 	hash.Write([]byte(payload))
 	signature := make([]byte, b64.EncodedLen(hash.Size()))
 	b64.Encode(signature, hash.Sum(nil))
 
-	params["Signature"] = string(signature)
+	vals.Set("Signature", string(signature))
+
+	req.URL.RawQuery = vals.Encode()
+
+	return nil
 }
 
 // Common date formats for signing requests
@@ -75,39 +92,43 @@ func NewRoute53Signer(auth Auth) *Route53Signer {
 	return &Route53Signer{auth: auth}
 }
 
-// getCurrentDate fetches the date stamp from the aws servers to
-// ensure the auth headers are within 5 minutes of the server time
-func (s *Route53Signer) getCurrentDate() string {
-	response, err := http.Get("https://route53.amazonaws.com/date")
-	if err != nil {
-		fmt.Print("Unable to get date from amazon: ", err)
-		return ""
-	}
-
-	response.Body.Close()
-	return response.Header.Get("Date")
-}
-
 // Creates the authorize signature based on the date stamp and secret key
-func (s *Route53Signer) getHeaderAuthorize(message string) string {
-	hmacSha256 := hmac.New(sha256.New, []byte(s.auth.SecretKey))
-	hmacSha256.Write([]byte(message))
-	cryptedString := hmacSha256.Sum(nil)
+func getHeaderAuthorize(date string, auth Auth) string {
+	hmacSha256 := hmac.New(sha256.New, []byte(auth.SecretKey))
+	hmacSha256.Write([]byte(date))
 
-	return base64.StdEncoding.EncodeToString(cryptedString)
+	return base64.StdEncoding.EncodeToString(hmacSha256.Sum(nil))
 }
 
 // Adds all the required headers for AWS Route53 API to the request
 // including the authorization
 func (s *Route53Signer) Sign(req *http.Request) {
-	date := s.getCurrentDate()
-	authHeader := fmt.Sprintf("AWS3-HTTPS AWSAccessKeyId=%s,Algorithm=%s,Signature=%s",
-		s.auth.AccessKey, "HmacSHA256", s.getHeaderAuthorize(date))
-
 	req.Header.Set("Host", req.Host)
+	req.Header.Set("Content-Type", "application/xml")
+	SignRoute53(req, s.auth, "")
+}
+
+// SignRoute53 signs req using the AWS Route53 signature with the given credentials.
+// In contrast to Route53Signer.Sign this only sets the X-Amzn-Authorization and X-Amz-Date headers.
+// serviceName is present to so that it can be used as a SignerFunc and is not used
+func SignRoute53(req *http.Request, auth Auth, serviceName string) error {
+	resp, err := http.Get("https://route53.amazonaws.com/date")
+	if resp != nil {
+		resp.Body.Close()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	date := resp.Header.Get("Date")
+	authHeader := fmt.Sprintf("AWS3-HTTPS AWSAccessKeyId=%s,Algorithm=%s,Signature=%s",
+		auth.AccessKey, "HmacSHA256", getHeaderAuthorize(date, auth))
+
 	req.Header.Set("X-Amzn-Authorization", authHeader)
 	req.Header.Set("X-Amz-Date", date)
-	req.Header.Set("Content-Type", "application/xml")
+
+	return nil
 }
 
 /*
@@ -117,14 +138,26 @@ Signature Version 4 Signing Process. (http://goo.gl/u1OWZz)
 type V4Signer struct {
 	auth        Auth
 	serviceName string
-	region      Region
+	regionName  string
+}
+
+// SignV4Region is an adapter to allow Signer to be used with SignV4 given a regionName.
+func SignV4Region(regionName string) SignerFunc {
+	return func(req *http.Request, auth Auth, serviceName string) error {
+		return SignV4(req, auth, serviceName, regionName)
+	}
+}
+
+// SignV4 signs the req with auth for regionName
+func SignV4(req *http.Request, auth Auth, serviceName, regionName string) error {
+	return NewV4Signer(auth, serviceName, regionName).Sign(req)
 }
 
 /*
 Return a new instance of a V4Signer capable of signing AWS requests.
 */
-func NewV4Signer(auth Auth, serviceName string, region Region) *V4Signer {
-	return &V4Signer{auth: auth, serviceName: serviceName, region: region}
+func NewV4Signer(auth Auth, serviceName, regionName string) *V4Signer {
+	return &V4Signer{auth: auth, serviceName: serviceName, regionName: regionName}
 }
 
 /*
@@ -132,22 +165,25 @@ Sign a request according to the AWS Signature Version 4 Signing Process. (http:/
 
 The signed request will include an "x-amz-date" header with a current timestamp if a valid "x-amz-date"
 or "date" header was not available in the original request. In addition, AWS Signature Version 4 requires
-the "host" header to be a signed header, therefor the Sign method will manually set a "host" header from
+the "host" header to be a signed header, therefore the Sign method will manually set a "host" header from
 the request.Host.
 
 The signed request will include a new "Authorization" header indicating that the request has been signed.
 
 Any changes to the request after signing the request will invalidate the signature.
 */
-func (s *V4Signer) Sign(req *http.Request) {
-	req.Header.Set("host", req.Host)                  // host header must be included as a signed header
-	t := s.requestTime(req)                           // Get requst time
-	creq := s.canonicalRequest(req)                   // Build canonical request
+func (s *V4Signer) Sign(req *http.Request) error {
+	req.Header.Set("Host", req.Host)     // host header must be included as a signed header
+	t := s.requestTime(req)              // Get requst time
+	creq, err := s.canonicalRequest(req) // Build canonical request
+	if err != nil {
+		return err
+	}
 	sts := s.stringToSign(t, creq)                    // Build string to sign
 	signature := s.signature(t, sts)                  // Calculate the AWS Signature Version 4
 	auth := s.authorization(req.Header, t, signature) // Create Authorization header value
 	req.Header.Set("Authorization", auth)             // Add Authorization header to request
-	return
+	return nil
 }
 
 /*
@@ -200,15 +236,22 @@ canonicalRequest method creates the canonical request according to Task 1 of the
       SignedHeaders + '\n' +
       HexEncode(Hash(Payload))
 */
-func (s *V4Signer) canonicalRequest(req *http.Request) string {
+func (s *V4Signer) canonicalRequest(req *http.Request) (string, error) {
 	c := new(bytes.Buffer)
+
+	// Precalculate hash as it can add a header needed by canonicalHeaders
+	hash, err := s.payloadHash(req)
+	if err != nil {
+		return "", err
+	}
+
 	fmt.Fprintf(c, "%s\n", req.Method)
 	fmt.Fprintf(c, "%s\n", s.canonicalURI(req.URL))
 	fmt.Fprintf(c, "%s\n", s.canonicalQueryString(req.URL))
 	fmt.Fprintf(c, "%s\n\n", s.canonicalHeaders(req.Header))
 	fmt.Fprintf(c, "%s\n", s.signedHeaders(req.Header))
-	fmt.Fprintf(c, "%s", s.payloadHash(req))
-	return c.String()
+	fmt.Fprintf(c, "%s", hash)
+	return c.String(), nil
 }
 
 func (s *V4Signer) canonicalURI(u *url.URL) string {
@@ -225,20 +268,7 @@ func (s *V4Signer) canonicalURI(u *url.URL) string {
 }
 
 func (s *V4Signer) canonicalQueryString(u *url.URL) string {
-	var a []string
-	for k, vs := range u.Query() {
-		k = Encode(k)
-		for _, v := range vs {
-			if v == "" {
-				a = append(a, k+"=")
-			} else {
-				v = Encode(v)
-				a = append(a, k+"="+v)
-			}
-		}
-	}
-	sort.Strings(a)
-	return strings.Join(a, "&")
+	return strings.Replace(u.Query().Encode(), "+", "%20", -1)
 }
 
 func (s *V4Signer) canonicalHeaders(h http.Header) string {
@@ -265,20 +295,32 @@ func (s *V4Signer) signedHeaders(h http.Header) string {
 	return strings.Join(a, ";")
 }
 
-func (s *V4Signer) payloadHash(req *http.Request) string {
-	var b []byte
-	if req.Body == nil {
-		b = []byte("")
-	} else {
-		var err error
-		b, err = ioutil.ReadAll(req.Body)
-		if err != nil {
-			// TODO: I REALLY DON'T LIKE THIS PANIC!!!!
-			panic(err)
+// payloadHash returns the payload hash for the req.
+// This will return the value of X-Amz-Content-Sha256 if present otherwise
+// it will be calculated from the req details and the X-Amz-Content-Sha256 set.
+//
+// Due to the fact this can add a new header it must be called before any call
+// to canonicalHeaders, otherwise the canonicalHeaders will be missing the added
+// header.
+func (s *V4Signer) payloadHash(req *http.Request) (string, error) {
+	hash := req.Header.Get("X-Amz-Content-Sha256")
+	if hash == "" {
+		var b []byte
+		if req.Body == nil {
+			b = []byte("")
+		} else {
+			var err error
+			b, err = ioutil.ReadAll(req.Body)
+			if err != nil {
+				return "", err
+			}
 		}
+		req.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		hash = s.hash(string(b))
+		req.Header.Add("X-Amz-Content-Sha256", hash)
 	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-	return s.hash(string(b))
+
+	return hash, nil
 }
 
 /*
@@ -300,7 +342,7 @@ func (s *V4Signer) stringToSign(t time.Time, creq string) string {
 }
 
 func (s *V4Signer) credentialScope(t time.Time) string {
-	return fmt.Sprintf("%s/%s/%s/aws4_request", t.Format(ISO8601BasicFormatShort), s.region.Name, s.serviceName)
+	return fmt.Sprintf("%s/%s/%s/aws4_request", t.Format(ISO8601BasicFormatShort), s.regionName, s.serviceName)
 }
 
 /*
@@ -324,7 +366,7 @@ derivedKey method derives a signing key to be used for signing a request.
 */
 func (s *V4Signer) derivedKey(t time.Time) []byte {
 	h := s.hmac([]byte("AWS4"+s.auth.SecretKey), []byte(t.Format(ISO8601BasicFormatShort)))
-	h = s.hmac(h, []byte(s.region.Name))
+	h = s.hmac(h, []byte(s.regionName))
 	h = s.hmac(h, []byte(s.serviceName))
 	h = s.hmac(h, []byte("aws4_request"))
 	return h

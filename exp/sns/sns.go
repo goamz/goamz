@@ -82,7 +82,7 @@ func (sns *SNS) query(params map[string]string, resp interface{}) error {
 	}
 	defer r.Body.Close()
 
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return buildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)

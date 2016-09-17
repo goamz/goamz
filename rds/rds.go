@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"github.com/goamz/goamz/aws"
 	"log"
+	"net/http"
 	"net/http/httputil"
 	"strconv"
 )
@@ -22,7 +23,7 @@ type RDS struct {
 
 // New creates a new RDS Client.
 func New(auth aws.Auth, region aws.Region) (*RDS, error) {
-	service, err := aws.NewService(auth, region.RDSEndpoint)
+	service, err := aws.NewService(auth, region.RDSEndpoint, region, "rds")
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (rds *RDS) query(method, path string, params map[string]string, resp interf
 		log.Printf("%v\n}\n", string(dump))
 	}
 
-	if r.StatusCode != 200 {
+	if r.StatusCode != http.StatusOK {
 		return rds.Service.BuildError(r)
 	}
 	err = xml.NewDecoder(r.Body).Decode(resp)
