@@ -230,13 +230,14 @@ var APNortheast2 = Region{
 	"https://iam.amazonaws.com",
 	"https://elasticloadbalancing.ap-northeast-2.amazonaws.com",
 	"https://dynamodb.ap-northeast-2.amazonaws.com",
-	ServiceInfo{"https://monitoring.ap-northeast-2.amazonaws.com", V2Signature},
+	"https://monitoring.ap-northeast-2.amazonaws.com",
 	"https://autoscaling.ap-northeast-2.amazonaws.com",
-	ServiceInfo{"https://rds.ap-northeast-2.amazonaws.com", V2Signature},
+	"https://rds.ap-northeast-2.amazonaws.com",
 	"https://sts.amazonaws.com",
 	"https://cloudformation.ap-northeast-2.amazonaws.com",
 	"https://ecs.ap-northeast-2.amazonaws.com",
 	"https://streams.dynamodb.ap-northeast-2.amazonaws.com",
+	SignV4Region("eu-central-1"),
 }
 
 var SAEast = Region{
