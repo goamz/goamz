@@ -1088,14 +1088,14 @@ func (ec2 *EC2) RebootInstances(ids ...string) (resp *SimpleResp, err error) {
 type ModifyInstance struct {
 	InstanceType          string
 	BlockDevices          []BlockDeviceMapping
-	DisableAPITermination bool
-	EbsOptimized          bool
+	DisableAPITermination string
+	EbsOptimized          string
 	SecurityGroups        []SecurityGroup
 	ShutdownBehavior      string
 	KernelId              string
 	RamdiskId             string
-	SourceDestCheck       bool
-	SriovNetSupport       bool
+	SourceDestCheck       string
+	SriovNetSupport       string
 	UserData              []byte
 }
 
@@ -1121,12 +1121,12 @@ func (ec2 *EC2) ModifyInstance(instId string, options *ModifyInstance) (resp *Mo
 		params["InstanceType.Value"] = options.InstanceType
 	}
 
-	if options.DisableAPITermination {
-		params["DisableApiTermination.Value"] = "true"
+	if options.DisableAPITermination != "" {
+		params["DisableApiTermination.Value"] = options.DisableAPITermination
 	}
 
-	if options.EbsOptimized {
-		params["EbsOptimized"] = "true"
+	if options.EbsOptimized != "" {
+		params["EbsOptimized"] = options.EbsOptimized
 	}
 
 	if options.ShutdownBehavior != "" {
@@ -1141,12 +1141,12 @@ func (ec2 *EC2) ModifyInstance(instId string, options *ModifyInstance) (resp *Mo
 		params["Ramdisk.Value"] = options.RamdiskId
 	}
 
-	if options.SourceDestCheck {
-		params["SourceDestCheck.Value"] = "true"
+	if options.SourceDestCheck != "" {
+		params["SourceDestCheck.Value"] = options.SourceDestCheck
 	}
 
-	if options.SriovNetSupport {
-		params["SriovNetSupport.Value"] = "simple"
+	if options.SriovNetSupport != "" {
+		params["SriovNetSupport.Value"] = options.SriovNetSupport
 	}
 
 	if options.UserData != nil {

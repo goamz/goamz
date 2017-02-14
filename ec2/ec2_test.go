@@ -1224,14 +1224,14 @@ func (s *S) TestModifyInstance(c *C) {
 
 	options := ec2.ModifyInstance{
 		InstanceType:          "m1.small",
-		DisableAPITermination: true,
-		EbsOptimized:          true,
+		DisableAPITermination: "true",
+		EbsOptimized:          "true",
 		SecurityGroups:        []ec2.SecurityGroup{{Id: "g1"}, {Id: "g2"}},
 		ShutdownBehavior:      "terminate",
 		KernelId:              "kernel-id",
 		RamdiskId:             "ramdisk-id",
-		SourceDestCheck:       true,
-		SriovNetSupport:       true,
+		SourceDestCheck:       "true",
+		SriovNetSupport:       "simple",
 		UserData:              []byte("1234"),
 		BlockDevices: []ec2.BlockDeviceMapping{
 			{DeviceName: "/dev/sda1", SnapshotId: "snap-a08912c9", DeleteOnTermination: true},
