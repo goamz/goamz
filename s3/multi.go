@@ -7,9 +7,14 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"sort"
 	"strconv"
+)
+
+var ErrMD5PartSumMismatch = errors.New(
+	"Etag received did not match calculated MD5 sum",
 )
 
 // Multi represents an unfinished multipart upload.
@@ -135,6 +140,54 @@ func (b *Bucket) InitMulti(key string, contType string, perm ACL) (*Multi, error
 		return nil, err
 	}
 	return &Multi{Bucket: b, Key: key, UploadId: resp.UploadId}, nil
+}
+
+// PutPart sends part n of the multipart upload, reading all the content from r.
+// Each part, except for the last one, must be at least 5MB in size.
+//
+// This function does not need a io.ReadSeeker as input, so it's suitable for
+// doing streamed uploads.
+//
+// See http://goo.gl/pqZer for details.
+func (m *Multi) PutPartReader(n int, r io.Reader, contentLength int64) (Part, error) {
+	hash := md5.New()
+	tr := io.TeeReader(r, hash)
+
+	headers := map[string][]string{
+		"Content-Length": {strconv.FormatInt(contentLength, 10)},
+	}
+	params := map[string][]string{
+		"uploadId":   {m.UploadId},
+		"partNumber": {strconv.FormatInt(int64(n), 10)},
+	}
+
+	req := &request{
+		method:  "PUT",
+		bucket:  m.Bucket.Name,
+		path:    m.Key,
+		headers: headers,
+		params:  params,
+		payload: tr,
+	}
+	if err := m.Bucket.S3.prepare(req); err != nil {
+		return Part{}, err
+	}
+
+	resp, err := m.Bucket.S3.run(req, nil)
+	if err != nil {
+		return Part{}, err
+	}
+
+	// Verify that S3 received the same bytes that we read
+	calculatedHash := fmt.Sprintf(`"%x"`, hash.Sum(nil))
+	etag := resp.Header.Get("ETag")
+	if etag == "" {
+		return Part{}, errors.New("part upload succeeded with no ETag")
+	} else if etag != calculatedHash {
+		return Part{}, ErrMD5PartSumMismatch
+	}
+
+	return Part{n, etag, contentLength}, nil
 }
 
 // PutPart sends part n of the multipart upload, reading all the content from r.

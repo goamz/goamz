@@ -138,6 +138,56 @@ func (s *S) TestPutPart(c *C) {
 	c.Assert(req.Header["Content-Md5"], DeepEquals, []string{"JvkO/RDWFPEAJS/1bYja2A=="})
 }
 
+func (s *S) TestPutPartReader(c *C) {
+	headers := map[string]string{
+		"ETag": `"26f90efd10d614f100252ff56d88dad8"`,
+	}
+	testServer.Response(200, nil, InitMultiResultDump)
+	testServer.Response(200, headers, "")
+
+	b := s.s3.Bucket("sample")
+
+	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
+	c.Assert(err, IsNil)
+
+	r := strings.NewReader("<part 1>")
+
+	part, err := multi.PutPartReader(1, r, int64(r.Len()))
+	c.Assert(err, IsNil)
+	c.Assert(part.N, Equals, 1)
+	c.Assert(part.Size, Equals, int64(8))
+	c.Assert(part.ETag, Equals, headers["ETag"])
+
+	testServer.WaitRequest()
+	req := testServer.WaitRequest()
+	c.Assert(req.Method, Equals, "PUT")
+	c.Assert(req.URL.Path, Equals, "/sample/multi")
+	c.Assert(req.Form.Get("uploadId"), Matches, "JNbR_[A-Za-z0-9.]+QQ--")
+	c.Assert(req.Form["partNumber"], DeepEquals, []string{"1"})
+	c.Assert(req.Header["Content-Length"], DeepEquals, []string{"8"})
+}
+
+// Makes sure that our upload fails if S3 returns a different Etag from what we
+// calculated during the upload.
+func (s *S) TestPutPartReaderMD5Mismatch(c *C) {
+	headers := map[string]string{
+		"ETag": `"badbadbadbadbadbadbadbadbadbadba"`,
+	}
+	testServer.Response(200, nil, InitMultiResultDump)
+	testServer.Response(200, headers, "")
+
+	b := s.s3.Bucket("sample")
+
+	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
+	c.Assert(err, IsNil)
+
+	r := strings.NewReader("<part 1>")
+
+	part, err := multi.PutPartReader(1, r, int64(r.Len()))
+	c.Assert(err, Equals, s3.ErrMD5PartSumMismatch)
+	c.Assert(part, Equals, s3.Part{})
+}
+
 func readAll(r io.Reader) string {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
