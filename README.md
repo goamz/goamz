@@ -2,9 +2,9 @@
 
 [![Build Status](http://travis-ci.org/goamz/goamz.png?branch=master)](https://travis-ci.org/goamz/goamz)
 
-The _goamz_ package enables Go programs to interact with Amazon Web Services.
+The _goamz_ package enables Go programs to interact with Amazon Web Services. 
 
-This is a fork of the version [developed within Canonical](https://wiki.ubuntu.com/goamz) with additional functionality and services from [a number of contributors](https://github.com/goamz/goamz/contributors)!
+This is a fork of the version [developed within Canonical](https://wiki.ubuntu.com/goamz) with additional functionality and services from [a number of contributors](https://github.com/goamz/goamz/contributors)! Currently this fork is no longer actively maintained and users are advised to switch to the [official AWS supported Golang SDK](https://github.com/aws/aws-sdk-go)
 
 The API of AWS is very comprehensive, though, and goamz doesn't even scratch the surface of it. That said, it's fairly well tested, and is the foundation in which further calls can easily be integrated. We'll continue extending the API as necessary - Pull Requests are _very_ welcome!
 
