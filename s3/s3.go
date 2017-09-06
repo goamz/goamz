@@ -286,7 +286,18 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 		resp, err := b.S3.run(req, nil)
 
 		if shouldRetry(err) && attempt.HasNext() {
+			if resp != nil && resp.Body != nil {
+				io.Copy(ioutil.Discard, resp.Body)
+				resp.Body.Close()
+			}
 			continue
+		}
+
+		if resp != nil && resp.Body != nil {
+			defer func() {
+				io.Copy(ioutil.Discard, resp.Body)
+				resp.Body.Close()
+			}()
 		}
 
 		if err != nil {
@@ -300,6 +311,7 @@ func (b *Bucket) Exists(path string) (exists bool, err error) {
 		if resp.StatusCode/100 == 2 {
 			exists = true
 		}
+
 		return exists, err
 	}
 	return false, fmt.Errorf("S3 Currently Unreachable")
@@ -977,7 +989,7 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		Method:     req.method,
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		Close:      true,
+		Close:      false,
 		Header:     req.headers,
 	}
 
@@ -996,7 +1008,10 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 		s3.client = &http.Client{
 			Transport: &http.Transport{
 				Dial: func(netw, addr string) (c net.Conn, err error) {
-					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
+					c, err = (&net.Dialer{
+						Timeout:   s3.ConnectTimeout,
+						KeepAlive: 30 * time.Second,
+					}).Dial(netw, addr)
 					if err != nil {
 						return
 					}
