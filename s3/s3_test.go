@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,6 +49,27 @@ func (s *S) TearDownTest(c *C) {
 
 func (s *S) DisableRetries() {
 	s.s3.AttemptStrategy = aws.AttemptStrategy{}
+}
+
+// This will trigger an error when tests are run with -race before this commit.
+func (s *S) TestClientRace(c *C) {
+	auth := aws.Auth{AccessKey: "abc", SecretKey: "123"}
+	_s3 := s3.New(
+		auth, aws.Region{Name: "faux-region-1", S3Endpoint: testServer.URL},
+	)
+
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+	for i := 0; i < 4; i++ {
+		testServer.Response(200, nil, "")
+
+		go func(S3 *s3.S3, w *sync.WaitGroup) {
+			defer w.Done()
+			b := S3.Bucket("bucket")
+			b.PutBucket(s3.Private)
+		}(_s3, &wg)
+	}
+	wg.Wait()
 }
 
 // PutBucket docs: http://goo.gl/kBTCu
