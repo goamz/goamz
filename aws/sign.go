@@ -157,7 +157,6 @@ If neither header is defined or we are unable to parse either header as a valid 
 then we will create a new "x-amz-date" header with the current time.
 */
 func (s *V4Signer) requestTime(req *http.Request) time.Time {
-
 	// Get "x-amz-date" header
 	date := req.Header.Get("x-amz-date")
 

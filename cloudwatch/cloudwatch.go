@@ -263,7 +263,6 @@ func (c *CloudWatch) GetMetricStatistics(req *GetMetricStatisticsRequest) (resul
 // Returned metrics can be used with GetMetricStatistics to obtain statistical data for a given metric.
 
 func (c *CloudWatch) ListMetrics(req *ListMetricsRequest) (result *ListMetricsResponse, err error) {
-
 	// Serialize all the params
 	params := aws.MakeParams("ListMetrics")
 	if req.Namespace != "" {
