@@ -481,7 +481,7 @@ func (s *ClientTests) TestMultiComplete(c *C) {
 	c.Assert(len(data), Equals, len(data1)+len(data2))
 	for i := range data1 {
 		if data[i] != data1[i] {
-			c.Fatalf("uploaded object at byte %d: want %d, got %d", data1[i], data[i])
+			c.Fatalf("uploaded object at byte %d: want %d, got %d", i, data1[i], data[i])
 		}
 	}
 	c.Assert(string(data[len(data1):]), Equals, string(data2))
