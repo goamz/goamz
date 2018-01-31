@@ -271,7 +271,6 @@ type RunInstancesResp struct {
 //
 // See http://goo.gl/OCH8a for more details.
 type Instance struct {
-
 	// General instance information
 	InstanceId         string              `xml:"instanceId"`                 // The ID of the instance launched
 	InstanceType       string              `xml:"instanceType"`               // The instance type eg. m1.small | m1.medium | m1.large etc
