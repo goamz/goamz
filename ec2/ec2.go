@@ -127,7 +127,7 @@ type xmlErrors struct {
 var timeNow = time.Now
 
 func (ec2 *EC2) query(params map[string]string, resp interface{}) error {
-	params["Version"] = "2014-02-01"
+	params["Version"] = "2015-03-01"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(ec2.Region.EC2Endpoint)
 	if err != nil {
@@ -2263,4 +2263,53 @@ func (ec2 *EC2) DisassociateAddress(publicIp, associationId string) (resp *Disas
 		return nil, err
 	}
 	return resp, nil
+}
+
+// The CopyImage request parameters.
+//
+// See http://goo.gl/hQwPCK for more details.
+type CopySnapshot struct {
+	SourceRegion      string
+	DestinationRegion string
+	SourceSnapshotId  string
+	Description       string
+}
+
+// Response to a CopyImage request.
+//
+// See http://goo.gl/hQwPCK for more details.
+type CopySnapshotResp struct {
+	RequestId  string `xml:"requestId"`
+	SnapshotId string `xml:"snapshotId"`
+}
+
+// Copy Snapshot from one region to another or to same region.
+//
+// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CopySnapshot.html for more details.
+func (ec2 *EC2) CopySnapshot(options *CopySnapshot) (resp *CopySnapshotResp, err error) {
+	params := makeParams("CopySnapshot")
+
+	if options.SourceRegion != "" {
+		params["SourceRegion"] = options.SourceRegion
+	}
+
+	if options.DestinationRegion != "" {
+		params["DestinationRegion"] = options.DestinationRegion
+	}
+
+	if options.SourceSnapshotId != "" {
+		params["SourceSnapshotId"] = options.SourceSnapshotId
+	}
+
+	if options.Description != "" {
+		params["Description"] = options.Description
+	}
+
+	resp = &CopySnapshotResp{}
+	err = ec2.query(params, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return
 }
