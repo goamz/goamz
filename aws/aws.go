@@ -70,6 +70,7 @@ var Regions = map[string]Region{
 	APSoutheast2.Name: APSoutheast2,
 	EUCentral.Name:    EUCentral,
 	EUWest.Name:       EUWest,
+	EUWest2.Name:      EUWest2,
 	USEast.Name:       USEast,
 	USEast2.Name:      USEast2,
 	USWest.Name:       USWest,
