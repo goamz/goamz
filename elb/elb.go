@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/goamz/goamz/aws"
@@ -331,23 +330,16 @@ func (elb *ELB) RemoveTags(elbName string, tagKeys []string) (*SimpleResp, error
 func (elb *ELB) query(params map[string]string, resp interface{}) error {
 	params["Version"] = "2012-06-01"
 	params["Timestamp"] = time.Now().In(time.UTC).Format(time.RFC3339)
-	data := strings.NewReader(multimap(params).Encode())
-	hreq, err := http.NewRequest("GET", elb.Region.ELBEndpoint+"/", data)
+	endpoint, err := url.Parse(elb.Region.ELBEndpoint)
 	if err != nil {
 		return err
 	}
-
-	hreq.URL.RawQuery = multimap(params).Encode()
-	token := elb.Auth.Token()
-	if token != "" {
-		hreq.Header.Set("X-Amz-Security-Token", token)
+	if endpoint.Path == "" {
+		endpoint.Path = "/"
 	}
-
-	signer := aws.NewV4Signer(elb.Auth, "elasticloadbalancing", elb.Region)
-	signer.Sign(hreq)
-
-	r, err := http.DefaultClient.Do(hreq)
-
+	sign(elb.Auth, "GET", endpoint.Path, params, endpoint.Host)
+	endpoint.RawQuery = multimap(params).Encode()
+	r, err := http.Get(endpoint.String())
 	if err != nil {
 		return err
 	}
